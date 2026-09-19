@@ -17,7 +17,7 @@
 🚧 **v2.1 — Integrated Visits & Account Operations**
 
 - [x] **Phase 16: Visits Unification Backend** - Visitor QR scans and walk-ins land as Visit rows; entry-log re-scoped; unified ledger read model lands with the write-path fold (no double-counting window)
-- [ ] **Phase 17: Gatehouse Panel + Reports Page** - Consolidated `/gatehouse` operator panel, `/reports` route fixing the dead dashboard link, ledger filtering/search, CSV export
+- [x] **Phase 17: Gatehouse Panel + Reports Page** - Consolidated `/gatehouse` operator panel, `/reports` route fixing the dead dashboard link, ledger filtering/search, CSV export
 - [ ] **Phase 18: Password Management** - Enumeration-safe forgot-password for admins (SMTP temp password), scoped admin resets, durable delivery-state machinery
 
 ## Phase Details
@@ -58,11 +58,13 @@ Plans:
   4. An administrator clicks the dashboard "Review reports and history" link and lands on `/reports` (inside the auth guard — dead-link fixed), where they can pick Today/7d/30d/custom ranges, see visit counts by day, residents per apartment, and the unified history table with CSV export using the millisecond-precision pattern (PANEL-04)
   5. Filtering the ledger by date, status, subject, destination, or origin queries the server (server-side search) and returns matching rows (PANEL-05)
 
-**Plans**: TBD
+**Plans**: 3/3 plans executed
 
 Plans:
 
-- [ ] 17-01: TBD
+- [x] 17-01-PLAN.md — Gatehouse Operator Panel & Navigation (PANEL-01, PANEL-02)
+- [x] 17-02-PLAN.md — QR Scanner Camera Orientation Persistence (PANEL-03)
+- [x] 17-03-PLAN.md — Reports Page, Unified Ledger Server-Side Filtering & CSV Export (PANEL-04, PANEL-05)
 
 **UI hint**: yes
 
@@ -95,7 +97,7 @@ Phases 16 and 18 can start in parallel (18 has zero data dependency on 16); Phas
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 16. Visits Unification Backend | 3/3 | Complete | 2026-09-19 |
-| 17. Gatehouse Panel + Reports Page | 0/TBD | Not started | - |
+| 17. Gatehouse Panel + Reports Page | 3/3 | Complete | 2026-09-19 |
 | 18. Password Management | 0/TBD | Not started | - |
 
 ## Future Milestones

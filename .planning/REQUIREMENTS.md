@@ -7,22 +7,22 @@
 
 ### Visits Unification
 
-- [ ] **VISIT-01**: Visitor QR scan creates or checks in a Visit row — an unmatched visitor scan creates a new Visit (CheckedIn) in the Visits table; a matching Pending visit is checked in; the AccessEvent references the VisitId; resident/vehicle scans remain AccessEvents-only
-- [ ] **VISIT-02**: Gatehouse walk-in registration creates a Visit landing directly `CheckedIn` via `POST /api/v1/visits` (`CheckInNow: true`); `POST /api/v1/entry-log` is re-scoped to its privacy-consent audit role (no walk-in operational records); legacy ConsentAuditLog walk-ins remain a read-only ledger segment below a cutoff
-- [ ] **VISIT-03**: Manual lookup of a visitor by document/name/apartment/block creates or checks in the Visit row (same behavior as QR path); manual resident/vehicle entries and walk-outs stay in AccessEvents
-- [ ] **VISIT-04**: Unified Shift ledger stream — `GET /api/v1/reports/history` returns one chronological stream (Visits + visitor AccessEvents + legacy entry-log segment) with per-row native state stamps, source origin, and `kind` discriminator; no double-counting; tenant-predicated per UNION branch; server-side pagination
-- [ ] **VISIT-05**: Refused scans and security events appear in the ledger as context rows with origin stamps, rendered in their native decision state (never coerced into Visit status enums)
-- [ ] **VISIT-06**: Package-delivery visits (gatehouse-only destination) support an optional free-text description of what was delivered (e.g. "2 boxes", "florist bouquet"), captured at registration or edited later; the description shows on the ledger row and in visit history
-- [ ] **VISIT-07**: Package-delivery visits carry structured carrier/courier codes (e.g. Correios, Sedex, carrier dropdown or code field) alongside the free-text description, filterable in the ledger and reports
+- [x] **VISIT-01**: Visitor QR scan creates or checks in a Visit row — an unmatched visitor scan creates a new Visit (CheckedIn) in the Visits table; a matching Pending visit is checked in; the AccessEvent references the VisitId; resident/vehicle scans remain AccessEvents-only
+- [x] **VISIT-02**: Gatehouse walk-in registration creates a Visit landing directly `CheckedIn` via `POST /api/v1/visits` (`CheckInNow: true`); `POST /api/v1/entry-log` is re-scoped to its privacy-consent audit role (no walk-in operational records); legacy ConsentAuditLog walk-ins remain a read-only ledger segment below a cutoff
+- [x] **VISIT-03**: Manual lookup of a visitor by document/name/apartment/block creates or checks in the Visit row (same behavior as QR path); manual resident/vehicle entries and walk-outs stay in AccessEvents
+- [x] **VISIT-04**: Unified Shift ledger stream — `GET /api/v1/reports/history` returns one chronological stream (Visits + visitor AccessEvents + legacy entry-log segment) with per-row native state stamps, source origin, and `kind` discriminator; no double-counting; tenant-predicated per UNION branch; server-side pagination
+- [x] **VISIT-05**: Refused scans and security events appear in the ledger as context rows with origin stamps, rendered in their native decision state (never coerced into Visit status enums)
+- [x] **VISIT-06**: Package-delivery visits (gatehouse-only destination) support an optional free-text description of what was delivered (e.g. "2 boxes", "florist bouquet"), captured at registration or edited later; the description shows on the ledger row and in visit history
+- [x] **VISIT-07**: Package-delivery visits carry structured carrier/courier codes (e.g. Correios, Sedex, carrier dropdown or code field) alongside the free-text description, filterable in the ledger and reports
 
 
 ### Gatehouse Panel & Reports
 
-- [ ] **PANEL-01**: Consolidated gatehouse operator panel at `/gatehouse` — tabs composing existing components (scan QR, manual lookup, walk-in registration, open visits list); deep-link parity with existing `/gatehouse/qr` and `/gatehouse/manual` routes; follows the Shift Ledger design system
-- [ ] **PANEL-02**: `/visits` demoted to admin management/reporting (pre-registration, edit, cancel); dashboard "Add visit" and "Record access" buttons repoint to the gatehouse panel
-- [ ] **PANEL-03**: QR scan screen remembers camera direction (facingMode) in browser localStorage per device, reopening in the last-used orientation at each gate
-- [ ] **PANEL-04**: `/reports` page with date ranges (Today/7d/30d/custom), visit counts by day, residents per apartment, unified history table, and CSV export (millisecond-precision pattern); consumes the generated OpenAPI report clients; the dashboard "Review reports and history" link resolves to it (dead-link fix)
-- [ ] **PANEL-05**: Ledger filtering and server-side search on the unified stream (date, status, subject, destination, origin)
+- [x] **PANEL-01**: Consolidated gatehouse operator panel at `/gatehouse` — tabs composing existing components (scan QR, manual lookup, walk-in registration, open visits list); deep-link parity with existing `/gatehouse/qr` and `/gatehouse/manual` routes; follows the Shift Ledger design system
+- [x] **PANEL-02**: `/visits` demoted to admin management/reporting (pre-registration, edit, cancel); dashboard "Add visit" and "Record access" buttons repoint to the gatehouse panel
+- [x] **PANEL-03**: QR scan screen remembers camera direction (facingMode) in browser localStorage per device, reopening in the last-used orientation at each gate
+- [x] **PANEL-04**: `/reports` page with date ranges (Today/7d/30d/custom), visit counts by day, residents per apartment, unified history table, and CSV export (millisecond-precision pattern); consumes the generated OpenAPI report clients; the dashboard "Review reports and history" link resolves to it (dead-link fix)
+- [x] **PANEL-05**: Ledger filtering and server-side search on the unified stream (date, status, subject, destination, origin)
 
 ### Password Management
 
@@ -35,7 +35,7 @@
 ### Infrastructure
 
 - [ ] **INFRA-01**: `IEmailSender` abstraction + MailKit SMTP adapter; Mailpit dev catch-all service in docker-compose (SMTP 1025 / UI 8025); demo mode sends nothing (`Demo.DisableOutboundEmail` no-op sender); SMTP config via environment variables
-- [ ] **INFRA-02**: `Visits(tenant_id, CreatedAtUtc)` index migration; tenant-local day-boundary helper shared by ledger and reports (no UTC-vs-local "today" bugs)
+- [x] **INFRA-02**: `Visits(tenant_id, CreatedAtUtc)` index migration; tenant-local day-boundary helper shared by ledger and reports (no UTC-vs-local "today" bugs)
 
 ## Future Requirements (deferred)
 
@@ -62,22 +62,22 @@ Phase mapping per `.planning/ROADMAP.md` (v2.1 starts at Phase 16; Phases 14–1
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| VISIT-01 | Phase 16 | Pending |
-| VISIT-02 | Phase 16 | Pending |
-| VISIT-03 | Phase 16 | Pending |
-| VISIT-04 | Phase 16 | Pending |
-| VISIT-05 | Phase 16 | Pending |
-| VISIT-06 | Phase 16 | Pending |
-| VISIT-07 | Phase 16 | Pending |
-| PANEL-01 | Phase 17 | Pending |
-| PANEL-02 | Phase 17 | Pending |
-| PANEL-03 | Phase 17 | Pending |
-| PANEL-04 | Phase 17 | Pending |
-| PANEL-05 | Phase 17 | Pending |
+| VISIT-01 | Phase 16 | Complete |
+| VISIT-02 | Phase 16 | Complete |
+| VISIT-03 | Phase 16 | Complete |
+| VISIT-04 | Phase 16 | Complete |
+| VISIT-05 | Phase 16 | Complete |
+| VISIT-06 | Phase 16 | Complete |
+| VISIT-07 | Phase 16 | Complete |
+| PANEL-01 | Phase 17 | Complete |
+| PANEL-02 | Phase 17 | Complete |
+| PANEL-03 | Phase 17 | Complete |
+| PANEL-04 | Phase 17 | Complete |
+| PANEL-05 | Phase 17 | Complete |
 | PASS-01 | Phase 18 | Pending |
 | PASS-02 | Phase 18 | Pending |
 | PASS-03 | Phase 18 | Pending |
 | PASS-04 | Phase 18 | Pending |
 | PASS-05 | Phase 18 | Pending |
 | INFRA-01 | Phase 18 | Pending |
-| INFRA-02 | Phase 16 | Pending |
+| INFRA-02 | Phase 16 | Complete |

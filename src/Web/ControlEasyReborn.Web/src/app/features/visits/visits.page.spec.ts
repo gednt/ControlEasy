@@ -6,6 +6,8 @@ import { VisitsApiService } from './visits-api.service';
 import { ApartmentsApiService } from '../apartments/apartments-api.service';
 import { GatewayControlService } from '../access-control/gateway-control.service';
 
+import { provideRouter } from '@angular/router';
+
 describe('VisitsPage', () => {
   let fixture: ComponentFixture<VisitsPage>;
   let component: VisitsPage;
@@ -15,6 +17,7 @@ describe('VisitsPage', () => {
     await TestBed.configureTestingModule({
       imports: [VisitsPage],
       providers: [
+        provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
         VisitsApiService,
@@ -32,11 +35,18 @@ describe('VisitsPage', () => {
     httpMock.verify();
   });
 
+  function flushApartmentRequests(): void {
+    const apartmentRequests = httpMock.match('/api/v1/apartments?skip=0&take=500');
+    expect(apartmentRequests.length).toBe(2);
+    for (const request of apartmentRequests) {
+      request.flush([]);
+    }
+  }
+
   it('renders visits and shows QR pass button for pending visits', () => {
     fixture.detectChanges();
 
-    const aptReq = httpMock.expectOne('/api/v1/apartments?skip=0&take=500');
-    aptReq.flush([]);
+    flushApartmentRequests();
 
     const visitsReq = httpMock.expectOne('/api/v1/visits?skip=0&take=50');
     visitsReq.flush([
@@ -64,8 +74,7 @@ describe('VisitsPage', () => {
   it('generates a QR pass when QR Pass button is clicked', () => {
     fixture.detectChanges();
 
-    const aptReq = httpMock.expectOne('/api/v1/apartments?skip=0&take=500');
-    aptReq.flush([]);
+    flushApartmentRequests();
 
     const visitsReq = httpMock.expectOne('/api/v1/visits?skip=0&take=50');
     const mockVisit = {

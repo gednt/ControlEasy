@@ -35,20 +35,20 @@ export const routes: Routes = [
       {
         path: 'gatehouse',
         canActivate: [porteiroGuard],
-        data: { breadcrumb: 'New entry' },
-        loadComponent: () => import('./features/entry-workflow/entry-workflow.page').then((m) => m.EntryWorkflowPage),
+        data: { breadcrumb: 'Gatehouse' },
+        loadComponent: () => import('./features/gatehouse/gatehouse-panel.page').then((m) => m.GatehousePanelPage),
       },
       {
         path: 'gatehouse/qr',
         canActivate: [porteiroGuard],
-        data: { breadcrumb: 'QR scan' },
-        loadComponent: () => import('./features/access-control/qr-scan.page').then((m) => m.QrScanPage),
+        data: { breadcrumb: 'QR scan', initialTab: 'qr' },
+        loadComponent: () => import('./features/gatehouse/gatehouse-panel.page').then((m) => m.GatehousePanelPage),
       },
       {
         path: 'gatehouse/manual',
         canActivate: [porteiroGuard],
-        data: { breadcrumb: 'Manual lookup' },
-        loadComponent: () => import('./features/access-control/manual-lookup.page').then((m) => m.ManualLookupPage),
+        data: { breadcrumb: 'Manual lookup', initialTab: 'manual' },
+        loadComponent: () => import('./features/gatehouse/gatehouse-panel.page').then((m) => m.GatehousePanelPage),
       },
       {
         path: 'gatehouse/credentials',
@@ -62,6 +62,11 @@ export const routes: Routes = [
         canActivate: [syndicGuard],
         data: { breadcrumb: 'Audit Log' },
         loadComponent: () => import('./features/audit/audit.page').then((m) => m.AuditPage),
+      },
+      {
+        path: 'reports',
+        data: { breadcrumb: 'Reports & History' },
+        loadComponent: () => import('./features/reports/reports.page').then((m) => m.ReportsPage),
       },
       {
         path: 'admin/consent-policy',

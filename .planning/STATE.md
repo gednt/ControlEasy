@@ -2,17 +2,17 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Integrated Visits & Account Operations (started 2026-09-19)
-current_phase: 17
-current_phase_name: Gatehouse Panel + Reports Page
-status: planning
-stopped_at: Phase 16 complete — Phase 17 is ready for planning.
-last_updated: "2026-09-19T16:20:00.000Z"
+current_phase: 18
+current_phase_name: Password Management
+status: ready
+stopped_at: Phase 17 verified complete — ready for Phase 18 planning.
+last_updated: "2026-09-19T18:40:00.000Z"
 last_activity: 2026-09-19
-last_activity_desc: Phase 16 unified ledger and consent-only entry-log completed
-state_head: 18c9a77
+last_activity_desc: Phase 17 verified complete with full local CI gate passing; Phase 18 next
+state_head: HEAD
 progress:
   total_phases: 3
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 3
   completed_plans: 3
 ---
@@ -24,16 +24,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-19)
 
 **Core value:** Gatehouse staff can reliably register and control access through a fast, tenant-isolated web UI.
-**Current focus:** Phase 17 — Gatehouse Panel + Reports Page
+**Current focus:** Phase 18 — Password Management
 
 ## Current Position
 
-Phase: 17 (Gatehouse Panel + Reports Page) — PLANNING
+Phase: 18 (Password Management) — READY
 Plan: 0 of TBD
-Status: Phase 16 complete; Phase 17 ready for planning
-Last activity: 2026-09-19 — Phase 16 unified ledger and consent-only entry-log completed
+Status: Phase 17 complete; Phase 18 ready
+Last activity: 2026-09-19 — Phase 17 verified complete with full local CI gate passing; Phase 18 next
 
-Progress: [███░░░░░░░] 33%
+Progress: [███████░░░] 67%
 
 ## Performance Metrics
 

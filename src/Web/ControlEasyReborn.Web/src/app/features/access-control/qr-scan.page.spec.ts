@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
-import { QrScanPage } from './qr-scan.page';
+import { QrScanPage, CAMERA_FACING_MODE_STORAGE_KEY } from './qr-scan.page';
 import { AccessScanResultComponent } from './components/access-scan-result.component';
 import { GatewayControlService } from './gateway-control.service';
 import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
@@ -33,14 +33,21 @@ describe('QrScanPage', () => {
     decodeCallback = null;
     decodePromise = null;
 
-    spyOn(BrowserMultiFormatReader.prototype, 'decodeFromVideoDevice').and.callFake(
-      (_deviceId: string | undefined, _video: HTMLVideoElement | string | undefined, cb: DecodeCallback) => {
-        decodeCallback = cb;
-        return new Promise<IScannerControls>((resolve, reject) => {
-          decodePromise = { resolve, reject };
-        });
-      },
-    );
+    const fakeDecode = (
+      _constraintsOrId: unknown,
+      _video: HTMLVideoElement | string | undefined,
+      cb: DecodeCallback,
+    ) => {
+      decodeCallback = cb;
+      return new Promise<IScannerControls>((resolve, reject) => {
+        decodePromise = { resolve, reject };
+      });
+    };
+
+    spyOn(BrowserMultiFormatReader.prototype, 'decodeFromVideoDevice').and.callFake(fakeDecode);
+    if ('decodeFromConstraints' in BrowserMultiFormatReader.prototype) {
+      spyOn(BrowserMultiFormatReader.prototype, 'decodeFromConstraints').and.callFake(fakeDecode);
+    }
 
     await TestBed.configureTestingModule({
       imports: [QrScanPage, AccessScanResultComponent],
@@ -239,4 +246,32 @@ describe('QrScanPage', () => {
     expect(component.state().error).toBeNull();
     drainPendingScanner();
   }));
+
+  it('loads facingMode from localStorage and toggles orientation when flip button clicked', fakeAsync(() => {
+    localStorage.setItem(CAMERA_FACING_MODE_STORAGE_KEY, 'environment');
+    const localFixture = TestBed.createComponent(QrScanPage);
+    const localComp = localFixture.componentInstance;
+    localFixture.detectChanges();
+    tick();
+
+    expect(localComp.facingMode()).toBe('environment');
+    expect(localComp.isMirrored()).toBeFalse();
+
+    localComp.toggleCameraFacingMode();
+    tick();
+
+    expect(localComp.facingMode()).toBe('user');
+    expect(localComp.isMirrored()).toBeTrue();
+    expect(localStorage.getItem(CAMERA_FACING_MODE_STORAGE_KEY)).toBe('user');
+
+    localComp.toggleCameraFacingMode();
+    tick();
+
+    expect(localComp.facingMode()).toBe('environment');
+    expect(localComp.isMirrored()).toBeFalse();
+    expect(localStorage.getItem(CAMERA_FACING_MODE_STORAGE_KEY)).toBe('environment');
+
+    localStorage.removeItem(CAMERA_FACING_MODE_STORAGE_KEY);
+  }));
 });
+

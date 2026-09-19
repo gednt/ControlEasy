@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { VisitsApiService, VisitResponse } from './visits-api.service';
 import { ApartmentsApiService, formatApartmentLabel } from '../apartments/apartments-api.service';
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
@@ -16,6 +17,7 @@ type StatusFilter = 'all' | 'Pending' | 'CheckedIn';
   standalone: true,
   imports: [
     CommonModule,
+    RouterLink,
     CeButtonComponent,
     CeModalComponent,
     CePhotoPanelComponent,
@@ -25,10 +27,12 @@ type StatusFilter = 'all' | 'Pending' | 'CheckedIn';
   template: `
     <div class="page-header">
       <div>
-        <h1 class="page-title">Visits</h1>
-        <p class="page-subtitle">{{ visits().length }} visit records</p>
+        <h1 class="page-title">Visit register (administrative)</h1>
+        <p class="page-subtitle">
+          Administrative pre-registration, scheduled arrivals, and visit history ({{ visits().length }} records). For immediate walk-in access and gate control, use the <a routerLink="/gatehouse" class="inline-link">Gatehouse operator panel</a>.
+        </p>
       </div>
-      <button class="ce-button variant-primary size-md" (click)="openCreate()">+ Add visit</button>
+      <button class="ce-button variant-primary size-md" (click)="openCreate()">+ Pre-register visit</button>
     </div>
 
     <div class="filter-tabs">

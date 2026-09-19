@@ -246,10 +246,11 @@ export class SidebarComponent {
     { route: '/visits', label: 'Visits', icon: 'calendar' },
     { route: '/vehicles', label: 'Vehicles', icon: 'car' },
     { route: '/service-providers', label: 'Service Providers', icon: 'briefcase' },
+    { route: '/reports', label: 'Reports', icon: 'file-text' },
   ];
 
   readonly gatehouseItems: ReadonlyArray<{ route: string; label: string; icon: LucideIconName }> = [
-    { route: '/gatehouse', label: 'New entry', icon: 'check-circle' },
+    { route: '/gatehouse', label: 'Gatehouse panel', icon: 'check-circle' },
     { route: '/gatehouse/qr', label: 'QR scan', icon: 'camera' },
     { route: '/gatehouse/manual', label: 'Manual lookup', icon: 'search' },
     { route: '/gatehouse/credentials', label: 'QR credentials', icon: 'user-check' },

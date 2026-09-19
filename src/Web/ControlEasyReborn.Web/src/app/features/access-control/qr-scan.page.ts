@@ -68,6 +68,21 @@ function cryptoRandom(): string {
   });
 }
 
+export const CAMERA_FACING_MODE_STORAGE_KEY = 'ce_qr_facing_mode';
+export type CameraFacingMode = 'environment' | 'user';
+
+function getSavedCameraFacingMode(): CameraFacingMode {
+  try {
+    const saved = localStorage.getItem(CAMERA_FACING_MODE_STORAGE_KEY);
+    if (saved === 'user' || saved === 'environment') {
+      return saved;
+    }
+  } catch {
+    /* non-blocking */
+  }
+  return 'user';
+}
+
 @Component({
   selector: 'ce-qr-scan-page',
   standalone: true,
@@ -203,11 +218,12 @@ function cryptoRandom(): string {
           <button
             type="button"
             class="camera-flip-btn"
-            (click)="toggleMirror()"
-            title="Invert camera horizontally"
-            aria-label="Invert camera horizontally"
+            (click)="toggleCameraFacingMode()"
+            [title]="facingMode() === 'environment' ? 'Switch to user camera' : 'Switch to environment camera'"
+            [attr.aria-label]="facingMode() === 'environment' ? 'Switch to user camera' : 'Switch to environment camera'"
+            data-testid="camera-flip-btn"
           >
-            ⇄ Flip camera
+            ⇄ Flip camera ({{ facingMode() === 'environment' ? 'Back' : 'Front' }})
           </button>
         }
       </div>
@@ -283,13 +299,25 @@ export class QrScanPage implements AfterViewInit, OnDestroy {
   private lastScannedAt = 0;
   private intentionalStopInProgress = false;
   private destroyed = false;
-
   @ViewChild('video', { static: false }) videoRef?: ElementRef<HTMLVideoElement>;
 
-  readonly isMirrored = signal(true);
+  readonly facingMode = signal<CameraFacingMode>(getSavedCameraFacingMode());
+  readonly isMirrored = computed(() => this.facingMode() === 'user');
+
+  toggleCameraFacingMode(): void {
+    const next: CameraFacingMode = this.facingMode() === 'environment' ? 'user' : 'environment';
+    this.facingMode.set(next);
+    try {
+      localStorage.setItem(CAMERA_FACING_MODE_STORAGE_KEY, next);
+    } catch {
+      /* non-blocking */
+    }
+    this.stopScanner();
+    this.startScanner();
+  }
 
   toggleMirror(): void {
-    this.isMirrored.update((v) => !v);
+    this.toggleCameraFacingMode();
   }
 
   readonly state = signal<UiState>(initialState());
@@ -386,37 +414,52 @@ export class QrScanPage implements AfterViewInit, OnDestroy {
     const sessionId = this.currentSessionId;
     this.retryCount = 0;
 
-    this.reader
-      .decodeFromVideoDevice(undefined, videoEl, (result, _err, controls) => {
-        if (this.destroyed || sessionId !== this.currentSessionId) {
-          controls.stop();
-          return;
-        }
-        this.scannerControls = controls;
-        if (this.state().cameraStatus !== 'unavailable') {
-          this.state.update((s) => ({ ...s, cameraStatus: 'active' }));
-        }
-        if (!result) {
-          return;
-        }
-        if (this.state().busy) {
-          return;
-        }
-        const text = result.getText();
-        if (!text || text.length > PAYLOAD_MAX_LENGTH) return;
-        const trimmed = text.trim();
-        if (!trimmed || trimmed.length < PAYLOAD_MIN_LENGTH) return;
-        if (this.isSuppressedRescan(trimmed)) return;
-        this.state.update((s) => ({
-          ...s,
-          qrPayload: trimmed,
-        }));
-        this.submit();
-      })
-      .catch((err: unknown) => {
-        if (this.destroyed || sessionId !== this.currentSessionId) return;
-        this.handleCameraError(err);
-      });
+    const decodeCallback = (
+      result: { getText: () => string } | undefined,
+      _err: unknown,
+      controls: IScannerControls,
+    ) => {
+      if (this.destroyed || sessionId !== this.currentSessionId) {
+        controls.stop();
+        return;
+      }
+      this.scannerControls = controls;
+      if (this.state().cameraStatus !== 'unavailable') {
+        this.state.update((s) => ({ ...s, cameraStatus: 'active' }));
+      }
+      if (!result) {
+        return;
+      }
+      if (this.state().busy) {
+        return;
+      }
+      const text = result.getText();
+      if (!text || text.length > PAYLOAD_MAX_LENGTH) return;
+      const trimmed = text.trim();
+      if (!trimmed || trimmed.length < PAYLOAD_MIN_LENGTH) return;
+      if (this.isSuppressedRescan(trimmed)) return;
+      this.state.update((s) => ({
+        ...s,
+        qrPayload: trimmed,
+      }));
+      this.submit();
+    };
+
+    const constraints: MediaStreamConstraints = {
+      video: {
+        facingMode: { ideal: this.facingMode() },
+      },
+    };
+
+    const decodePromise =
+      typeof (this.reader as unknown as { decodeFromConstraints?: unknown }).decodeFromConstraints === 'function'
+        ? this.reader.decodeFromConstraints(constraints, videoEl, decodeCallback)
+        : this.reader.decodeFromVideoDevice(undefined, videoEl, decodeCallback);
+
+    decodePromise.catch((err: unknown) => {
+      if (this.destroyed || sessionId !== this.currentSessionId) return;
+      this.handleCameraError(err);
+    });
   }
 
   private armSuppression(payload: string): void {

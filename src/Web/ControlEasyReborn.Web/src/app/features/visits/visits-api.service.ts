@@ -22,6 +22,7 @@ export interface CreateVisitRequest {
   visitorPhone?: string | null;
   apartmentId?: string | null;
   purpose?: string | null;
+  checkInNow?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
