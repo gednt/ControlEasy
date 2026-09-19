@@ -1,6 +1,6 @@
 namespace ControlEasyReborn.Modules.Visits.Application.Contracts;
 
-public sealed record CreateVisitRequest(string VisitorName, string VisitorDocument, string? VisitorPhone, Guid? ApartmentId, string? Purpose);
+public sealed record CreateVisitRequest(string VisitorName, string VisitorDocument, string? VisitorPhone, Guid? ApartmentId, string? Purpose, bool CheckInNow = false);
 
 public sealed record CheckInRequest;
 

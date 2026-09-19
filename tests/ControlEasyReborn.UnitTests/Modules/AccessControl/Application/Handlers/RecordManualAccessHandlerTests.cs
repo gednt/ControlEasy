@@ -144,7 +144,7 @@ public sealed class RecordManualAccessHandlerTests
     }
 
     [Fact]
-    public async Task Records_manual_event_and_checks_in_visitor_on_entrance()
+    public async Task Records_manual_event_and_folds_visitor_arrival_through_shared_handler()
     {
         var lookupAuditId = Guid.NewGuid();
         var visitId = Guid.NewGuid();
@@ -170,6 +170,14 @@ public sealed class RecordManualAccessHandlerTests
         result.DestinationBlock.Should().Be("Block B");
         result.DestinationUnit.Should().Be("204");
 
-        await _visits.Received(1).CheckInAsync(_tenantId, visitId, _profileId, null, Arg.Any<CancellationToken>());
+        // The manual path funnels through the shared VisitorArrivalHandler
+        // (RegisterArrivalAsync) — no direct CheckInAsync call remains.
+        await _visits.Received(1).RegisterArrivalAsync(
+            Arg.Is<ControlEasyReborn.Modules.Visits.Application.Handlers.VisitorArrivalCommand>(c =>
+                c.VisitorName == "Carlos Visitante" &&
+                c.VisitorDocument == "12345678901" &&
+                c.DestinationApartmentId == apartmentId),
+            Arg.Any<CancellationToken>());
+        await _visits.DidNotReceive().CheckInAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
     }
 }

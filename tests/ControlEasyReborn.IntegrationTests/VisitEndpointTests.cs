@@ -111,6 +111,24 @@ public sealed class VisitEndpointTests
     }
 
     [Fact]
+    public async Task CreateVisit_WithCheckInNow_LandsDirectlyCheckedIn()
+    {
+        var client = _factory.AsTenantA();
+        var apartmentId = await _factory.SeedApartmentForTenantAAsync();
+        var request = new CreateVisitRequest("Walk-in Wanda", "10203040506", null, apartmentId, "Errand", CheckInNow: true);
+
+        var response = await client.PostAsJsonAsync("/api/v1/visits", request);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var body = await response.Content.ReadFromJsonAsync<VisitResponse>();
+        body.Should().NotBeNull();
+        body!.Status.Should().Be("CheckedIn");
+        body.CheckedInAtUtc.Should().NotBeNull();
+        body.CheckedOutAtUtc.Should().BeNull();
+        body.AttendantProfileId.Should().NotBeNull();
+    }
+
+    [Fact]
     public async Task CrossTenant_GetVisit_AsDifferentTenant_Returns404()
     {
         var clientA = _factory.AsTenantA();

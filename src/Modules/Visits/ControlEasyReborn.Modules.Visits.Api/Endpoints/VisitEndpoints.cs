@@ -47,7 +47,10 @@ public static class VisitEndpoints
         {
             var tenantId = tenantContext.TenantId
                 ?? throw new InvalidOperationException("Tenant context is not resolved.");
-            var response = await handler.HandleAsync(request, tenantId, ct);
+            var profileId = tenantContext.ProfileId;
+            // GatehouseId is not resolvable from the JWT tenant context (same as
+            // the /checkin endpoint's established null pattern).
+            var response = await handler.HandleAsync(request, tenantId, profileId, null, ct);
             return Results.Created($"/api/v1/visits/{response.Id}", response);
         });
 

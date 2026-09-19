@@ -23,7 +23,7 @@ public sealed class CreateVisitHandler
         _validator = validator;
     }
 
-    public async Task<VisitResponse> HandleAsync(CreateVisitRequest request, Guid tenantId, CancellationToken ct)
+    public async Task<VisitResponse> HandleAsync(CreateVisitRequest request, Guid tenantId, Guid? attendantProfileId = null, Guid? gatehouseId = null, CancellationToken ct = default)
     {
         var result = await _validator.ValidateAsync(request, ct);
         if (!result.IsValid)
@@ -54,6 +54,11 @@ public sealed class CreateVisitHandler
             });
         }
 
+        // Walk-in (D-02/VISIT-02): CheckInNow lands the Visit directly CheckedIn —
+        // the person is physically present at the gate. AttendantProfileId and
+        // GatehouseId are stamped server-side from the JWT tenant context.
+        var nowUtc = DateTime.UtcNow;
+        var checkInNow = request.CheckInNow;
         var visit = new Visit(
             id: Guid.NewGuid(),
             tenantId: tenantId,
@@ -64,12 +69,12 @@ public sealed class CreateVisitHandler
             destinationBlock: apartment.Block,
             destinationUnit: apartment.Unit,
             purpose: request.Purpose,
-            status: VisitStatus.Pending,
-            attendantProfileId: null,
-            gatehouseId: null,
-            checkedInAtUtc: null,
+            status: checkInNow ? VisitStatus.CheckedIn : VisitStatus.Pending,
+            attendantProfileId: checkInNow ? attendantProfileId : null,
+            gatehouseId: checkInNow ? gatehouseId : null,
+            checkedInAtUtc: checkInNow ? nowUtc : null,
             checkedOutAtUtc: null,
-            createdAtUtc: DateTime.UtcNow);
+            createdAtUtc: nowUtc);
 
         await _visits.AddAsync(visit, ct);
         return ToResponse(visit);

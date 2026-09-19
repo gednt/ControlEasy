@@ -123,7 +123,24 @@ public sealed class RecordManualAccessHandler
 
         if (command.SubjectType == SubjectType.Visitor && command.Direction == CycleDirection.Entrance && _visits is not null)
         {
-            await _visits.CheckInAsync(command.TenantId, command.SubjectId, command.PerformedByProfileId, command.GatehouseId, ct);
+            // Single check-in path (D-01/D-02): route the manual-lookup arrival
+            // through the shared VisitorArrivalHandler so QR and manual paths
+            // produce identical Visit rows. The visitor profile comes from the
+            // looked-up visit the audit points at.
+            var visitorProfile = await _resolver.ResolveVisitorProfileAsync(command.TenantId, command.SubjectId, ct);
+            var arrival = new ControlEasyReborn.Modules.Visits.Application.Handlers.VisitorArrivalCommand(
+                TenantId: command.TenantId,
+                VisitorName: visitorProfile?.Name ?? "Visitor",
+                VisitorDocument: visitorProfile?.Document ?? string.Empty,
+                VisitorPhone: visitorProfile?.Phone,
+                DestinationApartmentId: destination.ApartmentId!.Value,
+                DestinationBlock: destination.Block,
+                DestinationUnit: destination.Unit,
+                Purpose: visitorProfile?.Purpose,
+                AttendantProfileId: command.PerformedByProfileId,
+                GatehouseId: command.GatehouseId,
+                OccurredAtUtc: nowUtc);
+            await _visits.RegisterArrivalAsync(arrival, ct);
         }
 
         stopwatch.Stop();

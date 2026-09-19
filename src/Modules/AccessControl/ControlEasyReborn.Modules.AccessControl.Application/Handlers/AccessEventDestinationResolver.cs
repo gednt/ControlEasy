@@ -48,6 +48,25 @@ public sealed class AccessEventDestinationResolver
         };
     }
 
+    /// <summary>
+    /// Resolves the visitor profile (name / document / phone / purpose) for a
+    /// manual-lookup arrival: the SubjectId is a visit id the lookup audit
+    /// selected, so the visit row itself is the data source. Returns null when
+    /// the visit no longer exists (the caller falls back to the display name).
+    /// </summary>
+    public async Task<VisitorProfileSnapshot?> ResolveVisitorProfileAsync(Guid tenantId, Guid visitId, CancellationToken ct)
+    {
+        var visit = await _visits.FindByIdAsync(tenantId, visitId, ct);
+        if (visit is null)
+        {
+            return null;
+        }
+
+        return new VisitorProfileSnapshot(visit.VisitorName, visit.VisitorDocument, visit.VisitorPhone, visit.Purpose);
+    }
+
+    public sealed record VisitorProfileSnapshot(string Name, string Document, string? Phone, string? Purpose);
+
     private async Task<DestinationResolution> ResolveVisitorAsync(Guid tenantId, Guid visitId, CancellationToken ct)
     {
         var visit = await _visits.FindByIdAsync(tenantId, visitId, ct);
