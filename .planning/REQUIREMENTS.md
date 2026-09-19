@@ -58,8 +58,26 @@
 
 ## Traceability
 
-Filled by the roadmap (phase mapping below).
+Phase mapping per `.planning/ROADMAP.md` (v2.1 starts at Phase 16; Phases 14–15 reserved for v2.2 Door Integration).
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (pending roadmap) | — | — |
+| VISIT-01 | Phase 16 | Pending |
+| VISIT-02 | Phase 16 | Pending |
+| VISIT-03 | Phase 16 | Pending |
+| VISIT-04 | Phase 16 | Pending |
+| VISIT-05 | Phase 16 | Pending |
+| VISIT-06 | Phase 16 | Pending |
+| VISIT-07 | Phase 16 | Pending |
+| PANEL-01 | Phase 17 | Pending |
+| PANEL-02 | Phase 17 | Pending |
+| PANEL-03 | Phase 17 | Pending |
+| PANEL-04 | Phase 17 | Pending |
+| PANEL-05 | Phase 17 | Pending |
+| PASS-01 | Phase 18 | Pending |
+| PASS-02 | Phase 18 | Pending |
+| PASS-03 | Phase 18 | Pending |
+| PASS-04 | Phase 18 | Pending |
+| PASS-05 | Phase 18 | Pending |
+| INFRA-01 | Phase 18 | Pending |
+| INFRA-02 | Phase 16 | Pending |
