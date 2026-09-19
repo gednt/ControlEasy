@@ -81,11 +81,13 @@ Plans:
   4. Password hashing uses BCrypt with work factor explicitly pinned ≥ 11, and temp passwords are generated from an unambiguous charset (no 0/O/o, 1/l/I) via `RandomNumberGenerator.GetString` (PASS-05)
   5. In dev, emails land in Mailpit (SMTP 1025 / UI 8025 via docker-compose); demo mode sends nothing (no-op sender behind `Demo.DisableOutboundEmail`); SMTP config comes from environment variables through the `IEmailSender` abstraction (INFRA-01)
 
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
 
-- [ ] 18-01: TBD
+- [ ] 18-01-PLAN.md — Infrastructure & Security Primitives (INFRA-01, PASS-05, PASS-04 schema)
+- [ ] 18-02-PLAN.md — Administrative Password Reset Endpoints & Token Revocation (PASS-02, PASS-03, PASS-04)
+- [ ] 18-03-PLAN.md — Self-Service Forgot Password & Frontend Flows (PASS-01, PASS-04)
 
 **UI hint**: yes
 
