@@ -35,13 +35,13 @@
   4. `GET /api/v1/reports/history` returns one chronological stream (Visits + visitor AccessEvents + legacy entry-log segment) with per-row native state stamps, source origin, and `kind` discriminator — counted exactly once per real-world entry, tenant-predicated per UNION branch, server-side paginated; refused scans and security events appear as context rows in their native decision state, never coerced into Visit status enums (VISIT-04, VISIT-05)
   5. A package-delivery visit carries an optional free-text description and a structured carrier code; both show on ledger rows, appear in visit history, and carrier codes are filterable in the ledger and reports (VISIT-06, VISIT-07)
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans executed
 
 Plans:
 
 - [x] 16-01-PLAN.md — Visitor write-path fold: shared VisitorArrivalHandler (QR/manual/walk-in), migration 14 (Visits index + AccessEvents package columns), TenantDayBoundary helper
 - [x] 16-02-PLAN.md — Package drops as AccessEvents PackageDrop rows (description + carrier code, optional apartment destination, no Visit rows)
-- [ ] 16-03-PLAN.md — Unified honest ledger: GET /api/v1/reports/history (single UNION, native stamps, pagination + filters) and entry-log consent-only re-scope
+- [x] 16-03-PLAN.md — Unified honest ledger: GET /api/v1/reports/history (single UNION, native stamps, pagination + filters) and entry-log consent-only re-scope
 
 **UI hint**: no
 
