@@ -23,6 +23,9 @@ public sealed class AccessEvent
     public Guid DestinationApartmentId { get; private set; }
     public string DestinationBlock { get; private set; } = string.Empty;
     public string DestinationUnit { get; private set; } = string.Empty;
+    public AccessEventKind EventKind { get; private set; }
+    public string? PackageDescription { get; private set; }
+    public string? PackageCarrierCode { get; private set; }
 
     private AccessEvent() { }
 
@@ -45,15 +48,24 @@ public sealed class AccessEvent
         PolicyOutcome policyOutcome,
         Guid destinationApartmentId,
         string destinationBlock,
-        string destinationUnit)
+        string destinationUnit,
+        AccessEventKind eventKind = AccessEventKind.Access,
+        string? packageDescription = null,
+        string? packageCarrierCode = null)
     {
-        if (destinationApartmentId == Guid.Empty) throw new InvalidOperationException("Destination apartment is required.");
+        if (destinationApartmentId == Guid.Empty && eventKind != AccessEventKind.PackageDrop)
+            throw new InvalidOperationException("Destination apartment is required.");
+        if (eventKind == AccessEventKind.PackageDrop && destinationApartmentId == Guid.Empty
+            && (string.IsNullOrWhiteSpace(destinationBlock) || string.IsNullOrWhiteSpace(destinationUnit)))
+            throw new InvalidOperationException("Condominium-level package drops require a gatehouse destination snapshot.");
         if (string.IsNullOrWhiteSpace(destinationBlock)) throw new InvalidOperationException("Destination block is required.");
         if (string.IsNullOrWhiteSpace(destinationUnit)) throw new InvalidOperationException("Destination unit is required.");
         if (accessMethod == AccessMethod.Qr && credentialId is null)
             throw new InvalidOperationException("QR access events require a credential id.");
         if (accessMethod == AccessMethod.ManualLookup && lookupAuditId is null)
             throw new InvalidOperationException("Manual lookup access events require a lookup audit id.");
+        if (eventKind != AccessEventKind.PackageDrop && (packageDescription is not null || packageCarrierCode is not null))
+            throw new InvalidOperationException("Package fields are only valid for package-drop events.");
 
         Id = id;
         TenantId = tenantId;
@@ -74,6 +86,9 @@ public sealed class AccessEvent
         DestinationApartmentId = destinationApartmentId;
         DestinationBlock = destinationBlock;
         DestinationUnit = destinationUnit;
+        EventKind = eventKind;
+        PackageDescription = packageDescription;
+        PackageCarrierCode = packageCarrierCode;
     }
 
     public static AccessEvent Record(
@@ -94,7 +109,10 @@ public sealed class AccessEvent
         PolicyOutcome policyOutcome,
         Guid destinationApartmentId,
         string destinationBlock,
-        string destinationUnit)
+        string destinationUnit,
+        AccessEventKind eventKind = AccessEventKind.Access,
+        string? packageDescription = null,
+        string? packageCarrierCode = null)
     {
         return new AccessEvent(
             id: Guid.NewGuid(),
@@ -115,7 +133,10 @@ public sealed class AccessEvent
             policyOutcome: policyOutcome,
             destinationApartmentId: destinationApartmentId,
             destinationBlock: destinationBlock,
-            destinationUnit: destinationUnit);
+            destinationUnit: destinationUnit,
+            eventKind: eventKind,
+            packageDescription: packageDescription,
+            packageCarrierCode: packageCarrierCode);
     }
 
     public static AccessEvent Hydrate(
@@ -137,7 +158,10 @@ public sealed class AccessEvent
         PolicyOutcome policyOutcome,
         Guid destinationApartmentId,
         string destinationBlock,
-        string destinationUnit)
+        string destinationUnit,
+        AccessEventKind eventKind = AccessEventKind.Access,
+        string? packageDescription = null,
+        string? packageCarrierCode = null)
     {
         return new AccessEvent(
             id: id,
@@ -158,6 +182,9 @@ public sealed class AccessEvent
             policyOutcome: policyOutcome,
             destinationApartmentId: destinationApartmentId,
             destinationBlock: destinationBlock,
-            destinationUnit: destinationUnit);
+            destinationUnit: destinationUnit,
+            eventKind: eventKind,
+            packageDescription: packageDescription,
+            packageCarrierCode: packageCarrierCode);
     }
 }
