@@ -1,12 +1,14 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { importProvidersFrom } from '@angular/core';
 import { AccessCredentialsPage } from './access-credentials.page';
 import { GatewayControlService } from './gateway-control.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ApartmentsApiService } from '../apartments/apartments-api.service';
 import { ResidentsApiService } from '../residents/residents-api.service';
 import { VehiclesApiService } from '../vehicles/vehicles-api.service';
+import { CE_LUCIDE_ICONS } from '../../design-system/components/icon/icon.registry';
 
 describe('AccessCredentialsPage', () => {
   let fixture: ComponentFixture<AccessCredentialsPage>;
@@ -23,6 +25,7 @@ describe('AccessCredentialsPage', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        importProvidersFrom(CE_LUCIDE_ICONS),
         GatewayControlService,
         ApartmentsApiService,
         ResidentsApiService,

@@ -30,7 +30,7 @@ describe('VisitCreateModalComponent', () => {
     fixture.detectChanges();
 
     // Apartment picker calls /api/v1/apartments
-    const aptReq = httpMock.expectOne('/api/v1/apartments?skip=0&take=100');
+    const aptReq = httpMock.expectOne('/api/v1/apartments?skip=0&take=500');
     aptReq.flush([]);
 
     fixture.detectChanges();
@@ -43,7 +43,7 @@ describe('VisitCreateModalComponent', () => {
     fixture.componentRef.setInput('open', true);
     fixture.detectChanges();
 
-    const aptReq = httpMock.expectOne('/api/v1/apartments?skip=0&take=100');
+    const aptReq = httpMock.expectOne('/api/v1/apartments?skip=0&take=500');
     aptReq.flush([]);
 
     component.form.patchValue({
