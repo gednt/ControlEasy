@@ -10,22 +10,25 @@ import { RequestBuilder } from '../../request-builder';
 import { RecordAccessScanRequest } from '../../models/record-access-scan-request';
 
 export interface ApiV1AccessEventsScansPost$Params {
-      body: RecordAccessScanRequest
+  body: RecordAccessScanRequest;
 }
 
-export function apiV1AccessEventsScansPost(http: HttpClient, rootUrl: string, params: ApiV1AccessEventsScansPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+export function apiV1AccessEventsScansPost(
+  http: HttpClient,
+  rootUrl: string,
+  params: ApiV1AccessEventsScansPost$Params,
+  context?: HttpContext,
+): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1AccessEventsScansPost.PATH, 'post');
   if (params) {
     rb.body(params.body, 'application/json');
   }
 
-  return http.request(
-    rb.build({ responseType: 'text', accept: '*/*', context })
-  ).pipe(
+  return http.request(rb.build({ responseType: 'text', accept: '*/*', context })).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
-    })
+    }),
   );
 }
 

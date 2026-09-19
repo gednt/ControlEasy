@@ -50,6 +50,7 @@ public static class AccessCredentialsEndpoints
             {
                 "resident" => SubjectType.Resident,
                 "vehicle" => SubjectType.Vehicle,
+                "visitor" => SubjectType.Visitor,
                 _ => null
             };
 

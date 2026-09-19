@@ -11,23 +11,26 @@ import { UpdateApartmentRequest } from '../../models/update-apartment-request';
 
 export interface ApiV1ApartmentsIdPut$Params {
   id: string;
-      body: UpdateApartmentRequest
+  body: UpdateApartmentRequest;
 }
 
-export function apiV1ApartmentsIdPut(http: HttpClient, rootUrl: string, params: ApiV1ApartmentsIdPut$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+export function apiV1ApartmentsIdPut(
+  http: HttpClient,
+  rootUrl: string,
+  params: ApiV1ApartmentsIdPut$Params,
+  context?: HttpContext,
+): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1ApartmentsIdPut.PATH, 'put');
   if (params) {
     rb.path('id', params.id, {});
     rb.body(params.body, 'application/json');
   }
 
-  return http.request(
-    rb.build({ responseType: 'text', accept: '*/*', context })
-  ).pipe(
+  return http.request(rb.build({ responseType: 'text', accept: '*/*', context })).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
-    })
+    }),
   );
 }
 

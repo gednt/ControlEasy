@@ -42,6 +42,17 @@ export class AuthService {
     this.api = api;
     this.router = router;
     this.tenantSession = tenantSession;
+    const existingToken = this.accessToken();
+    if (existingToken) {
+      this.syncClaimsFromToken(existingToken);
+      if (
+        this.roles().includes('TenantAdmin') &&
+        !this.hasPermission('Access.Control.Issue') &&
+        this.refreshTokenValue()
+      ) {
+        this.refreshAuth().subscribe({ error: () => {} });
+      }
+    }
   }
 
   postLoginRoute(): string {
@@ -168,6 +179,7 @@ export class AuthService {
   setToken(token: string): void {
     this.accessToken.set(token);
     this.saveToStorage(this.tokenKey, token);
+    this.syncClaimsFromToken(token);
   }
 
   getRememberedEmail(): string | null {
@@ -190,6 +202,31 @@ export class AuthService {
     this.refreshTokenValue.set(refreshToken);
     this.saveToStorage(this.tokenKey, accessToken);
     this.saveToStorage(this.refreshKey, refreshToken);
+    this.syncClaimsFromToken(accessToken);
+  }
+
+  private syncClaimsFromToken(token: string): void {
+    try {
+      const parts = token.split('.');
+      if (parts.length < 2) return;
+      const base64 = parts[1]!.replace(/-/g, '+').replace(/_/g, '/');
+      if (typeof atob !== 'function') return;
+      const json = atob(base64);
+      if (!json) return;
+      const payload = JSON.parse(json);
+      if (payload.permissions) {
+        const perms = Array.isArray(payload.permissions) ? payload.permissions : [payload.permissions];
+        this.permissions.set(perms);
+        this.saveJsonToStorage(this.permissionsKey, perms);
+      }
+      if (payload.roles) {
+        const roles = Array.isArray(payload.roles) ? payload.roles : [payload.roles];
+        this.roles.set(roles);
+        this.saveJsonToStorage(this.rolesKey, roles);
+      }
+    } catch {
+      // Ignore token parse failure
+    }
   }
 
   private loadFromStorage(key: string): string | null {

@@ -7,7 +7,6 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-
 export interface ApiV1AccessCredentialsGet$Params {
   subjectType?: string;
   subjectId?: string;
@@ -16,7 +15,12 @@ export interface ApiV1AccessCredentialsGet$Params {
   take?: number;
 }
 
-export function apiV1AccessCredentialsGet(http: HttpClient, rootUrl: string, params?: ApiV1AccessCredentialsGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+export function apiV1AccessCredentialsGet(
+  http: HttpClient,
+  rootUrl: string,
+  params?: ApiV1AccessCredentialsGet$Params,
+  context?: HttpContext,
+): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1AccessCredentialsGet.PATH, 'get');
   if (params) {
     rb.query('subjectType', params.subjectType, {});
@@ -26,13 +30,11 @@ export function apiV1AccessCredentialsGet(http: HttpClient, rootUrl: string, par
     rb.query('take', params.take, {});
   }
 
-  return http.request(
-    rb.build({ responseType: 'text', accept: '*/*', context })
-  ).pipe(
+  return http.request(rb.build({ responseType: 'text', accept: '*/*', context })).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
-    })
+    }),
   );
 }
 

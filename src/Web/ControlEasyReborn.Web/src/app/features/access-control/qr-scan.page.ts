@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
 import { GatewayControlService } from './gateway-control.service';
 import { AccessScanResultComponent } from './components/access-scan-result.component';
@@ -58,10 +59,10 @@ function cryptoRandom(): string {
     const v8 = b[8] ?? 0;
     b[6] = (v6 & 0x0f) | 0x40;
     b[8] = (v8 & 0x3f) | 0x80;
-    const h = Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
+    const h = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
     return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
   }
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, ch => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (ch) => {
     const r = (Math.random() * 16) | 0;
     return (ch === 'x' ? r : (r & 0x3) | 0x8).toString(16);
   });
@@ -70,7 +71,7 @@ function cryptoRandom(): string {
 @Component({
   selector: 'ce-qr-scan-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, AccessScanResultComponent],
+  imports: [CommonModule, FormsModule, RouterLink, AccessScanResultComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   styles: [
     `
@@ -92,6 +93,33 @@ function cryptoRandom(): string {
         height: 100%;
         object-fit: cover;
         display: block;
+        transition: transform 0.2s ease-in-out;
+      }
+      .qr-camera-video.is-mirrored {
+        transform: scaleX(-1);
+      }
+      .camera-flip-btn {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        z-index: 10;
+        background: rgba(0, 0, 0, 0.65);
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 6px;
+        padding: 5px 10px;
+        font-size: 0.75rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        backdrop-filter: blur(4px);
+        font-weight: 500;
+        transition: background 0.15s ease, border-color 0.15s ease;
+      }
+      .camera-flip-btn:hover {
+        background: rgba(0, 0, 0, 0.85);
+        border-color: rgba(255, 255, 255, 0.6);
       }
       .qr-camera-reticle {
         position: absolute;
@@ -124,6 +152,40 @@ function cryptoRandom(): string {
         color: #666;
         margin: 0.25rem 0;
       }
+      .scan-form {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+      .field-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+      .field-title {
+        font-weight: 600;
+        font-size: 0.875rem;
+      }
+      .field-help {
+        font-size: 0.75rem;
+        color: #64748b;
+      }
+      .manual-fallback-hint {
+        margin-top: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .manual-lookup-link {
+        color: #2c5cdc;
+        font-weight: 600;
+        text-decoration: underline;
+      }
     `,
   ],
   template: `
@@ -132,12 +194,21 @@ function cryptoRandom(): string {
       <p class="hint">Point the camera at the credential QR. The raw QR is never stored.</p>
 
       <div class="qr-camera" [class.is-hidden]="!showCameraPanel()" data-testid="qr-camera-panel">
-        <video #video class="qr-camera-video" playsinline muted></video>
+        <video #video class="qr-camera-video" [class.is-mirrored]="isMirrored()" playsinline muted></video>
         @if (showCameraPanel()) {
           <div class="qr-camera-reticle" aria-hidden="true"></div>
           @if (state().cameraStatus === 'starting') {
             <p class="qr-camera-status" role="status" aria-live="polite">Starting camera…</p>
           }
+          <button
+            type="button"
+            class="camera-flip-btn"
+            (click)="toggleMirror()"
+            title="Invert camera horizontally"
+            aria-label="Invert camera horizontally"
+          >
+            ⇄ Flip camera
+          </button>
         }
       </div>
 
@@ -145,33 +216,32 @@ function cryptoRandom(): string {
         <div class="error" role="alert" data-testid="qr-camera-error">{{ state().error }}</div>
       }
 
-      <form (ngSubmit)="submit()" novalidate>
-        <label>
-          QR payload
+      <form (ngSubmit)="submit()" novalidate class="scan-form">
+        <label class="field-group">
+          <span class="field-title">Or enter QR credential token or UUID manually</span>
+          <span class="field-help"
+            >Enter the cryptographic access pass token or the active Subject / Credential UUID.</span
+          >
           <input
             name="qrPayload"
             type="text"
             [ngModel]="state().qrPayload"
             (ngModelChange)="onQrPayloadChange($event)"
-            placeholder="Paste scanned value"
+            placeholder="Paste QR token or Subject UUID..."
             autocomplete="off"
             required
             [maxlength]="1024"
             data-testid="qr-payload-input"
           />
         </label>
-        <label>
-          Direction
+        <label class="field-group">
+          <span class="field-title">Direction</span>
           <select name="direction" [ngModel]="state().direction" (ngModelChange)="onDirectionChange($event)">
             <option value="entrance">Entrance</option>
             <option value="exit">Exit</option>
           </select>
         </label>
-        <button
-          type="submit"
-          [disabled]="state().busy || !state().qrPayload"
-          data-testid="qr-submit-button"
-        >
+        <button type="submit" [disabled]="state().busy || !state().qrPayload" data-testid="qr-submit-button">
           {{ state().busy ? 'Scanning...' : 'Submit scan' }}
         </button>
         @if (state().busy) {
@@ -179,6 +249,11 @@ function cryptoRandom(): string {
             Already scanning — please wait.
           </p>
         }
+
+        <div class="manual-fallback-hint">
+          <span>Visitor or resident has no QR code?</span>
+          <a routerLink="/gatehouse/manual" class="manual-lookup-link">Open Manual Lookup</a>
+        </div>
       </form>
 
       <div aria-live="polite">
@@ -191,10 +266,7 @@ function cryptoRandom(): string {
             [destinationUnit]="state().result!.destinationUnit"
           />
         } @else if (state().refusal) {
-          <ce-access-scan-result
-            [decision]="state().refusal!.decision"
-            [failureCode]="state().refusal!.failureCode"
-          />
+          <ce-access-scan-result [decision]="state().refusal!.decision" [failureCode]="state().refusal!.failureCode" />
         }
       </div>
     </section>
@@ -213,6 +285,12 @@ export class QrScanPage implements AfterViewInit, OnDestroy {
   private destroyed = false;
 
   @ViewChild('video', { static: false }) videoRef?: ElementRef<HTMLVideoElement>;
+
+  readonly isMirrored = signal(true);
+
+  toggleMirror(): void {
+    this.isMirrored.update((v) => !v);
+  }
 
   readonly state = signal<UiState>(initialState());
   readonly showCameraPanel = computed(
@@ -258,7 +336,7 @@ export class QrScanPage implements AfterViewInit, OnDestroy {
         next: (result: ScanResult) => {
           if (this.destroyed) return;
           this.armSuppression(trimmed);
-          this.state.update(s => ({ ...s, busy: false, result, refusal: null, qrPayload: '' }));
+          this.state.update((s) => ({ ...s, busy: false, result, refusal: null, qrPayload: '' }));
           this.scheduleRearm();
         },
         error: (err: { error?: { failureCode?: ScanRefusal['failureCode']; decision?: ScanRefusal['decision'] } }) => {
@@ -271,7 +349,7 @@ export class QrScanPage implements AfterViewInit, OnDestroy {
           if (refusal) {
             this.armSuppression(trimmed);
           }
-          this.state.update(s => ({
+          this.state.update((s) => ({
             ...s,
             busy: false,
             refusal,
@@ -288,11 +366,11 @@ export class QrScanPage implements AfterViewInit, OnDestroy {
   }
 
   onQrPayloadChange(value: string): void {
-    this.state.update(s => ({ ...s, qrPayload: value }));
+    this.state.update((s) => ({ ...s, qrPayload: value }));
   }
 
   onDirectionChange(value: 'entrance' | 'exit'): void {
-    this.state.update(s => ({ ...s, direction: value }));
+    this.state.update((s) => ({ ...s, direction: value }));
   }
 
   private startScanner(): void {
@@ -300,11 +378,11 @@ export class QrScanPage implements AfterViewInit, OnDestroy {
     if (this.scannerControls || this.state().cameraStatus === 'unavailable') return;
     const videoEl = this.videoRef?.nativeElement;
     if (!videoEl) {
-      this.state.update(s => ({ ...s, cameraStatus: 'unavailable', error: NO_CAMERA }));
+      this.state.update((s) => ({ ...s, cameraStatus: 'unavailable', error: NO_CAMERA }));
       return;
     }
     this.attachVideoLifecycleListeners(videoEl);
-    this.state.update(s => ({ ...s, cameraStatus: 'starting' }));
+    this.state.update((s) => ({ ...s, cameraStatus: 'starting' }));
     const sessionId = this.currentSessionId;
     this.retryCount = 0;
 
@@ -316,7 +394,7 @@ export class QrScanPage implements AfterViewInit, OnDestroy {
         }
         this.scannerControls = controls;
         if (this.state().cameraStatus !== 'unavailable') {
-          this.state.update(s => ({ ...s, cameraStatus: 'active' }));
+          this.state.update((s) => ({ ...s, cameraStatus: 'active' }));
         }
         if (!result) {
           return;
@@ -329,7 +407,7 @@ export class QrScanPage implements AfterViewInit, OnDestroy {
         const trimmed = text.trim();
         if (!trimmed || trimmed.length < PAYLOAD_MIN_LENGTH) return;
         if (this.isSuppressedRescan(trimmed)) return;
-        this.state.update(s => ({
+        this.state.update((s) => ({
           ...s,
           qrPayload: trimmed,
         }));
@@ -387,7 +465,7 @@ export class QrScanPage implements AfterViewInit, OnDestroy {
       message = CAMERA_IN_USE;
     }
     this.currentSessionId += 1;
-    this.state.update(s => ({ ...s, cameraStatus: 'unavailable', error: message }));
+    this.state.update((s) => ({ ...s, cameraStatus: 'unavailable', error: message }));
     this.scannerControls = null;
     if (!terminal && !this.destroyed && this.retryCount < CAMERA_RETRY_LIMIT) {
       this.retryCount += 1;
@@ -406,7 +484,7 @@ export class QrScanPage implements AfterViewInit, OnDestroy {
     if (videoEl) {
       const stream = videoEl.srcObject as MediaStream | null;
       if (stream) {
-        stream.getTracks().forEach(t => {
+        stream.getTracks().forEach((t) => {
           try {
             t.stop();
           } catch {
@@ -439,7 +517,7 @@ export class QrScanPage implements AfterViewInit, OnDestroy {
       this.rearmHandle = null;
       if (this.destroyed) return;
       this.intentionalStopInProgress = false;
-      this.state.update(s => ({ ...s, cameraStatus: 'idle' }));
+      this.state.update((s) => ({ ...s, cameraStatus: 'idle' }));
       this.startScanner();
     }, CAMERA_RETRY_DELAY_MS);
   }

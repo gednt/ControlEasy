@@ -25,6 +25,7 @@ public sealed class RecordManualAccessHandlerTests
     private readonly IResidentDirectory _residents = Substitute.For<IResidentDirectory>();
     private readonly IVehicleDirectory _vehicles = Substitute.For<IVehicleDirectory>();
     private readonly IApartmentDirectory _apartments = Substitute.For<IApartmentDirectory>();
+    private readonly ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory _visits = Substitute.For<ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory>();
     private readonly IConsentPolicyEvaluator _policy = Substitute.For<IConsentPolicyEvaluator>();
 
     private sealed class StubClock : IAccessControlClock
@@ -33,7 +34,7 @@ public sealed class RecordManualAccessHandlerTests
     }
 
     private RecordManualAccessHandler Build() =>
-        new(_audits, _events, new StubClock(), _policy, new AccessEventDestinationResolver(_residents, _vehicles, _apartments));
+        new(_audits, _events, new StubClock(), _policy, new AccessEventDestinationResolver(_residents, _vehicles, _apartments, _visits), _visits);
 
     [Fact]
     public async Task Records_manual_event_when_audit_belongs_to_profile_and_subject_resolves()
@@ -140,5 +141,35 @@ public sealed class RecordManualAccessHandlerTests
         var act = async () => await handler.HandleAsync(cmd, CancellationToken.None);
 
         await act.Should().ThrowAsync<ControlEasyReborn.Modules.AccessControl.Application.Errors.ValidationException>();
+    }
+
+    [Fact]
+    public async Task Records_manual_event_and_checks_in_visitor_on_entrance()
+    {
+        var lookupAuditId = Guid.NewGuid();
+        var visitId = Guid.NewGuid();
+        var apartmentId = Guid.NewGuid();
+        var visit = new ControlEasyReborn.Modules.Visits.Domain.Entities.Visit(
+            visitId, _tenantId, "Carlos Visitante", "12345678901", null, apartmentId, "Block B", "204", "Party",
+            ControlEasyReborn.Modules.Visits.Domain.Entities.VisitStatus.Pending, null, null, null, null, DateTime.UtcNow, null);
+
+        _audits.FindAsync(_tenantId, lookupAuditId, Arg.Any<CancellationToken>())
+            .Returns(AccessLookupAudit.Hydrate(lookupAuditId, _tenantId, LookupCriterionType.Cpf, ResultCountBand.One, SubjectType.Visitor, visitId, _profileId, DateTime.UtcNow, Guid.NewGuid()));
+        _visits.FindByIdAsync(_tenantId, visitId, Arg.Any<CancellationToken>())
+            .Returns(visit);
+        _policy.EvaluateAsync("visitor", visitId, "manual", Arg.Any<CancellationToken>())
+            .Returns(ConsentOutcome.Permitted);
+
+        var handler = Build();
+        var cmd = new RecordManualAccessCommand(_tenantId, lookupAuditId, SubjectType.Visitor, visitId, CycleDirection.Entrance, _profileId, null);
+
+        var result = await handler.HandleAsync(cmd, CancellationToken.None);
+
+        result.PolicyOutcome.Should().Be(PolicyOutcome.Permit);
+        result.SubjectType.Should().Be(SubjectType.Visitor);
+        result.DestinationBlock.Should().Be("Block B");
+        result.DestinationUnit.Should().Be("204");
+
+        await _visits.Received(1).CheckInAsync(_tenantId, visitId, _profileId, null, Arg.Any<CancellationToken>());
     }
 }

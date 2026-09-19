@@ -11,23 +11,26 @@ import { UpdateAttendantProfileRequest } from '../../models/update-attendant-pro
 
 export interface ApiV1SecurityAttendantProfilesIdPut$Params {
   id: string;
-      body: UpdateAttendantProfileRequest
+  body: UpdateAttendantProfileRequest;
 }
 
-export function apiV1SecurityAttendantProfilesIdPut(http: HttpClient, rootUrl: string, params: ApiV1SecurityAttendantProfilesIdPut$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+export function apiV1SecurityAttendantProfilesIdPut(
+  http: HttpClient,
+  rootUrl: string,
+  params: ApiV1SecurityAttendantProfilesIdPut$Params,
+  context?: HttpContext,
+): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1SecurityAttendantProfilesIdPut.PATH, 'put');
   if (params) {
     rb.path('id', params.id, {});
     rb.body(params.body, 'application/json');
   }
 
-  return http.request(
-    rb.build({ responseType: 'text', accept: '*/*', context })
-  ).pipe(
+  return http.request(rb.build({ responseType: 'text', accept: '*/*', context })).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
-    })
+    }),
   );
 }
 

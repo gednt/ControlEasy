@@ -1,20 +1,8 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  OnDestroy,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GatewayControlService } from './gateway-control.service';
-import {
-  ManualLookupResponse,
-  ManualLookupResult,
-  ManualLookupType,
-  ScanResult,
-} from './access-control.types';
+import { LookupResponse, ManualLookupResult, ManualLookupType, ScanResult, SubjectKind } from './access-control.types';
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
 import { AccessScanResultComponent } from './components/access-scan-result.component';
 import { ToastService } from '../../design-system/components/toast/toast.component';
@@ -32,7 +20,7 @@ interface UiState {
   block: string;
   busy: boolean;
   error: string | null;
-  lookupId: string | null;
+  lookupAuditId: string | null;
   results: ManualLookupResult[];
   narrowHint: string | null;
   selected: ManualLookupResult | null;
@@ -40,7 +28,7 @@ interface UiState {
   recorded: {
     decision: ScanResult['decision'];
     accessEventId: string;
-    subjectType: 'resident' | 'vehicle';
+    subjectType: SubjectKind;
     direction: 'entrance' | 'exit';
     destinationBlock: string;
     destinationUnit: string;
@@ -62,7 +50,7 @@ const initialState = (): UiState => ({
   block: '',
   busy: false,
   error: null,
-  lookupId: null,
+  lookupAuditId: null,
   results: [],
   narrowHint: null,
   selected: null,
@@ -80,8 +68,8 @@ const initialState = (): UiState => ({
       <div>
         <h1 class="page-title">Manual lookup</h1>
         <p class="page-subtitle">
-          Use when the resident or driver has no QR code. Search by CPF,
-          identity document, name, apartment, or block. Documents are masked.
+          Use when the resident or driver has no QR code. Search by CPF, identity document, name, apartment, or block.
+          Documents are masked.
         </p>
       </div>
     </div>
@@ -241,7 +229,7 @@ const initialState = (): UiState => ({
     @if (state().mode === 'search' && state().results.length > 0) {
       <section class="results" aria-label="Lookup results">
         <h2>Matches</h2>
-        <p class="hint">Tap a resident or vehicle to confirm.</p>
+        <p class="hint">Tap a resident, visitor, or vehicle to confirm.</p>
         @if (state().narrowHint) {
           <p class="hint" data-testid="narrow-hint">{{ state().narrowHint }}</p>
         }
@@ -257,11 +245,11 @@ const initialState = (): UiState => ({
               >
                 <strong>{{ result.displayName }}</strong>
                 <span class="result-meta">
-                  @if (result.maskedDocument) {
-                    <span>{{ result.maskedDocument }}</span>
+                  @if (result.documentMasked) {
+                    <span>{{ result.documentMasked }}</span>
                   }
-                  @if (result.destinationBlock && result.destinationUnit) {
-                    <span> · {{ result.destinationBlock }}/{{ result.destinationUnit }}</span>
+                  @if (result.apartmentBlock && result.apartmentUnit) {
+                    <span> · {{ result.apartmentBlock }}/{{ result.apartmentUnit }}</span>
                   }
                   <span class="subject-type">{{ subjectTypeLabel(result.subjectType) }}</span>
                 </span>
@@ -282,10 +270,11 @@ const initialState = (): UiState => ({
           <p>
             <strong>{{ state().selected!.displayName }}</strong>
             ({{ subjectTypeLabel(state().selected!.subjectType) }})
-            @if (state().selected!.destinationBlock && state().selected!.destinationUnit) {
-              heading to {{ state().selected!.destinationBlock }}/{{ state().selected!.destinationUnit }}
+            @if (state().selected!.apartmentBlock && state().selected!.apartmentUnit) {
+              heading to {{ state().selected!.apartmentBlock }}/{{ state().selected!.apartmentUnit }}
             }
-            on <strong>{{ state().direction === 'entrance' ? 'entrance' : 'exit' }}</strong>.
+            on <strong>{{ state().direction === 'entrance' ? 'entrance' : 'exit' }}</strong
+            >.
           </p>
           @if (state().error) {
             <p class="lookup-message error" role="alert">{{ state().error }}</p>
@@ -322,20 +311,16 @@ const initialState = (): UiState => ({
           [destinationUnit]="state().recorded!.destinationUnit"
         />
         <div class="actions">
-          <button
-            type="button"
-            class="ce-button variant-primary size-md"
-            (click)="reset()"
-          >
-            Record another
-          </button>
+          <button type="button" class="ce-button variant-primary size-md" (click)="reset()">Record another</button>
         </div>
       </section>
     }
   `,
   styles: [
     `
-      :host { display: block; }
+      :host {
+        display: block;
+      }
       .lookup-card,
       .results,
       .confirm,
@@ -346,12 +331,32 @@ const initialState = (): UiState => ({
         margin-top: var(--space-4, 16px);
         box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
       }
-      .field { display: flex; flex-direction: column; gap: var(--space-1, 4px); margin-top: var(--space-3, 12px); }
-      .field-label { font-weight: var(--font-weight-semibold, 600); font-size: 0.85rem; }
-      .field-hint { color: var(--color-text-secondary, #555); font-size: 0.75rem; }
-      .ce-input { padding: var(--space-2, 8px); border-radius: var(--radius-sm, 4px); border: 1px solid var(--color-border, #ccc); }
-      .field-row { display: flex; gap: var(--space-3, 12px); }
-      .field-row .field { flex: 1; }
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-1, 4px);
+        margin-top: var(--space-3, 12px);
+      }
+      .field-label {
+        font-weight: var(--font-weight-semibold, 600);
+        font-size: 0.85rem;
+      }
+      .field-hint {
+        color: var(--color-text-secondary, #555);
+        font-size: 0.75rem;
+      }
+      .ce-input {
+        padding: var(--space-2, 8px);
+        border-radius: var(--radius-sm, 4px);
+        border: 1px solid var(--color-border, #ccc);
+      }
+      .field-row {
+        display: flex;
+        gap: var(--space-3, 12px);
+      }
+      .field-row .field {
+        flex: 1;
+      }
       .criterion-tabs {
         display: flex;
         gap: 0;
@@ -376,7 +381,11 @@ const initialState = (): UiState => ({
         opacity: 0.55;
         cursor: wait;
       }
-      .direction-row { display: flex; gap: var(--space-2, 8px); margin-top: var(--space-1, 4px); }
+      .direction-row {
+        display: flex;
+        gap: var(--space-2, 8px);
+        margin-top: var(--space-1, 4px);
+      }
       .direction-chip {
         padding: var(--space-2, 8px) var(--space-3, 12px);
         border: 1px solid var(--color-border, #ccc);
@@ -390,11 +399,27 @@ const initialState = (): UiState => ({
         color: var(--color-text-on-primary, #fff);
         border-color: var(--color-primary, #2c5cdc);
       }
-      .actions { display: flex; gap: var(--space-2, 8px); margin-top: var(--space-4, 16px); }
-      .lookup-message { margin-top: var(--space-2, 8px); font-size: 0.85rem; }
-      .lookup-message.error { color: var(--color-danger, #b42318); }
-      .hint { color: var(--color-text-secondary, #555); font-size: 0.85rem; }
-      .result-list { list-style: none; padding: 0; margin: var(--space-3, 12px) 0 0; }
+      .actions {
+        display: flex;
+        gap: var(--space-2, 8px);
+        margin-top: var(--space-4, 16px);
+      }
+      .lookup-message {
+        margin-top: var(--space-2, 8px);
+        font-size: 0.85rem;
+      }
+      .lookup-message.error {
+        color: var(--color-danger, #b42318);
+      }
+      .hint {
+        color: var(--color-text-secondary, #555);
+        font-size: 0.85rem;
+      }
+      .result-list {
+        list-style: none;
+        padding: 0;
+        margin: var(--space-3, 12px) 0 0;
+      }
       .result-item {
         width: 100%;
         text-align: left;
@@ -417,8 +442,14 @@ const initialState = (): UiState => ({
         color: var(--color-text-secondary, #555);
         margin-top: var(--space-1, 4px);
       }
-      .subject-type { font-style: italic; }
-      .confirm-card { background: rgba(44, 92, 220, 0.05); border-radius: var(--radius-sm, 4px); padding: var(--space-3, 12px); }
+      .subject-type {
+        font-style: italic;
+      }
+      .confirm-card {
+        background: rgba(44, 92, 220, 0.05);
+        border-radius: var(--radius-sm, 4px);
+        padding: var(--space-3, 12px);
+      }
     `,
   ],
 })
@@ -445,20 +476,29 @@ export class ManualLookupPage implements OnDestroy {
 
   onCriterionChange(criterion: ManualLookupType): void {
     if (this.state().busy) return;
-    this.state.update(s => ({ ...s, activeCriterion: criterion, error: null, results: [], lookupId: null, narrowHint: null, selected: null, mode: 'search' }));
+    this.state.update((s) => ({
+      ...s,
+      activeCriterion: criterion,
+      error: null,
+      results: [],
+      lookupId: null,
+      narrowHint: null,
+      selected: null,
+      mode: 'search',
+    }));
   }
 
   onCriterionKeydown(event: KeyboardEvent, criterion: ManualLookupType): void {
     if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
       event.preventDefault();
-      const idx = this.criterionTabs.findIndex(t => t.id === criterion);
+      const idx = this.criterionTabs.findIndex((t) => t.id === criterion);
       const next = this.criterionTabs[(idx + 1) % this.criterionTabs.length];
       if (next) {
         this.onCriterionChange(next.id);
       }
     } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
       event.preventDefault();
-      const idx = this.criterionTabs.findIndex(t => t.id === criterion);
+      const idx = this.criterionTabs.findIndex((t) => t.id === criterion);
       const prev = this.criterionTabs[(idx - 1 + this.criterionTabs.length) % this.criterionTabs.length];
       if (prev) {
         this.onCriterionChange(prev.id);
@@ -467,43 +507,52 @@ export class ManualLookupPage implements OnDestroy {
   }
 
   onCpfChange(value: string): void {
-    this.state.update(s => ({ ...s, cpf: value, error: null }));
+    this.state.update((s) => ({ ...s, cpf: value, error: null }));
   }
 
   onIdentityDocumentChange(value: string): void {
-    this.state.update(s => ({ ...s, identityDocument: value, error: null }));
+    this.state.update((s) => ({ ...s, identityDocument: value, error: null }));
   }
 
   onNameChange(value: string): void {
-    this.state.update(s => ({ ...s, name: value, error: null }));
+    this.state.update((s) => ({ ...s, name: value, error: null }));
   }
 
   onApartmentBlockChange(value: string): void {
-    this.state.update(s => ({ ...s, apartmentBlock: value, error: null }));
+    this.state.update((s) => ({ ...s, apartmentBlock: value, error: null }));
   }
 
   onApartmentUnitChange(value: string): void {
-    this.state.update(s => ({ ...s, apartmentUnit: value, error: null }));
+    this.state.update((s) => ({ ...s, apartmentUnit: value, error: null }));
   }
 
   onBlockChange(value: string): void {
-    this.state.update(s => ({ ...s, block: value, error: null }));
+    this.state.update((s) => ({ ...s, block: value, error: null }));
   }
 
   onDirectionChange(direction: 'entrance' | 'exit'): void {
-    this.state.update(s => ({ ...s, direction }));
+    this.state.update((s) => ({ ...s, direction }));
   }
 
-  subjectTypeLabel(type: 'resident' | 'vehicle'): string {
-    return type === 'resident' ? 'Resident' : 'Vehicle';
+  subjectTypeLabel(type: SubjectKind): string {
+    switch (type) {
+      case 'resident':
+        return 'Resident';
+      case 'vehicle':
+        return 'Vehicle';
+      case 'visitor':
+        return 'Visitor';
+      default:
+        return type;
+    }
   }
 
   select(result: ManualLookupResult): void {
-    this.state.update(s => ({ ...s, selected: result, mode: 'confirm', error: null }));
+    this.state.update((s) => ({ ...s, selected: result, mode: 'confirm', error: null }));
   }
 
   backToSearch(): void {
-    this.state.update(s => ({ ...s, mode: 'search', selected: null, error: null }));
+    this.state.update((s) => ({ ...s, mode: 'search', selected: null, error: null }));
   }
 
   reset(): void {
@@ -515,31 +564,31 @@ export class ManualLookupPage implements OnDestroy {
     if (current.busy) return;
     const criterion = this.buildCriterion(current);
     if (!criterion) {
-      this.state.update(s => ({ ...s, error: 'Provide a value that is specific enough.' }));
+      this.state.update((s) => ({ ...s, error: 'Provide a value that is specific enough.' }));
       return;
     }
-    this.state.update(s => ({ ...s, busy: true, error: null, results: [], lookupId: null }));
+    this.state.update((s) => ({ ...s, busy: true, error: null, results: [], lookupAuditId: null }));
 
     this.gateway.searchSubject(criterion).subscribe({
-      next: (response: ManualLookupResponse) => {
+      next: (response: LookupResponse) => {
         if (this.destroyed) return;
-        this.state.update(s => ({
+        this.state.update((s) => ({
           ...s,
           busy: false,
-          lookupId: response.lookupId,
-          results: response.results,
-          narrowHint: response.narrowHint ?? null,
+          lookupAuditId: response.lookupAuditId,
+          results: response.items,
+          narrowHint: null,
         }));
-        if (response.results.length === 0) {
-          this.state.update(s => ({
+        if (response.items.length === 0) {
+          this.state.update((s) => ({
             ...s,
-            error: response.narrowHint ?? 'No matches. Try a different criterion.',
+            error: 'No matches found. Try a different criterion.',
           }));
         }
       },
-      error: err => {
+      error: (err) => {
         if (this.destroyed) return;
-        this.state.update(s => ({
+        this.state.update((s) => ({
           ...s,
           busy: false,
           error: getApiErrorMessage(err, 'Search failed.'),
@@ -550,26 +599,26 @@ export class ManualLookupPage implements OnDestroy {
 
   confirm(): void {
     const current = this.state();
-    if (current.busy || !current.selected || !current.lookupId) return;
-    this.state.update(s => ({ ...s, busy: true, error: null }));
+    if (current.busy || !current.selected || !current.lookupAuditId) return;
+    this.state.update((s) => ({ ...s, busy: true, error: null }));
 
     this.gateway
       .recordManual({
-        lookupId: current.lookupId,
+        lookupAuditId: current.lookupAuditId,
         subjectType: current.selected.subjectType,
         subjectId: current.selected.subjectId,
         direction: current.direction,
       })
       .subscribe({
-        next: response => {
+        next: (response) => {
           if (this.destroyed) return;
           this.toast.info('Manual access recorded.');
-          this.state.update(s => ({
+          this.state.update((s) => ({
             ...s,
             busy: false,
             mode: 'recorded',
             recorded: {
-              decision: response.decision,
+              decision: response.decision ?? 'recorded',
               accessEventId: response.accessEventId,
               subjectType: response.subjectType,
               direction: response.direction,
@@ -578,9 +627,9 @@ export class ManualLookupPage implements OnDestroy {
             },
           }));
         },
-        error: err => {
+        error: (err) => {
           if (this.destroyed) return;
-          this.state.update(s => ({
+          this.state.update((s) => ({
             ...s,
             busy: false,
             error: getApiErrorMessage(err, 'Could not record the event.'),
@@ -599,10 +648,7 @@ export class ManualLookupPage implements OnDestroy {
       case 'name':
         return s.name.trim().length >= MIN_NAME;
       case 'apartment':
-        return (
-          s.apartmentBlock.trim().length >= MIN_APARTMENT
-          && s.apartmentUnit.trim().length >= MIN_APARTMENT
-        );
+        return s.apartmentBlock.trim().length >= MIN_APARTMENT && s.apartmentUnit.trim().length >= MIN_APARTMENT;
       case 'block':
         return s.block.trim().length >= MIN_BLOCK;
     }

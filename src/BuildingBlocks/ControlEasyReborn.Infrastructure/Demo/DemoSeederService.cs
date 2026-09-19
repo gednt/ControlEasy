@@ -270,15 +270,23 @@ public sealed class DemoSeederService : IHostedService
     {
         const string marker = "Access.Access.Operate";
         const string accessRead = "Access.Read";
+        const string issueMarker = "Access.Control.Issue";
         var rows = await db.SelectAsync(
             fields: "Id,Permissions",
             table: "AttendantProfiles",
-            whereClause: "Permissions NOT LIKE @param0 AND Permissions <> 'platform:*' AND Id <> @param1",
-            parameters: new object[] { "%" + marker + "%", DemoIds.MoradorProfileId },
+            whereClause: "(Permissions NOT LIKE @param0 OR (Permissions LIKE '%Visits.CheckIn%' AND Permissions NOT LIKE @param2)) AND Permissions <> 'platform:*' AND Id <> @param1",
+            parameters: new object[] { "%" + marker + "%", DemoIds.MoradorProfileId, "%" + issueMarker + "%" },
             ct: ct);
 
         if (rows is null || rows.Rows.Count == 0)
             return;
+
+        var adminCredentialPerms = new[]
+        {
+            "Access.Control.Issue",
+            "Access.Control.Replace",
+            "Access.Control.Revoke"
+        };
 
         foreach (DataRow row in rows.Rows)
         {
@@ -289,9 +297,6 @@ public sealed class DemoSeederService : IHostedService
                 .Select(t => t.Trim())
                 .ToList();
             var tokenSet = new HashSet<string>(normalizedTokens, StringComparer.OrdinalIgnoreCase);
-
-            if (tokenSet.Contains(marker) && tokenSet.Contains(accessRead))
-                continue;
 
             var added = new List<string>();
             if (!tokenSet.Contains(marker))
@@ -306,6 +311,27 @@ public sealed class DemoSeederService : IHostedService
                 tokenSet.Add(accessRead);
                 added.Add(accessRead);
             }
+
+            var isAdminProfile = tokenSet.Contains("Visits.CheckIn") ||
+                id.Equals(DemoIds.AdminProfileId.ToString(), StringComparison.OrdinalIgnoreCase) ||
+                id.Equals(DemoIds.MultiAuroraProfileId.ToString(), StringComparison.OrdinalIgnoreCase) ||
+                id.Equals(DemoIds.MultiParqueProfileId.ToString(), StringComparison.OrdinalIgnoreCase);
+
+            if (isAdminProfile)
+            {
+                foreach (var perm in adminCredentialPerms)
+                {
+                    if (!tokenSet.Contains(perm))
+                    {
+                        normalizedTokens.Add(perm);
+                        tokenSet.Add(perm);
+                        added.Add(perm);
+                    }
+                }
+            }
+
+            if (added.Count == 0)
+                continue;
 
             var updated = await db.UpdateAsync(
                 new[] { "Permissions" },

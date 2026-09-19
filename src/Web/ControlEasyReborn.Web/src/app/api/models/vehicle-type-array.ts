@@ -6,9 +6,4 @@ import { VehicleType } from './vehicle-type';
 /**
  * Each possible value of `VehicleType`
  */
-export const VEHICLE_TYPE: VehicleType[] = [
-  0,
-  1,
-  2,
-  3
-];
+export const VEHICLE_TYPE: VehicleType[] = [0, 1, 2, 3];

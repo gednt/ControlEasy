@@ -15,14 +15,31 @@ internal static class AttendantProfileLoginSupport
     {
         var activeProfiles = await ListActiveProfilesAsync(profiles, user.Id, ct);
 
-        if (activeProfiles.Count == 0 && RequiresAttendantProfile(user.Roles))
+        if (RequiresAttendantProfile(user.Roles))
         {
-            await adminProfiles.EnsureAttendantProfileAsync(
-                user.Id, user.TenantId, user.DisplayName, user.Roles, ct);
-            activeProfiles = await ListActiveProfilesAsync(profiles, user.Id, ct);
+            var needsRepair = activeProfiles.Count == 0 ||
+                (user.Roles.Contains("TenantAdmin", StringComparison.Ordinal) &&
+                 activeProfiles.Any(p => MissingTenantAdminPermissions(p.Permissions)));
+
+            if (needsRepair)
+            {
+                await adminProfiles.EnsureAttendantProfileAsync(
+                    user.Id, user.TenantId, user.DisplayName, user.Roles, ct);
+                activeProfiles = await ListActiveProfilesAsync(profiles, user.Id, ct);
+            }
         }
 
         return SelectProfile(user.Roles, activeProfiles);
+    }
+
+    private static bool MissingTenantAdminPermissions(string permissions)
+    {
+        var current = permissions
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var set = new HashSet<string>(current, StringComparer.OrdinalIgnoreCase);
+        return ControlEasyReborn.Modules.Tenants.Application.TenantAdminDefaults.Permissions
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Any(p => !set.Contains(p));
     }
 
     internal static AttendantProfile? SelectProfile(string roles, IReadOnlyList<AttendantProfile> activeProfiles)

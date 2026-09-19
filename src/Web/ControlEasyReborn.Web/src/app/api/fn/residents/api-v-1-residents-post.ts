@@ -10,22 +10,25 @@ import { RequestBuilder } from '../../request-builder';
 import { CreateResidentRequest } from '../../models/create-resident-request';
 
 export interface ApiV1ResidentsPost$Params {
-      body: CreateResidentRequest
+  body: CreateResidentRequest;
 }
 
-export function apiV1ResidentsPost(http: HttpClient, rootUrl: string, params: ApiV1ResidentsPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+export function apiV1ResidentsPost(
+  http: HttpClient,
+  rootUrl: string,
+  params: ApiV1ResidentsPost$Params,
+  context?: HttpContext,
+): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1ResidentsPost.PATH, 'post');
   if (params) {
     rb.body(params.body, 'application/json');
   }
 
-  return http.request(
-    rb.build({ responseType: 'text', accept: '*/*', context })
-  ).pipe(
+  return http.request(rb.build({ responseType: 'text', accept: '*/*', context })).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
-    })
+    }),
   );
 }
 

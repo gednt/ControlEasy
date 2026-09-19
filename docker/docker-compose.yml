@@ -93,7 +93,7 @@ services:
     command:
       - /bin/sh
       - -ec
-      - mysql --protocol=tcp -h db -u"$$MYSQL_USER" -p"$$MYSQL_PASSWORD" "$$MYSQL_DATABASE" < /migrations/10-photo-entity-bindings.sql && mysql --protocol=tcp -h db -u"$$MYSQL_USER" -p"$$MYSQL_PASSWORD" "$$MYSQL_DATABASE" < /migrations/0009-access-control.sql
+      - mysql --protocol=tcp -h db -u"$$MYSQL_USER" -p"$$MYSQL_PASSWORD" "$$MYSQL_DATABASE" < /migrations/10-photo-entity-bindings.sql && mysql --protocol=tcp -h db -u"$$MYSQL_USER" -p"$$MYSQL_PASSWORD" "$$MYSQL_DATABASE" < /migrations/0009-access-control.sql && mysql --protocol=tcp -h db -u"$$MYSQL_USER" -p"$$MYSQL_PASSWORD" "$$MYSQL_DATABASE" < /migrations/0010-backfill-tenant-admin-permissions.sql
 
   adminer:
     image: adminer:4

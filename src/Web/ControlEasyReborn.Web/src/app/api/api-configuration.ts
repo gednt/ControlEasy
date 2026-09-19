@@ -11,7 +11,7 @@ export function provideApiConfiguration(rootUrl: string) {
   config.rootUrl = rootUrl;
   return {
     provide: ApiConfiguration,
-    useValue: config
+    useValue: config,
   };
 }
 

@@ -10,22 +10,25 @@ import { RequestBuilder } from '../../request-builder';
 import { CreateVisitRequest } from '../../models/create-visit-request';
 
 export interface ApiV1VisitsPost$Params {
-      body: CreateVisitRequest
+  body: CreateVisitRequest;
 }
 
-export function apiV1VisitsPost(http: HttpClient, rootUrl: string, params: ApiV1VisitsPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+export function apiV1VisitsPost(
+  http: HttpClient,
+  rootUrl: string,
+  params: ApiV1VisitsPost$Params,
+  context?: HttpContext,
+): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1VisitsPost.PATH, 'post');
   if (params) {
     rb.body(params.body, 'application/json');
   }
 
-  return http.request(
-    rb.build({ responseType: 'text', accept: '*/*', context })
-  ).pipe(
+  return http.request(rb.build({ responseType: 'text', accept: '*/*', context })).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
-    })
+    }),
   );
 }
 

@@ -8,6 +8,7 @@
     <ProjectReference Include="..\..\Residents\ControlEasyReborn.Modules.Residents.Application\ControlEasyReborn.Modules.Residents.Application.csproj" />
     <ProjectReference Include="..\..\Vehicles\ControlEasyReborn.Modules.Vehicles.Application\ControlEasyReborn.Modules.Vehicles.Application.csproj" />
     <ProjectReference Include="..\..\Apartments\ControlEasyReborn.Modules.Apartments.Application\ControlEasyReborn.Modules.Apartments.Application.csproj" />
+    <ProjectReference Include="..\..\Visits\ControlEasyReborn.Modules.Visits.Application\ControlEasyReborn.Modules.Visits.Application.csproj" />
     <ProjectReference Include="..\..\Photos\ControlEasyReborn.Modules.Photos.Application\ControlEasyReborn.Modules.Photos.Application.csproj" />
   </ItemGroup>
   <ItemGroup>

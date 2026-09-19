@@ -7,11 +7,9 @@ import { GatewayControlService } from './gateway-control.service';
 import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
 import { Exception, Result } from '@zxing/library';
 
-type DecodeCallback = (
-  result: Result | undefined,
-  error: Exception | undefined,
-  controls: IScannerControls,
-) => void;
+type DecodeCallback = (result: Result | undefined, error: Exception | undefined, controls: IScannerControls) => void;
+
+import { provideRouter } from '@angular/router';
 
 describe('QrScanPage', () => {
   let fixture: ComponentFixture<QrScanPage>;
@@ -46,7 +44,7 @@ describe('QrScanPage', () => {
 
     await TestBed.configureTestingModule({
       imports: [QrScanPage, AccessScanResultComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting(), GatewayControlService],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting(), GatewayControlService],
     }).compileComponents();
 
     fixture = TestBed.createComponent(QrScanPage);
@@ -86,9 +84,7 @@ describe('QrScanPage', () => {
     tick();
 
     const req = httpMock.expectOne('/api/v1/access-events/scans');
-    expect(req.request.body).toEqual(
-      jasmine.objectContaining({ qrPayload: 'opaque-token', direction: 'entrance' }),
-    );
+    expect(req.request.body).toEqual(jasmine.objectContaining({ qrPayload: 'opaque-token', direction: 'entrance' }));
     req.flush({
       decision: 'recorded',
       accessEventId: '00000000-0000-0000-0000-000000000001',
@@ -244,4 +240,3 @@ describe('QrScanPage', () => {
     drainPendingScanner();
   }));
 });
-

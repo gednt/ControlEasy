@@ -30,6 +30,7 @@ public sealed class RecordManualAccessHandler
     private readonly IAccessControlClock _clock;
     private readonly IConsentPolicyEvaluator _policy;
     private readonly AccessEventDestinationResolver _resolver;
+    private readonly ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory? _visits;
     private readonly ILogger<RecordManualAccessHandler> _logger;
 
     public RecordManualAccessHandler(
@@ -38,6 +39,7 @@ public sealed class RecordManualAccessHandler
         IAccessControlClock clock,
         IConsentPolicyEvaluator policy,
         AccessEventDestinationResolver resolver,
+        ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory? visits = null,
         ILogger<RecordManualAccessHandler>? logger = null)
     {
         _audits = audits;
@@ -45,6 +47,7 @@ public sealed class RecordManualAccessHandler
         _clock = clock;
         _policy = policy;
         _resolver = resolver;
+        _visits = visits;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<RecordManualAccessHandler>.Instance;
     }
 
@@ -117,6 +120,11 @@ public sealed class RecordManualAccessHandler
             destinationUnit: destination.Unit);
 
         await _events.AddAsync(accessEvent, ct);
+
+        if (command.SubjectType == SubjectType.Visitor && command.Direction == CycleDirection.Entrance && _visits is not null)
+        {
+            await _visits.CheckInAsync(command.TenantId, command.SubjectId, command.PerformedByProfileId, command.GatehouseId, ct);
+        }
 
         stopwatch.Stop();
         using (AccessControlLogContext.PushDuration(stopwatch.ElapsedMilliseconds))

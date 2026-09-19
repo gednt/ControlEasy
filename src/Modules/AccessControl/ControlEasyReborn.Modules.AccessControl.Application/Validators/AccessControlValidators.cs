@@ -42,8 +42,8 @@ public sealed class RecordManualAccessCommandValidator : AbstractValidator<Recor
         RuleFor(c => c.TenantId).NotEmpty();
         RuleFor(c => c.LookupAuditId).NotEmpty();
         RuleFor(c => c.SubjectType)
-            .Must(t => t == SubjectType.Resident || t == SubjectType.Vehicle)
-            .WithMessage("SubjectType must be 'resident' or 'vehicle'.");
+            .Must(t => t == SubjectType.Resident || t == SubjectType.Vehicle || t == SubjectType.Visitor)
+            .WithMessage("SubjectType must be 'resident', 'vehicle', or 'visitor'.");
         RuleFor(c => c.SubjectId).NotEmpty();
         RuleFor(c => c.PerformedByProfileId).NotEmpty();
         RuleFor(c => c.Direction)
@@ -58,8 +58,8 @@ public sealed class IssueCredentialCommandValidator : AbstractValidator<IssueCre
     {
         RuleFor(c => c.TenantId).NotEmpty();
         RuleFor(c => c.SubjectType)
-            .Must(t => t == SubjectType.Resident || t == SubjectType.Vehicle)
-            .WithMessage("SubjectType must be 'resident' or 'vehicle'.");
+            .Must(t => t == SubjectType.Resident || t == SubjectType.Vehicle || t == SubjectType.Visitor)
+            .WithMessage("SubjectType must be 'resident', 'vehicle', or 'visitor'.");
         RuleFor(c => c.SubjectId).NotEmpty();
         RuleFor(c => c.IssuedByProfileId).NotEmpty();
         RuleFor(c => c.ValidFromUtc).NotEqual(default(DateTime));

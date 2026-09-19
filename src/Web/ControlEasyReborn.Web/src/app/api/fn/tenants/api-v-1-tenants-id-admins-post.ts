@@ -11,23 +11,26 @@ import { CreateTenantAdminRequest } from '../../models/create-tenant-admin-reque
 
 export interface ApiV1TenantsIdAdminsPost$Params {
   id: string;
-      body: CreateTenantAdminRequest
+  body: CreateTenantAdminRequest;
 }
 
-export function apiV1TenantsIdAdminsPost(http: HttpClient, rootUrl: string, params: ApiV1TenantsIdAdminsPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+export function apiV1TenantsIdAdminsPost(
+  http: HttpClient,
+  rootUrl: string,
+  params: ApiV1TenantsIdAdminsPost$Params,
+  context?: HttpContext,
+): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1TenantsIdAdminsPost.PATH, 'post');
   if (params) {
     rb.path('id', params.id, {});
     rb.body(params.body, 'application/json');
   }
 
-  return http.request(
-    rb.build({ responseType: 'text', accept: '*/*', context })
-  ).pipe(
+  return http.request(rb.build({ responseType: 'text', accept: '*/*', context })).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
-    })
+    }),
   );
 }
 

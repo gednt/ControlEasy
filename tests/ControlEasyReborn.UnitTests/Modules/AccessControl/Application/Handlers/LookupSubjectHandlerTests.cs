@@ -22,6 +22,7 @@ public sealed class LookupSubjectHandlerTests
     private readonly IResidentDirectory _residents = Substitute.For<IResidentDirectory>();
     private readonly IVehicleDirectory _vehicles = Substitute.For<IVehicleDirectory>();
     private readonly IApartmentDirectory _apartments = Substitute.For<IApartmentDirectory>();
+    private readonly ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory _visits = Substitute.For<ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory>();
 
     private sealed class StubClock : IAccessControlClock
     {
@@ -29,7 +30,7 @@ public sealed class LookupSubjectHandlerTests
     }
 
     private LookupSubjectHandler Build(StubClock? clock = null) =>
-        new(_audits, clock ?? new StubClock(), _residents, _vehicles, _apartments);
+        new(_audits, clock ?? new StubClock(), _residents, _vehicles, _apartments, _visits);
 
     [Fact]
     public async Task Lookup_by_name_below_min_length_throws_validation_search_too_broad()
@@ -107,5 +108,33 @@ public sealed class LookupSubjectHandlerTests
         var result = await handler.HandleAsync(cmd, _profileId, CancellationToken.None);
 
         result.ResultCountBand.Should().Be(ResultCountBand.Zero);
+    }
+
+    [Fact]
+    public async Task Lookup_by_cpf_returns_both_resident_and_pending_visitor()
+    {
+        var residentId = Guid.NewGuid();
+        var visitId = Guid.NewGuid();
+        var apartmentId = Guid.NewGuid();
+
+        _residents.FindActiveByCpfAsync(_tenantId, "12345678909", Arg.Any<CancellationToken>())
+            .Returns(new Resident(residentId, _tenantId, "Felipe Residente", "12345678909", null, null, apartmentId, true, DateTime.UtcNow, null));
+        _apartments.FindActiveAsync(_tenantId, apartmentId, Arg.Any<CancellationToken>())
+            .Returns(new Apartment(apartmentId, _tenantId, "A", "101", true, DateTime.UtcNow, null));
+
+        var visit = new ControlEasyReborn.Modules.Visits.Domain.Entities.Visit(
+            visitId, _tenantId, "Felipe Visitante", "12345678909", null, apartmentId, "B", "202", "Visit",
+            ControlEasyReborn.Modules.Visits.Domain.Entities.VisitStatus.Pending, null, null, null, null, DateTime.UtcNow, null);
+
+        _visits.SearchPendingByDocumentAsync(_tenantId, "12345678909", Arg.Any<CancellationToken>())
+            .Returns(new[] { visit });
+
+        var handler = Build();
+        var cmd = new LookupSubjectCommand(_tenantId, LookupCriterionType.Cpf, "12345678909", null);
+        var result = await handler.HandleAsync(cmd, _profileId, CancellationToken.None);
+
+        result.Items.Should().HaveCount(2);
+        result.Items.Should().Contain(i => i.SubjectType == "resident" && i.DisplayName == "Felipe Residente" && i.ApartmentBlock == "A");
+        result.Items.Should().Contain(i => i.SubjectType == "visitor" && i.DisplayName == "Felipe Visitante" && i.ApartmentBlock == "B");
     }
 }

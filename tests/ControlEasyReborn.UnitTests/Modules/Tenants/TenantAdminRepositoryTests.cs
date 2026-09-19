@@ -62,6 +62,40 @@ public sealed class TenantAdminRepositoryTests
     }
 
     [Fact]
+    public async Task EnsureAttendantProfileAsync_updates_profile_when_missing_permissions_for_tenant_admin()
+    {
+        var client = new FakeAsyncSqlClient();
+        var sut = new TenantAdminRepository(client);
+        var tenantId = Guid.Parse("cccccccc-cccc-cccc-cccc-cccccccccccc");
+        var userId = Guid.Parse("dddddddd-dddd-dddd-dddd-dddddddddddd");
+        var profileId = Guid.Parse("eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee");
+
+        var table = new System.Data.DataTable();
+        table.Columns.Add("Id", typeof(string));
+        table.Columns.Add("Permissions", typeof(string));
+        table.Rows.Add(profileId.ToString(), "Visits.Read");
+        client.SelectResultFactory = () => table;
+
+        await sut.EnsureAttendantProfileAsync(
+            userId,
+            tenantId,
+            "Existing Admin",
+            "TenantAdmin",
+            CancellationToken.None);
+
+        var update = client.Operations.Single(o => o.OperationType == "Update");
+        update.Sql.Should().Contain("AttendantProfiles");
+        update.Parameters.Should().Contain(profileId.ToString());
+        var newPerms = update.Parameters.OfType<string>().First(p => p.Contains("Access.Control.Issue"));
+        newPerms.Should().Contain("Visits.Read");
+        newPerms.Should().Contain("Access.Control.Issue");
+        newPerms.Should().Contain("Access.Control.Replace");
+        newPerms.Should().Contain("Access.Control.Revoke");
+        newPerms.Should().Contain("Access.Read");
+        newPerms.Should().Contain("Access.Access.Operate");
+    }
+
+    [Fact]
     public async Task CreatePorteiroAsync_inserts_user_and_attendant_profile()
     {
         var client = new FakeAsyncSqlClient();

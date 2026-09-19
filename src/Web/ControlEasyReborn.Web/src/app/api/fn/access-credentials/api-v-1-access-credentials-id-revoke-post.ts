@@ -11,23 +11,26 @@ import { RevokeCredentialRequest } from '../../models/revoke-credential-request'
 
 export interface ApiV1AccessCredentialsIdRevokePost$Params {
   id: string;
-      body: RevokeCredentialRequest
+  body: RevokeCredentialRequest;
 }
 
-export function apiV1AccessCredentialsIdRevokePost(http: HttpClient, rootUrl: string, params: ApiV1AccessCredentialsIdRevokePost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+export function apiV1AccessCredentialsIdRevokePost(
+  http: HttpClient,
+  rootUrl: string,
+  params: ApiV1AccessCredentialsIdRevokePost$Params,
+  context?: HttpContext,
+): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1AccessCredentialsIdRevokePost.PATH, 'post');
   if (params) {
     rb.path('id', params.id, {});
     rb.body(params.body, 'application/json');
   }
 
-  return http.request(
-    rb.build({ responseType: 'text', accept: '*/*', context })
-  ).pipe(
+  return http.request(rb.build({ responseType: 'text', accept: '*/*', context })).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
-    })
+    }),
   );
 }
 

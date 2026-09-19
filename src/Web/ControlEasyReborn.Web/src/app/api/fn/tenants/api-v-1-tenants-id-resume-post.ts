@@ -11,23 +11,26 @@ import { ResumeTenantRequest } from '../../models/resume-tenant-request';
 
 export interface ApiV1TenantsIdResumePost$Params {
   id: string;
-      body?: ResumeTenantRequest
+  body?: ResumeTenantRequest;
 }
 
-export function apiV1TenantsIdResumePost(http: HttpClient, rootUrl: string, params: ApiV1TenantsIdResumePost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+export function apiV1TenantsIdResumePost(
+  http: HttpClient,
+  rootUrl: string,
+  params: ApiV1TenantsIdResumePost$Params,
+  context?: HttpContext,
+): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1TenantsIdResumePost.PATH, 'post');
   if (params) {
     rb.path('id', params.id, {});
     rb.body(params.body, 'application/json');
   }
 
-  return http.request(
-    rb.build({ responseType: 'text', accept: '*/*', context })
-  ).pipe(
+  return http.request(rb.build({ responseType: 'text', accept: '*/*', context })).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
-    })
+    }),
   );
 }
 

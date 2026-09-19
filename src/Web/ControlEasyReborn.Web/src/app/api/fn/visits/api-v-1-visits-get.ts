@@ -7,14 +7,18 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-
 export interface ApiV1VisitsGet$Params {
   status?: string;
   skip?: number;
   take?: number;
 }
 
-export function apiV1VisitsGet(http: HttpClient, rootUrl: string, params?: ApiV1VisitsGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+export function apiV1VisitsGet(
+  http: HttpClient,
+  rootUrl: string,
+  params?: ApiV1VisitsGet$Params,
+  context?: HttpContext,
+): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1VisitsGet.PATH, 'get');
   if (params) {
     rb.query('status', params.status, {});
@@ -22,13 +26,11 @@ export function apiV1VisitsGet(http: HttpClient, rootUrl: string, params?: ApiV1
     rb.query('take', params.take, {});
   }
 
-  return http.request(
-    rb.build({ responseType: 'text', accept: '*/*', context })
-  ).pipe(
+  return http.request(rb.build({ responseType: 'text', accept: '*/*', context })).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
-    })
+    }),
   );
 }
 

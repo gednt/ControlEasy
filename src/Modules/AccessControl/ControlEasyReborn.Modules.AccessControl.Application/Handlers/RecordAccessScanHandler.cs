@@ -39,6 +39,7 @@ public sealed class RecordAccessScanHandler
     private readonly IAccessControlCryptoService _crypto;
     private readonly IAccessControlClock _clock;
     private readonly AccessEventDestinationResolver _resolver;
+    private readonly ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory? _visits;
     private readonly ILogger<RecordAccessScanHandler> _logger;
 
     public RecordAccessScanHandler(
@@ -52,6 +53,7 @@ public sealed class RecordAccessScanHandler
         IAccessControlCryptoService crypto,
         IAccessControlClock clock,
         AccessEventDestinationResolver? resolver = null,
+        ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory? visits = null,
         ILogger<RecordAccessScanHandler>? logger = null)
     {
         _credentials = credentials;
@@ -63,7 +65,8 @@ public sealed class RecordAccessScanHandler
         _policy = policy;
         _crypto = crypto;
         _clock = clock;
-        _resolver = resolver ?? new AccessEventDestinationResolver(residents, vehicles, apartments);
+        _visits = visits;
+        _resolver = resolver ?? new AccessEventDestinationResolver(residents, vehicles, apartments, visits!);
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<RecordAccessScanHandler>.Instance;
     }
 
@@ -189,6 +192,11 @@ public sealed class RecordAccessScanHandler
             destinationUnit: destination.Unit);
 
         await _events.AddAsync(accessEvent, ct);
+
+        if (credential.SubjectType == SubjectType.Visitor && command.Direction == CycleDirection.Entrance && _visits is not null)
+        {
+            await _visits.CheckInAsync(command.TenantId, credential.SubjectId, command.PerformedByProfileId, command.GatehouseId, ct);
+        }
 
         var accepted = new ScanDecisionResult(
             Decision: ScanDecisionKind.Recorded,

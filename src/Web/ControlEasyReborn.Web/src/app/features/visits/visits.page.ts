@@ -5,13 +5,23 @@ import { ApartmentsApiService, formatApartmentLabel } from '../apartments/apartm
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
 import { CeButtonComponent, CeModalComponent, CePhotoPanelComponent } from '../../design-system';
 import { VisitCreateModalComponent } from './visit-create-modal.component';
+import { GatewayControlService } from '../access-control/gateway-control.service';
+import { QrPassModalComponent } from '../access-control/components/qr-pass-modal.component';
+import { ToastService } from '../../design-system/components/toast/toast.component';
 
 type StatusFilter = 'all' | 'Pending' | 'CheckedIn';
 
 @Component({
   selector: 'ce-visits-page',
   standalone: true,
-  imports: [CommonModule, CeButtonComponent, CeModalComponent, CePhotoPanelComponent, VisitCreateModalComponent],
+  imports: [
+    CommonModule,
+    CeButtonComponent,
+    CeModalComponent,
+    CePhotoPanelComponent,
+    VisitCreateModalComponent,
+    QrPassModalComponent,
+  ],
   template: `
     <div class="page-header">
       <div>
@@ -72,6 +82,14 @@ type StatusFilter = 'all' | 'Pending' | 'CheckedIn';
                   <button class="ce-button variant-ghost size-sm" (click)="openPhotos(visit)">Photos</button>
                   @if (visit.status === 'Pending') {
                     <button
+                      class="ce-button variant-secondary size-sm"
+                      [disabled]="actionInFlight() === visit.id"
+                      (click)="onGenerateQrPass(visit)"
+                      title="Issue and display QR Access Pass for this visit"
+                    >
+                      QR Pass
+                    </button>
+                    <button
                       class="ce-button variant-primary size-sm"
                       [disabled]="actionInFlight() === visit.id"
                       (click)="onCheckIn(visit)"
@@ -107,7 +125,16 @@ type StatusFilter = 'all' | 'Pending' | 'CheckedIn';
       </div>
     }
 
-    <ce-visit-create-modal [open]="createOpen()" (closed)="closeCreate()" (created)="load()" />
+    <ce-visit-create-modal [open]="createOpen()" (closed)="closeCreate()" (created)="onVisitCreated($event)" />
+
+    <ce-qr-pass-modal
+      [open]="qrPassModalOpen()"
+      [qrPayload]="activeQrPayload()"
+      [subjectName]="activeSubjectName()"
+      [subjectType]="'Visitor'"
+      [destination]="activeDestination()"
+      (closed)="closeQrPassModal()"
+    />
 
     <ce-modal
       [open]="photosModalOpen()"
@@ -270,6 +297,8 @@ type StatusFilter = 'all' | 'Pending' | 'CheckedIn';
 export class VisitsPage {
   private readonly api = inject(VisitsApiService);
   private readonly apartmentsApi = inject(ApartmentsApiService);
+  private readonly gateway = inject(GatewayControlService);
+  private readonly toast = inject(ToastService);
 
   visits = signal<VisitResponse[]>([]);
   apartmentLabels = signal<Record<string, string>>({});
@@ -281,6 +310,12 @@ export class VisitsPage {
   actionInFlight = signal<string | null>(null);
   photosModalOpen = signal(false);
   photosVisit = signal<VisitResponse | null>(null);
+
+  // QR Pass modal state
+  readonly qrPassModalOpen = signal(false);
+  readonly activeQrPayload = signal<string | null>(null);
+  readonly activeSubjectName = signal('');
+  readonly activeDestination = signal('');
 
   readonly photosEntity = computed(() => {
     const v = this.photosVisit();
@@ -411,5 +446,74 @@ export class VisitsPage {
 
   onPhotosModalOpenChange(open: boolean): void {
     if (!open) this.closePhotos();
+  }
+
+  onVisitCreated(event: { visit: VisitResponse; qrPayload?: string | null }): void {
+    this.load();
+    if (event.qrPayload) {
+      this.activeQrPayload.set(event.qrPayload);
+      this.activeSubjectName.set(event.visit.visitorName);
+      this.activeDestination.set(this.getApartmentLabel(event.visit.apartmentId));
+      this.qrPassModalOpen.set(true);
+      this.toast.info('Visit created with QR Access Pass.');
+    } else {
+      this.toast.info('Visit created.');
+    }
+  }
+
+  onGenerateQrPass(visit: VisitResponse): void {
+    this.actionInFlight.set(visit.id);
+    this.gateway
+      .issueCredential({
+        subjectType: 'visitor',
+        subjectId: visit.id,
+      })
+      .subscribe({
+        next: (res) => {
+          this.actionInFlight.set(null);
+          this.activeQrPayload.set(res.qrPayload);
+          this.activeSubjectName.set(visit.visitorName);
+          this.activeDestination.set(this.getApartmentLabel(visit.apartmentId));
+          this.qrPassModalOpen.set(true);
+        },
+        error: (err) => {
+          if (err?.status === 409) {
+            this.gateway.listCredentials('visitor', visit.id, 'active').subscribe({
+              next: (list) => {
+                if (list.length > 0) {
+                  this.gateway.replaceCredential(list[0]!.id).subscribe({
+                    next: (res) => {
+                      this.actionInFlight.set(null);
+                      this.activeQrPayload.set(res.qrPayload);
+                      this.activeSubjectName.set(visit.visitorName);
+                      this.activeDestination.set(this.getApartmentLabel(visit.apartmentId));
+                      this.qrPassModalOpen.set(true);
+                    },
+                    error: (replaceErr) => {
+                      this.actionInFlight.set(null);
+                      this.toast.error(getApiErrorMessage(replaceErr, 'Failed to regenerate QR pass'));
+                    },
+                  });
+                } else {
+                  this.actionInFlight.set(null);
+                  this.toast.error(getApiErrorMessage(err, 'Failed to generate QR pass'));
+                }
+              },
+              error: () => {
+                this.actionInFlight.set(null);
+                this.toast.error(getApiErrorMessage(err, 'Failed to generate QR pass'));
+              },
+            });
+            return;
+          }
+          this.actionInFlight.set(null);
+          this.toast.error(getApiErrorMessage(err, 'Failed to generate QR pass'));
+        },
+      });
+  }
+
+  closeQrPassModal(): void {
+    this.qrPassModalOpen.set(false);
+    this.activeQrPayload.set(null);
   }
 }

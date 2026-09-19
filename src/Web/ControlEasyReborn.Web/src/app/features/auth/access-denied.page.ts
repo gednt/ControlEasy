@@ -18,6 +18,7 @@ import { AuthService } from '../../core/services/auth.service';
         </p>
         <div class="actions">
           <a class="ce-button variant-primary size-md" [routerLink]="returnLink()">Back</a>
+          <button class="ce-button variant-secondary size-md" type="button" (click)="signOut()">Sign out</button>
         </div>
       </section>
     </main>
@@ -42,7 +43,7 @@ import { AuthService } from '../../core/services/auth.service';
       }
       h1 { margin: 0 0 var(--space-3, 12px); font-size: 1.5rem; }
       .message { color: var(--color-text-secondary, #555); margin: 0 0 var(--space-4, 16px); }
-      .actions { display: flex; justify-content: center; }
+      .actions { display: flex; justify-content: center; gap: var(--space-3, 12px); }
       .ce-button {
         display: inline-flex;
         align-items: center;
@@ -51,10 +52,17 @@ import { AuthService } from '../../core/services/auth.service';
         border-radius: var(--radius-sm, 4px);
         text-decoration: none;
         font-weight: var(--font-weight-semibold, 600);
+        cursor: pointer;
+        border: none;
       }
       .ce-button.variant-primary {
         background: var(--color-primary, #2c5cdc);
         color: var(--color-text-on-primary, #fff);
+      }
+      .ce-button.variant-secondary {
+        background: var(--color-surface-muted, #f1f5f9);
+        color: var(--color-text-primary, #1e293b);
+        border: 1px solid var(--color-border, #cbd5e1);
       }
     `,
   ],
@@ -72,4 +80,8 @@ export class AccessDeniedPage {
     }
     return ['/'];
   });
+
+  signOut(): void {
+    this.auth.logout();
+  }
 }

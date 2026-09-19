@@ -7,26 +7,28 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-
 export interface ApiV1TenantsIdAdminsUserIdSuspendPost$Params {
   id: string;
   userId: string;
 }
 
-export function apiV1TenantsIdAdminsUserIdSuspendPost(http: HttpClient, rootUrl: string, params: ApiV1TenantsIdAdminsUserIdSuspendPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+export function apiV1TenantsIdAdminsUserIdSuspendPost(
+  http: HttpClient,
+  rootUrl: string,
+  params: ApiV1TenantsIdAdminsUserIdSuspendPost$Params,
+  context?: HttpContext,
+): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1TenantsIdAdminsUserIdSuspendPost.PATH, 'post');
   if (params) {
     rb.path('id', params.id, {});
     rb.path('userId', params.userId, {});
   }
 
-  return http.request(
-    rb.build({ responseType: 'text', accept: '*/*', context })
-  ).pipe(
+  return http.request(rb.build({ responseType: 'text', accept: '*/*', context })).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
-    })
+    }),
   );
 }
 

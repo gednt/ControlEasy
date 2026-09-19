@@ -10,22 +10,25 @@ import { RequestBuilder } from '../../request-builder';
 import { CreateTenantRequest } from '../../models/create-tenant-request';
 
 export interface ApiV1TenantsPost$Params {
-      body: CreateTenantRequest
+  body: CreateTenantRequest;
 }
 
-export function apiV1TenantsPost(http: HttpClient, rootUrl: string, params: ApiV1TenantsPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+export function apiV1TenantsPost(
+  http: HttpClient,
+  rootUrl: string,
+  params: ApiV1TenantsPost$Params,
+  context?: HttpContext,
+): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1TenantsPost.PATH, 'post');
   if (params) {
     rb.body(params.body, 'application/json');
   }
 
-  return http.request(
-    rb.build({ responseType: 'text', accept: '*/*', context })
-  ).pipe(
+  return http.request(rb.build({ responseType: 'text', accept: '*/*', context })).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
-    })
+    }),
   );
 }
 

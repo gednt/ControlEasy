@@ -10,22 +10,25 @@ import { RequestBuilder } from '../../request-builder';
 import { CreateShiftRequest } from '../../models/create-shift-request';
 
 export interface ApiV1SecurityShiftsPost$Params {
-      body: CreateShiftRequest
+  body: CreateShiftRequest;
 }
 
-export function apiV1SecurityShiftsPost(http: HttpClient, rootUrl: string, params: ApiV1SecurityShiftsPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+export function apiV1SecurityShiftsPost(
+  http: HttpClient,
+  rootUrl: string,
+  params: ApiV1SecurityShiftsPost$Params,
+  context?: HttpContext,
+): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1SecurityShiftsPost.PATH, 'post');
   if (params) {
     rb.body(params.body, 'application/json');
   }
 
-  return http.request(
-    rb.build({ responseType: 'text', accept: '*/*', context })
-  ).pipe(
+  return http.request(rb.build({ responseType: 'text', accept: '*/*', context })).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
-    })
+    }),
   );
 }
 
