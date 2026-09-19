@@ -49,6 +49,14 @@ public sealed class AccessEventDestinationResolver
     }
 
     /// <summary>
+    /// Public apartment resolution for package-drop destination snapshots
+    /// (threat T-16-02-02): re-resolves the apartment server-side so a stale or
+    /// forged apartment id fails resolution instead of recording a snapshot.
+    /// </summary>
+    public Task<DestinationResolution> ResolveApartmentPublicAsync(Guid tenantId, Guid apartmentId, CancellationToken ct) =>
+        ResolveApartmentAsync(tenantId, apartmentId, ct);
+
+    /// <summary>
     /// Resolves the visitor profile (name / document / phone / purpose) for a
     /// manual-lookup arrival: the SubjectId is a visit id the lookup audit
     /// selected, so the visit row itself is the data source. Returns null when

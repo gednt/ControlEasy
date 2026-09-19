@@ -73,6 +73,11 @@ public sealed class RecordManualAccessHandler
             });
         }
 
+        if (command.Kind == AccessEventKind.PackageDrop)
+        {
+            return await RecordPackageDropAsync(command, audit, nowUtc, stopwatch, ct);
+        }
+
         var destination = await _resolver.ResolveAsync(command.TenantId, command.SubjectType, command.SubjectId, ct);
         if (!destination.Resolved)
         {
@@ -161,6 +166,96 @@ public sealed class RecordManualAccessHandler
             AccessMethod: AccessMethod.ManualLookup,
             Direction: command.Direction,
             PolicyOutcome: policyFinal,
+            DestinationApartmentId: accessEvent.DestinationApartmentId,
+            DestinationBlock: accessEvent.DestinationBlock,
+            DestinationUnit: accessEvent.DestinationUnit);
+    }
+
+    /// <summary>
+    /// Package-drop registration path (D-04: package drops are NOT visits):
+    /// records an AccessEvent with EventKind=PackageDrop directly — never through
+    /// VisitorArrivalHandler, never as a Visit row. Policy evaluation is skipped
+    /// (a package is not a person; consent policy does not apply). SubjectType is
+    /// Visitor with SubjectId=Guid.Empty (packages have no subject). When
+    /// DestinationApartmentId is not supplied the drop is condominium-level and
+    /// records the GATEHOUSE/RECEPTION snapshot with Guid.Empty.
+    /// </summary>
+    private async Task<ManualAccessResult> RecordPackageDropAsync(
+        RecordManualAccessCommand command,
+        AccessLookupAudit audit,
+        DateTime nowUtc,
+        Stopwatch stopwatch,
+        CancellationToken ct)
+    {
+        Guid destinationApartmentId;
+        string destinationBlock;
+        string destinationUnit;
+
+        if (command.SubjectId != Guid.Empty)
+        {
+            var resolution = await _resolver.ResolveApartmentPublicAsync(command.TenantId, command.SubjectId, ct);
+            if (!resolution.Resolved)
+            {
+                throw new Application.Errors.ValidationException(new Dictionary<string, string[]>
+                {
+                    ["DestinationApartmentId"] = new[] { resolution.FailureCode ?? RefusalCodes.DestinationInactive }
+                });
+            }
+            destinationApartmentId = resolution.ApartmentId!.Value;
+            destinationBlock = resolution.Block;
+            destinationUnit = resolution.Unit;
+        }
+        else
+        {
+            // Condominium-level drop (mail room / reception shelf): omits the apartment.
+            destinationApartmentId = Guid.Empty;
+            destinationBlock = "GATEHOUSE";
+            destinationUnit = "RECEPTION";
+        }
+
+        var accessEvent = AccessEvent.Record(
+            tenantId: command.TenantId,
+            subjectType: SubjectType.Visitor,
+            subjectId: Guid.Empty,
+            direction: CycleDirection.Entrance,
+            accessMethod: AccessMethod.ManualLookup,
+            credentialId: null,
+            lookupAuditId: command.LookupAuditId,
+            scanAttemptId: Guid.NewGuid(),
+            performedByProfileId: command.PerformedByProfileId,
+            gatehouseId: command.GatehouseId,
+            occurredAtUtc: nowUtc,
+            correlationId: Guid.NewGuid(),
+            duplicateOfAccessEventId: null,
+            duplicateConfirmed: false,
+            policyOutcome: PolicyOutcome.Permit,
+            destinationApartmentId: destinationApartmentId,
+            destinationBlock: destinationBlock,
+            destinationUnit: destinationUnit,
+            eventKind: AccessEventKind.PackageDrop,
+            packageDescription: command.PackageDescription,
+            packageCarrierCode: command.PackageCarrierCode);
+
+        await _events.AddAsync(accessEvent, ct);
+
+        stopwatch.Stop();
+        using (AccessControlLogContext.PushDuration(stopwatch.ElapsedMilliseconds))
+        {
+            _logger.LogInformation(
+                "AccessControl package drop recorded eventId={AccessEventId} lookupAuditId={LookupAuditId} elapsedMs={ElapsedMs}",
+                accessEvent.Id,
+                command.LookupAuditId,
+                stopwatch.ElapsedMilliseconds);
+        }
+
+        return new ManualAccessResult(
+            AccessEventId: accessEvent.Id,
+            LookupAuditId: command.LookupAuditId,
+            SubjectType: SubjectType.Visitor,
+            SubjectId: Guid.Empty,
+            AccessMethod: AccessMethod.ManualLookup,
+            Direction: CycleDirection.Entrance,
+            PolicyOutcome: PolicyOutcome.Permit,
             DestinationApartmentId: accessEvent.DestinationApartmentId,
             DestinationBlock: accessEvent.DestinationBlock,
             DestinationUnit: accessEvent.DestinationUnit);

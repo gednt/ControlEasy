@@ -26,7 +26,10 @@ public sealed record RecordManualAccessCommand(
     Guid SubjectId,
     CycleDirection Direction,
     Guid PerformedByProfileId,
-    Guid? GatehouseId);
+    Guid? GatehouseId,
+    AccessEventKind Kind = AccessEventKind.Access,
+    string? PackageDescription = null,
+    string? PackageCarrierCode = null);
 
 public sealed record IssueCredentialCommand(
     Guid TenantId,

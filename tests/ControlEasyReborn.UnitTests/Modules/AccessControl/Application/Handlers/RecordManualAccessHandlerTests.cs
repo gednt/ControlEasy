@@ -180,4 +180,86 @@ public sealed class RecordManualAccessHandlerTests
             Arg.Any<CancellationToken>());
         await _visits.DidNotReceive().CheckInAsync(Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<Guid>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task Package_drop_records_access_event_without_visit_row()
+    {
+        var lookupAuditId = Guid.NewGuid();
+        var apartmentId = Guid.NewGuid();
+        _audits.FindAsync(_tenantId, lookupAuditId, Arg.Any<CancellationToken>())
+            .Returns(AccessLookupAudit.Hydrate(lookupAuditId, _tenantId, LookupCriterionType.Cpf, ResultCountBand.One, SubjectType.Visitor, Guid.NewGuid(), _profileId, DateTime.UtcNow, Guid.NewGuid()));
+        _apartments.FindActiveAsync(_tenantId, apartmentId, Arg.Any<CancellationToken>())
+            .Returns(new Apartment(apartmentId, _tenantId, "A1", "102", active: true, DateTime.UtcNow, null));
+
+        var handler = Build();
+        var cmd = new RecordManualAccessCommand(
+            _tenantId, lookupAuditId, SubjectType.Visitor, apartmentId, CycleDirection.Entrance, _profileId, null,
+            Kind: AccessEventKind.PackageDrop,
+            PackageDescription: "2 boxes",
+            PackageCarrierCode: "Correios");
+
+        var result = await handler.HandleAsync(cmd, CancellationToken.None);
+
+        result.DestinationApartmentId.Should().Be(apartmentId);
+        result.DestinationBlock.Should().Be("A1");
+        result.DestinationUnit.Should().Be("102");
+
+        await _events.Received(1).AddAsync(
+            Arg.Is<AccessEvent>(e =>
+                e.EventKind == AccessEventKind.PackageDrop &&
+                e.PackageDescription == "2 boxes" &&
+                e.PackageCarrierCode == "Correios" &&
+                e.SubjectType == SubjectType.Visitor &&
+                e.SubjectId == Guid.Empty &&
+                e.AccessMethod == AccessMethod.ManualLookup),
+            Arg.Any<CancellationToken>());
+        await _visits.DidNotReceive().RegisterArrivalAsync(Arg.Any<ControlEasyReborn.Modules.Visits.Application.Handlers.VisitorArrivalCommand>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Condominium_level_package_drop_uses_gatehouse_reception_snapshot()
+    {
+        var lookupAuditId = Guid.NewGuid();
+        _audits.FindAsync(_tenantId, lookupAuditId, Arg.Any<CancellationToken>())
+            .Returns(AccessLookupAudit.Hydrate(lookupAuditId, _tenantId, LookupCriterionType.Cpf, ResultCountBand.One, SubjectType.Visitor, Guid.NewGuid(), _profileId, DateTime.UtcNow, Guid.NewGuid()));
+
+        var handler = Build();
+        var cmd = new RecordManualAccessCommand(
+            _tenantId, lookupAuditId, SubjectType.Visitor, Guid.Empty, CycleDirection.Entrance, _profileId, null,
+            Kind: AccessEventKind.PackageDrop,
+            PackageDescription: "Mail room letter");
+
+        var result = await handler.HandleAsync(cmd, CancellationToken.None);
+
+        result.DestinationApartmentId.Should().Be(Guid.Empty);
+        result.DestinationBlock.Should().Be("GATEHOUSE");
+        result.DestinationUnit.Should().Be("RECEPTION");
+
+        await _events.Received(1).AddAsync(
+            Arg.Is<AccessEvent>(e =>
+                e.EventKind == AccessEventKind.PackageDrop &&
+                e.DestinationApartmentId == Guid.Empty &&
+                e.DestinationBlock == "GATEHOUSE" &&
+                e.DestinationUnit == "RECEPTION"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Package_drop_with_unknown_apartment_is_refused()
+    {
+        var lookupAuditId = Guid.NewGuid();
+        _audits.FindAsync(_tenantId, lookupAuditId, Arg.Any<CancellationToken>())
+            .Returns(AccessLookupAudit.Hydrate(lookupAuditId, _tenantId, LookupCriterionType.Cpf, ResultCountBand.One, SubjectType.Visitor, Guid.NewGuid(), _profileId, DateTime.UtcNow, Guid.NewGuid()));
+
+        var handler = Build();
+        var cmd = new RecordManualAccessCommand(
+            _tenantId, lookupAuditId, SubjectType.Visitor, Guid.NewGuid(), CycleDirection.Entrance, _profileId, null,
+            Kind: AccessEventKind.PackageDrop,
+            PackageDescription: "2 boxes");
+
+        var act = async () => await handler.HandleAsync(cmd, CancellationToken.None);
+
+        var exception = await act.Should().ThrowAsync<ControlEasyReborn.Modules.AccessControl.Application.Errors.ValidationException>();
+        exception.Which.Errors.Should().ContainKey("DestinationApartmentId");
+    }
 }

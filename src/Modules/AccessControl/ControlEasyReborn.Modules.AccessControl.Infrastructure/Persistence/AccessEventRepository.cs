@@ -11,7 +11,7 @@ namespace ControlEasyReborn.Modules.AccessControl.Infrastructure.Persistence;
 public sealed class AccessEventRepository : IAccessEventRepository
 {
     private const string TableName = "AccessEvents";
-    private const string Fields = "Id, TenantId, SubjectType, SubjectId, Direction, AccessMethod, CredentialId, LookupAuditId, ScanAttemptId, PerformedByProfileId, GatehouseId, OccurredAtUtc, CorrelationId, DuplicateOfAccessEventId, DuplicateConfirmed, PolicyOutcome, DestinationApartmentId, DestinationBlock, DestinationUnit";
+    private const string Fields = "Id, TenantId, SubjectType, SubjectId, Direction, AccessMethod, CredentialId, LookupAuditId, ScanAttemptId, PerformedByProfileId, GatehouseId, OccurredAtUtc, CorrelationId, DuplicateOfAccessEventId, DuplicateConfirmed, PolicyOutcome, DestinationApartmentId, DestinationBlock, DestinationUnit, EventKind, PackageDescription, PackageCarrierCode";
 
     private readonly ITenantContext _ctx;
     private readonly ITenantAwareLinqFactory _factory;
@@ -107,9 +107,9 @@ public sealed class AccessEventRepository : IAccessEventRepository
     {
         var db = _factory.Create(_ctx);
         await db.InsertAsync(
-            new[] { "Id", "TenantId", "SubjectType", "SubjectId", "Direction", "AccessMethod", "CredentialId", "LookupAuditId", "ScanAttemptId", "PerformedByProfileId", "GatehouseId", "OccurredAtUtc", "CorrelationId", "DuplicateOfAccessEventId", "DuplicateConfirmed", "PolicyOutcome", "DestinationApartmentId", "DestinationBlock", "DestinationUnit", "tenant_id" },
+            new[] { "Id", "TenantId", "SubjectType", "SubjectId", "Direction", "AccessMethod", "CredentialId", "LookupAuditId", "ScanAttemptId", "PerformedByProfileId", "GatehouseId", "OccurredAtUtc", "CorrelationId", "DuplicateOfAccessEventId", "DuplicateConfirmed", "PolicyOutcome", "DestinationApartmentId", "DestinationBlock", "DestinationUnit", "EventKind", "PackageDescription", "PackageCarrierCode", "tenant_id" },
             TableName,
-            new object?[] { accessEvent.Id, accessEvent.TenantId, (int)accessEvent.SubjectType, accessEvent.SubjectId, (int)accessEvent.Direction, (int)accessEvent.AccessMethod, (object?)accessEvent.CredentialId ?? DBNull.Value, (object?)accessEvent.LookupAuditId ?? DBNull.Value, accessEvent.ScanAttemptId, accessEvent.PerformedByProfileId, (object?)accessEvent.GatehouseId ?? DBNull.Value, accessEvent.OccurredAtUtc, accessEvent.CorrelationId, (object?)accessEvent.DuplicateOfAccessEventId ?? DBNull.Value, accessEvent.DuplicateConfirmed ? 1 : 0, (int)accessEvent.PolicyOutcome, accessEvent.DestinationApartmentId, accessEvent.DestinationBlock, accessEvent.DestinationUnit, accessEvent.TenantId },
+            new object?[] { accessEvent.Id, accessEvent.TenantId, (int)accessEvent.SubjectType, accessEvent.SubjectId, (int)accessEvent.Direction, (int)accessEvent.AccessMethod, (object?)accessEvent.CredentialId ?? DBNull.Value, (object?)accessEvent.LookupAuditId ?? DBNull.Value, accessEvent.ScanAttemptId, accessEvent.PerformedByProfileId, (object?)accessEvent.GatehouseId ?? DBNull.Value, accessEvent.OccurredAtUtc, accessEvent.CorrelationId, (object?)accessEvent.DuplicateOfAccessEventId ?? DBNull.Value, accessEvent.DuplicateConfirmed ? 1 : 0, (int)accessEvent.PolicyOutcome, accessEvent.DestinationApartmentId, accessEvent.DestinationBlock, accessEvent.DestinationUnit, (int)accessEvent.EventKind, (object?)accessEvent.PackageDescription ?? DBNull.Value, (object?)accessEvent.PackageCarrierCode ?? DBNull.Value, accessEvent.TenantId },
             primaryKeyName: "Id",
             autoIncrement: false,
             ct: ct);
@@ -139,6 +139,15 @@ public sealed class AccessEventRepository : IAccessEventRepository
         var lookupAuditIdStr = r["LookupAuditId"]?.ToString();
         var gatehouseIdStr = r["GatehouseId"]?.ToString();
         var duplicateOfStr = r["DuplicateOfAccessEventId"]?.ToString();
+        var packageDescription = r.Table.Columns.Contains("PackageDescription") && r["PackageDescription"] != DBNull.Value
+            ? r["PackageDescription"]?.ToString()
+            : null;
+        var packageCarrierCode = r.Table.Columns.Contains("PackageCarrierCode") && r["PackageCarrierCode"] != DBNull.Value
+            ? r["PackageCarrierCode"]?.ToString()
+            : null;
+        var eventKind = r.Table.Columns.Contains("EventKind")
+            ? (AccessEventKind)Convert.ToInt32(r["EventKind"])
+            : AccessEventKind.Access;
 
         return AccessEvent.Hydrate(
             id: Guid.Parse(r["Id"].ToString() ?? string.Empty),
@@ -159,6 +168,9 @@ public sealed class AccessEventRepository : IAccessEventRepository
             policyOutcome: (PolicyOutcome)Convert.ToInt32(r["PolicyOutcome"]),
             destinationApartmentId: Guid.Parse(r["DestinationApartmentId"].ToString() ?? string.Empty),
             destinationBlock: r["DestinationBlock"]?.ToString() ?? string.Empty,
-            destinationUnit: r["DestinationUnit"]?.ToString() ?? string.Empty);
+            destinationUnit: r["DestinationUnit"]?.ToString() ?? string.Empty,
+            eventKind: eventKind,
+            packageDescription: packageDescription,
+            packageCarrierCode: packageCarrierCode);
     }
 }

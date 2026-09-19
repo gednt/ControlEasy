@@ -54,11 +54,27 @@ public sealed class RecordManualAccessCommandValidator : AbstractValidator<Recor
         RuleFor(c => c.SubjectType)
             .Must(t => t == SubjectType.Resident || t == SubjectType.Vehicle || t == SubjectType.Visitor)
             .WithMessage("SubjectType must be 'resident', 'vehicle', or 'visitor'.");
-        RuleFor(c => c.SubjectId).NotEmpty();
+        RuleFor(c => c.SubjectId).NotEmpty().When(c => c.Kind != AccessEventKind.PackageDrop);
         RuleFor(c => c.PerformedByProfileId).NotEmpty();
         RuleFor(c => c.Direction)
             .Must(d => d == CycleDirection.Entrance || d == CycleDirection.Exit)
             .WithMessage("Direction must be 'entrance' or 'exit'.");
+
+        // Package-drop fields (threat T-16-02-01): description required and
+        // length-capped (mirrors AccessEvents schema); carrier code optional
+        // free-form string — no lookup table this phase (D-04).
+        RuleFor(c => c.Kind).IsInEnum();
+        RuleFor(c => c.PackageDescription)
+            .NotEmpty()
+            .MaximumLength(500)
+            .When(c => c.Kind == AccessEventKind.PackageDrop);
+        RuleFor(c => c.PackageCarrierCode)
+            .MaximumLength(64)
+            .When(c => !string.IsNullOrEmpty(c.PackageCarrierCode));
+        RuleFor(c => c.PackageDescription)
+            .Null()
+            .When(c => c.Kind == AccessEventKind.Access)
+            .WithMessage("PackageDescription is only valid for package-drop registrations.");
     }
 }
 
