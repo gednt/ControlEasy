@@ -33,9 +33,10 @@ The gatehouse visit record is single-sourced — every visitor arrival (QR scan,
 
 ### Package Delivery Model
 - Package drops are recorded as AccessEvents with a `PackageDrop` kind/discriminator carrying `PackageDescription` (free text) + `PackageCarrierCode` (structured code) — no Visit row
+- Apartment-bound packages record which apartment the package goes to: a `PackageDrop` AccessEvent for an apartment carries the destination apartment (immutable destination snapshot fields, same pattern as other AccessEvents); condominium-level drops (e.g., mail room / reception shelf) omit it
 - Carrier code: free-form string code with a suggested dropdown list (Correios, Sedex, Jadlog, Loggi, Outro) on the UI in Phase 17; backend stores the code string — no lookup table this phase
-- Gatehouse operator registers a package drop via the registration path recording an AccessEvent directly — no apartment destination required
-- Filtering: ledger filter `carrierCode=<code>` on `/api/v1/reports/history` (server-side) plus free-text search matching description
+- Gatehouse operator registers a package drop via the registration path recording an AccessEvent directly — no apartment destination REQUIRED, but recorded when the package is for an apartment
+- Filtering: ledger filter `carrierCode=<code>` on `/api/v1/reports/history` (server-side) plus free-text search matching description; apartment-bound package rows are also filterable by apartment
 
 </decisions>
 
@@ -70,7 +71,7 @@ The gatehouse visit record is single-sourced — every visitor arrival (QR scan,
 <specifics>
 ## Specific Ideas
 
-- User-settled model refinement (this discussion): package drops are NOT visits — they are AccessEvents `PackageDrop` rows; this supersedes the VISIT-06/07 reading that package deliveries are Visit rows. Description + carrier code live on AccessEvents and surface on the unified ledger.
+- User-settled model refinement (this discussion): package drops are NOT visits — they are AccessEvents `PackageDrop` rows; this supersedes the VISIT-06/07 reading that package deliveries are Visit rows. Description + carrier code live on AccessEvents and surface on the unified ledger. Apartment-bound packages record the destination apartment.
 - Service-in-condominium visits use a designated CONDOMINIUM destination (block/unit value) rather than a concrete apartment.
 - Exploration notes: `.planning/notes/integrated-visits-flow.md` (settled decisions 1–5, key files list).
 - The write-path fold and read-model rewrite MUST land in the same phase (STATE.md decision) — no double-counting window.
