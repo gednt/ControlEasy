@@ -7,6 +7,7 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
+import { HistoryRowResponse } from '../../models/history-row-response';
 
 export interface ApiV1ReportsHistoryGet$Params {
   page?: number;
@@ -19,7 +20,7 @@ export interface ApiV1ReportsHistoryGet$Params {
   apartmentId?: string;
 }
 
-export function apiV1ReportsHistoryGet(http: HttpClient, rootUrl: string, params?: ApiV1ReportsHistoryGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+export function apiV1ReportsHistoryGet(http: HttpClient, rootUrl: string, params?: ApiV1ReportsHistoryGet$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<HistoryRowResponse>>> {
   const rb = new RequestBuilder(rootUrl, apiV1ReportsHistoryGet.PATH, 'get');
   if (params) {
     rb.query('page', params.page, {});
@@ -33,11 +34,11 @@ export function apiV1ReportsHistoryGet(http: HttpClient, rootUrl: string, params
   }
 
   return http.request(
-    rb.build({ responseType: 'text', accept: '*/*', context })
+    rb.build({ responseType: 'json', accept: 'application/json', context })
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
+      return r as StrictHttpResponse<Array<HistoryRowResponse>>;
     })
   );
 }

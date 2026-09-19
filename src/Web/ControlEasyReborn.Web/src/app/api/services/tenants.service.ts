@@ -1,0 +1,505 @@
+/* tslint:disable */
+/* eslint-disable */
+import { HttpClient, HttpContext } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+
+import { BaseService } from '../base-service';
+import { ApiConfiguration } from '../api-configuration';
+import { StrictHttpResponse } from '../strict-http-response';
+
+import { apiV1TenantsGet } from '../fn/tenants/api-v-1-tenants-get';
+import { ApiV1TenantsGet$Params } from '../fn/tenants/api-v-1-tenants-get';
+import { apiV1TenantsIdAdminsGet } from '../fn/tenants/api-v-1-tenants-id-admins-get';
+import { ApiV1TenantsIdAdminsGet$Params } from '../fn/tenants/api-v-1-tenants-id-admins-get';
+import { apiV1TenantsIdAdminsPost } from '../fn/tenants/api-v-1-tenants-id-admins-post';
+import { ApiV1TenantsIdAdminsPost$Params } from '../fn/tenants/api-v-1-tenants-id-admins-post';
+import { apiV1TenantsIdAdminsUserIdDelete } from '../fn/tenants/api-v-1-tenants-id-admins-user-id-delete';
+import { ApiV1TenantsIdAdminsUserIdDelete$Params } from '../fn/tenants/api-v-1-tenants-id-admins-user-id-delete';
+import { apiV1TenantsIdAdminsUserIdPut } from '../fn/tenants/api-v-1-tenants-id-admins-user-id-put';
+import { ApiV1TenantsIdAdminsUserIdPut$Params } from '../fn/tenants/api-v-1-tenants-id-admins-user-id-put';
+import { apiV1TenantsIdAdminsUserIdResumePost } from '../fn/tenants/api-v-1-tenants-id-admins-user-id-resume-post';
+import { ApiV1TenantsIdAdminsUserIdResumePost$Params } from '../fn/tenants/api-v-1-tenants-id-admins-user-id-resume-post';
+import { apiV1TenantsIdAdminsUserIdRevokePost } from '../fn/tenants/api-v-1-tenants-id-admins-user-id-revoke-post';
+import { ApiV1TenantsIdAdminsUserIdRevokePost$Params } from '../fn/tenants/api-v-1-tenants-id-admins-user-id-revoke-post';
+import { apiV1TenantsIdAdminsUserIdSuspendPost } from '../fn/tenants/api-v-1-tenants-id-admins-user-id-suspend-post';
+import { ApiV1TenantsIdAdminsUserIdSuspendPost$Params } from '../fn/tenants/api-v-1-tenants-id-admins-user-id-suspend-post';
+import { apiV1TenantsIdGet } from '../fn/tenants/api-v-1-tenants-id-get';
+import { ApiV1TenantsIdGet$Params } from '../fn/tenants/api-v-1-tenants-id-get';
+import { apiV1TenantsIdPorteirosGet } from '../fn/tenants/api-v-1-tenants-id-porteiros-get';
+import { ApiV1TenantsIdPorteirosGet$Params } from '../fn/tenants/api-v-1-tenants-id-porteiros-get';
+import { apiV1TenantsIdPorteirosPost } from '../fn/tenants/api-v-1-tenants-id-porteiros-post';
+import { ApiV1TenantsIdPorteirosPost$Params } from '../fn/tenants/api-v-1-tenants-id-porteiros-post';
+import { apiV1TenantsIdPorteirosUserIdDelete } from '../fn/tenants/api-v-1-tenants-id-porteiros-user-id-delete';
+import { ApiV1TenantsIdPorteirosUserIdDelete$Params } from '../fn/tenants/api-v-1-tenants-id-porteiros-user-id-delete';
+import { apiV1TenantsIdPorteirosUserIdPut } from '../fn/tenants/api-v-1-tenants-id-porteiros-user-id-put';
+import { ApiV1TenantsIdPorteirosUserIdPut$Params } from '../fn/tenants/api-v-1-tenants-id-porteiros-user-id-put';
+import { apiV1TenantsIdPorteirosUserIdResumePost } from '../fn/tenants/api-v-1-tenants-id-porteiros-user-id-resume-post';
+import { ApiV1TenantsIdPorteirosUserIdResumePost$Params } from '../fn/tenants/api-v-1-tenants-id-porteiros-user-id-resume-post';
+import { apiV1TenantsIdPorteirosUserIdSuspendPost } from '../fn/tenants/api-v-1-tenants-id-porteiros-user-id-suspend-post';
+import { ApiV1TenantsIdPorteirosUserIdSuspendPost$Params } from '../fn/tenants/api-v-1-tenants-id-porteiros-user-id-suspend-post';
+import { apiV1TenantsIdResumePost } from '../fn/tenants/api-v-1-tenants-id-resume-post';
+import { ApiV1TenantsIdResumePost$Params } from '../fn/tenants/api-v-1-tenants-id-resume-post';
+import { apiV1TenantsIdSuspendPost } from '../fn/tenants/api-v-1-tenants-id-suspend-post';
+import { ApiV1TenantsIdSuspendPost$Params } from '../fn/tenants/api-v-1-tenants-id-suspend-post';
+import { apiV1TenantsPost } from '../fn/tenants/api-v-1-tenants-post';
+import { ApiV1TenantsPost$Params } from '../fn/tenants/api-v-1-tenants-post';
+
+@Injectable({ providedIn: 'root' })
+export class TenantsService extends BaseService {
+  constructor(config: ApiConfiguration, http: HttpClient) {
+    super(config, http);
+  }
+
+  /** Path part for operation `apiV1TenantsGet()` */
+  static readonly ApiV1TenantsGetPath = '/api/v1/tenants';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1TenantsGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsGet$Response(params?: ApiV1TenantsGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1TenantsGet(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1TenantsGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsGet(params?: ApiV1TenantsGet$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1TenantsGet$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1TenantsPost()` */
+  static readonly ApiV1TenantsPostPath = '/api/v1/tenants';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1TenantsPost()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1TenantsPost$Response(params: ApiV1TenantsPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1TenantsPost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1TenantsPost$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1TenantsPost(params: ApiV1TenantsPost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1TenantsPost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1TenantsIdGet()` */
+  static readonly ApiV1TenantsIdGetPath = '/api/v1/tenants/{id}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1TenantsIdGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsIdGet$Response(params: ApiV1TenantsIdGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1TenantsIdGet(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1TenantsIdGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsIdGet(params: ApiV1TenantsIdGet$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1TenantsIdGet$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1TenantsIdSuspendPost()` */
+  static readonly ApiV1TenantsIdSuspendPostPath = '/api/v1/tenants/{id}/suspend';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1TenantsIdSuspendPost()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1TenantsIdSuspendPost$Response(params: ApiV1TenantsIdSuspendPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1TenantsIdSuspendPost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1TenantsIdSuspendPost$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1TenantsIdSuspendPost(params: ApiV1TenantsIdSuspendPost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1TenantsIdSuspendPost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1TenantsIdResumePost()` */
+  static readonly ApiV1TenantsIdResumePostPath = '/api/v1/tenants/{id}/resume';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1TenantsIdResumePost()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1TenantsIdResumePost$Response(params: ApiV1TenantsIdResumePost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1TenantsIdResumePost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1TenantsIdResumePost$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1TenantsIdResumePost(params: ApiV1TenantsIdResumePost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1TenantsIdResumePost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1TenantsIdAdminsGet()` */
+  static readonly ApiV1TenantsIdAdminsGetPath = '/api/v1/tenants/{id}/admins';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1TenantsIdAdminsGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsIdAdminsGet$Response(params: ApiV1TenantsIdAdminsGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1TenantsIdAdminsGet(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1TenantsIdAdminsGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsIdAdminsGet(params: ApiV1TenantsIdAdminsGet$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1TenantsIdAdminsGet$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1TenantsIdAdminsPost()` */
+  static readonly ApiV1TenantsIdAdminsPostPath = '/api/v1/tenants/{id}/admins';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1TenantsIdAdminsPost()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1TenantsIdAdminsPost$Response(params: ApiV1TenantsIdAdminsPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1TenantsIdAdminsPost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1TenantsIdAdminsPost$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1TenantsIdAdminsPost(params: ApiV1TenantsIdAdminsPost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1TenantsIdAdminsPost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1TenantsIdAdminsUserIdRevokePost()` */
+  static readonly ApiV1TenantsIdAdminsUserIdRevokePostPath = '/api/v1/tenants/{id}/admins/{userId}/revoke';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1TenantsIdAdminsUserIdRevokePost()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsIdAdminsUserIdRevokePost$Response(params: ApiV1TenantsIdAdminsUserIdRevokePost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1TenantsIdAdminsUserIdRevokePost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1TenantsIdAdminsUserIdRevokePost$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsIdAdminsUserIdRevokePost(params: ApiV1TenantsIdAdminsUserIdRevokePost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1TenantsIdAdminsUserIdRevokePost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1TenantsIdAdminsUserIdSuspendPost()` */
+  static readonly ApiV1TenantsIdAdminsUserIdSuspendPostPath = '/api/v1/tenants/{id}/admins/{userId}/suspend';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1TenantsIdAdminsUserIdSuspendPost()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsIdAdminsUserIdSuspendPost$Response(params: ApiV1TenantsIdAdminsUserIdSuspendPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1TenantsIdAdminsUserIdSuspendPost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1TenantsIdAdminsUserIdSuspendPost$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsIdAdminsUserIdSuspendPost(params: ApiV1TenantsIdAdminsUserIdSuspendPost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1TenantsIdAdminsUserIdSuspendPost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1TenantsIdAdminsUserIdResumePost()` */
+  static readonly ApiV1TenantsIdAdminsUserIdResumePostPath = '/api/v1/tenants/{id}/admins/{userId}/resume';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1TenantsIdAdminsUserIdResumePost()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsIdAdminsUserIdResumePost$Response(params: ApiV1TenantsIdAdminsUserIdResumePost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1TenantsIdAdminsUserIdResumePost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1TenantsIdAdminsUserIdResumePost$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsIdAdminsUserIdResumePost(params: ApiV1TenantsIdAdminsUserIdResumePost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1TenantsIdAdminsUserIdResumePost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1TenantsIdAdminsUserIdPut()` */
+  static readonly ApiV1TenantsIdAdminsUserIdPutPath = '/api/v1/tenants/{id}/admins/{userId}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1TenantsIdAdminsUserIdPut()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1TenantsIdAdminsUserIdPut$Response(params: ApiV1TenantsIdAdminsUserIdPut$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1TenantsIdAdminsUserIdPut(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1TenantsIdAdminsUserIdPut$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1TenantsIdAdminsUserIdPut(params: ApiV1TenantsIdAdminsUserIdPut$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1TenantsIdAdminsUserIdPut$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1TenantsIdAdminsUserIdDelete()` */
+  static readonly ApiV1TenantsIdAdminsUserIdDeletePath = '/api/v1/tenants/{id}/admins/{userId}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1TenantsIdAdminsUserIdDelete()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsIdAdminsUserIdDelete$Response(params: ApiV1TenantsIdAdminsUserIdDelete$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1TenantsIdAdminsUserIdDelete(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1TenantsIdAdminsUserIdDelete$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsIdAdminsUserIdDelete(params: ApiV1TenantsIdAdminsUserIdDelete$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1TenantsIdAdminsUserIdDelete$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1TenantsIdPorteirosGet()` */
+  static readonly ApiV1TenantsIdPorteirosGetPath = '/api/v1/tenants/{id}/porteiros';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1TenantsIdPorteirosGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsIdPorteirosGet$Response(params: ApiV1TenantsIdPorteirosGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1TenantsIdPorteirosGet(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1TenantsIdPorteirosGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsIdPorteirosGet(params: ApiV1TenantsIdPorteirosGet$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1TenantsIdPorteirosGet$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1TenantsIdPorteirosPost()` */
+  static readonly ApiV1TenantsIdPorteirosPostPath = '/api/v1/tenants/{id}/porteiros';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1TenantsIdPorteirosPost()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1TenantsIdPorteirosPost$Response(params: ApiV1TenantsIdPorteirosPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1TenantsIdPorteirosPost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1TenantsIdPorteirosPost$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1TenantsIdPorteirosPost(params: ApiV1TenantsIdPorteirosPost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1TenantsIdPorteirosPost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1TenantsIdPorteirosUserIdPut()` */
+  static readonly ApiV1TenantsIdPorteirosUserIdPutPath = '/api/v1/tenants/{id}/porteiros/{userId}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1TenantsIdPorteirosUserIdPut()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1TenantsIdPorteirosUserIdPut$Response(params: ApiV1TenantsIdPorteirosUserIdPut$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1TenantsIdPorteirosUserIdPut(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1TenantsIdPorteirosUserIdPut$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1TenantsIdPorteirosUserIdPut(params: ApiV1TenantsIdPorteirosUserIdPut$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1TenantsIdPorteirosUserIdPut$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1TenantsIdPorteirosUserIdDelete()` */
+  static readonly ApiV1TenantsIdPorteirosUserIdDeletePath = '/api/v1/tenants/{id}/porteiros/{userId}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1TenantsIdPorteirosUserIdDelete()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsIdPorteirosUserIdDelete$Response(params: ApiV1TenantsIdPorteirosUserIdDelete$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1TenantsIdPorteirosUserIdDelete(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1TenantsIdPorteirosUserIdDelete$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsIdPorteirosUserIdDelete(params: ApiV1TenantsIdPorteirosUserIdDelete$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1TenantsIdPorteirosUserIdDelete$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1TenantsIdPorteirosUserIdSuspendPost()` */
+  static readonly ApiV1TenantsIdPorteirosUserIdSuspendPostPath = '/api/v1/tenants/{id}/porteiros/{userId}/suspend';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1TenantsIdPorteirosUserIdSuspendPost()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsIdPorteirosUserIdSuspendPost$Response(params: ApiV1TenantsIdPorteirosUserIdSuspendPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1TenantsIdPorteirosUserIdSuspendPost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1TenantsIdPorteirosUserIdSuspendPost$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsIdPorteirosUserIdSuspendPost(params: ApiV1TenantsIdPorteirosUserIdSuspendPost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1TenantsIdPorteirosUserIdSuspendPost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1TenantsIdPorteirosUserIdResumePost()` */
+  static readonly ApiV1TenantsIdPorteirosUserIdResumePostPath = '/api/v1/tenants/{id}/porteiros/{userId}/resume';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1TenantsIdPorteirosUserIdResumePost()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsIdPorteirosUserIdResumePost$Response(params: ApiV1TenantsIdPorteirosUserIdResumePost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1TenantsIdPorteirosUserIdResumePost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1TenantsIdPorteirosUserIdResumePost$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsIdPorteirosUserIdResumePost(params: ApiV1TenantsIdPorteirosUserIdResumePost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1TenantsIdPorteirosUserIdResumePost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+}

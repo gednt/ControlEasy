@@ -129,6 +129,33 @@ public sealed class VisitEndpointTests
     }
 
     [Fact]
+    public async Task CreateVisit_WithCheckInNow_TwiceWithSameDocument_DeduplicatesToOneVisit()
+    {
+        var client = _factory.AsTenantA();
+        var apartmentId = await _factory.SeedApartmentForTenantAAsync();
+        var doc = "99887766554";
+        var request1 = new CreateVisitRequest("Walk-in Wanda", doc, null, apartmentId, "First Walk-in", CheckInNow: true);
+        var response1 = await client.PostAsJsonAsync("/api/v1/visits", request1);
+        response1.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body1 = await response1.Content.ReadFromJsonAsync<VisitResponse>();
+        body1.Should().NotBeNull();
+        body1!.Status.Should().Be("CheckedIn");
+
+        var request2 = new CreateVisitRequest("Walk-in Wanda 2", doc, null, apartmentId, "Second Walk-in", CheckInNow: true);
+        var response2 = await client.PostAsJsonAsync("/api/v1/visits", request2);
+        response2.StatusCode.Should().Be(HttpStatusCode.Created);
+        var body2 = await response2.Content.ReadFromJsonAsync<VisitResponse>();
+        body2.Should().NotBeNull();
+        body2!.Id.Should().Be(body1.Id);
+        body2.Status.Should().Be("CheckedIn");
+
+        var listResponse = await client.GetAsync("/api/v1/visits?take=100");
+        var visits = await listResponse.Content.ReadFromJsonAsync<List<VisitResponse>>();
+        visits.Should().NotBeNull();
+        visits!.Count(v => v.VisitorDocument == doc).Should().Be(1);
+    }
+
+    [Fact]
     public async Task CrossTenant_GetVisit_AsDifferentTenant_Returns404()
     {
         var clientA = _factory.AsTenantA();

@@ -1,0 +1,505 @@
+/* tslint:disable */
+/* eslint-disable */
+import { HttpClient, HttpContext } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+
+import { BaseService } from '../base-service';
+import { ApiConfiguration } from '../api-configuration';
+import { StrictHttpResponse } from '../strict-http-response';
+
+import { apiV1SecurityAttendantProfilesGet } from '../fn/security/api-v-1-security-attendant-profiles-get';
+import { ApiV1SecurityAttendantProfilesGet$Params } from '../fn/security/api-v-1-security-attendant-profiles-get';
+import { apiV1SecurityAttendantProfilesIdDeactivatePost } from '../fn/security/api-v-1-security-attendant-profiles-id-deactivate-post';
+import { ApiV1SecurityAttendantProfilesIdDeactivatePost$Params } from '../fn/security/api-v-1-security-attendant-profiles-id-deactivate-post';
+import { apiV1SecurityAttendantProfilesIdGet } from '../fn/security/api-v-1-security-attendant-profiles-id-get';
+import { ApiV1SecurityAttendantProfilesIdGet$Params } from '../fn/security/api-v-1-security-attendant-profiles-id-get';
+import { apiV1SecurityAttendantProfilesIdPut } from '../fn/security/api-v-1-security-attendant-profiles-id-put';
+import { ApiV1SecurityAttendantProfilesIdPut$Params } from '../fn/security/api-v-1-security-attendant-profiles-id-put';
+import { apiV1SecurityAttendantProfilesMeGet } from '../fn/security/api-v-1-security-attendant-profiles-me-get';
+import { ApiV1SecurityAttendantProfilesMeGet$Params } from '../fn/security/api-v-1-security-attendant-profiles-me-get';
+import { apiV1SecurityAttendantProfilesPost } from '../fn/security/api-v-1-security-attendant-profiles-post';
+import { ApiV1SecurityAttendantProfilesPost$Params } from '../fn/security/api-v-1-security-attendant-profiles-post';
+import { apiV1SecurityAuthChangePasswordPost } from '../fn/security/api-v-1-security-auth-change-password-post';
+import { ApiV1SecurityAuthChangePasswordPost$Params } from '../fn/security/api-v-1-security-auth-change-password-post';
+import { apiV1SecurityAuthLoginPost } from '../fn/security/api-v-1-security-auth-login-post';
+import { ApiV1SecurityAuthLoginPost$Params } from '../fn/security/api-v-1-security-auth-login-post';
+import { apiV1SecurityAuthRefreshPost } from '../fn/security/api-v-1-security-auth-refresh-post';
+import { ApiV1SecurityAuthRefreshPost$Params } from '../fn/security/api-v-1-security-auth-refresh-post';
+import { apiV1SecurityBootstrapGet } from '../fn/security/api-v-1-security-bootstrap-get';
+import { ApiV1SecurityBootstrapGet$Params } from '../fn/security/api-v-1-security-bootstrap-get';
+import { apiV1SecurityGatehousesGet } from '../fn/security/api-v-1-security-gatehouses-get';
+import { ApiV1SecurityGatehousesGet$Params } from '../fn/security/api-v-1-security-gatehouses-get';
+import { apiV1SecurityGatehousesPost } from '../fn/security/api-v-1-security-gatehouses-post';
+import { ApiV1SecurityGatehousesPost$Params } from '../fn/security/api-v-1-security-gatehouses-post';
+import { apiV1SecuritySessionGet } from '../fn/security/api-v-1-security-session-get';
+import { ApiV1SecuritySessionGet$Params } from '../fn/security/api-v-1-security-session-get';
+import { apiV1SecurityShiftsGet } from '../fn/security/api-v-1-security-shifts-get';
+import { ApiV1SecurityShiftsGet$Params } from '../fn/security/api-v-1-security-shifts-get';
+import { apiV1SecurityShiftsPost } from '../fn/security/api-v-1-security-shifts-post';
+import { ApiV1SecurityShiftsPost$Params } from '../fn/security/api-v-1-security-shifts-post';
+import { apiV1SecurityTenantsGet } from '../fn/security/api-v-1-security-tenants-get';
+import { ApiV1SecurityTenantsGet$Params } from '../fn/security/api-v-1-security-tenants-get';
+import { apiV1SecurityTenantSwitchPost } from '../fn/security/api-v-1-security-tenant-switch-post';
+import { ApiV1SecurityTenantSwitchPost$Params } from '../fn/security/api-v-1-security-tenant-switch-post';
+import { apiV1SecurityUsersPost } from '../fn/security/api-v-1-security-users-post';
+import { ApiV1SecurityUsersPost$Params } from '../fn/security/api-v-1-security-users-post';
+
+@Injectable({ providedIn: 'root' })
+export class SecurityService extends BaseService {
+  constructor(config: ApiConfiguration, http: HttpClient) {
+    super(config, http);
+  }
+
+  /** Path part for operation `apiV1SecurityBootstrapGet()` */
+  static readonly ApiV1SecurityBootstrapGetPath = '/api/v1/security/bootstrap';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecurityBootstrapGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecurityBootstrapGet$Response(params?: ApiV1SecurityBootstrapGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1SecurityBootstrapGet(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecurityBootstrapGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecurityBootstrapGet(params?: ApiV1SecurityBootstrapGet$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1SecurityBootstrapGet$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1SecurityAuthLoginPost()` */
+  static readonly ApiV1SecurityAuthLoginPostPath = '/api/v1/security/auth/login';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecurityAuthLoginPost()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityAuthLoginPost$Response(params: ApiV1SecurityAuthLoginPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1SecurityAuthLoginPost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecurityAuthLoginPost$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityAuthLoginPost(params: ApiV1SecurityAuthLoginPost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1SecurityAuthLoginPost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1SecurityAuthRefreshPost()` */
+  static readonly ApiV1SecurityAuthRefreshPostPath = '/api/v1/security/auth/refresh';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecurityAuthRefreshPost()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityAuthRefreshPost$Response(params: ApiV1SecurityAuthRefreshPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1SecurityAuthRefreshPost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecurityAuthRefreshPost$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityAuthRefreshPost(params: ApiV1SecurityAuthRefreshPost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1SecurityAuthRefreshPost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1SecurityAuthChangePasswordPost()` */
+  static readonly ApiV1SecurityAuthChangePasswordPostPath = '/api/v1/security/auth/change-password';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecurityAuthChangePasswordPost()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityAuthChangePasswordPost$Response(params: ApiV1SecurityAuthChangePasswordPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1SecurityAuthChangePasswordPost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecurityAuthChangePasswordPost$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityAuthChangePasswordPost(params: ApiV1SecurityAuthChangePasswordPost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1SecurityAuthChangePasswordPost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1SecurityTenantsGet()` */
+  static readonly ApiV1SecurityTenantsGetPath = '/api/v1/security/tenants';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecurityTenantsGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecurityTenantsGet$Response(params: ApiV1SecurityTenantsGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1SecurityTenantsGet(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecurityTenantsGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecurityTenantsGet(params: ApiV1SecurityTenantsGet$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1SecurityTenantsGet$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1SecurityUsersPost()` */
+  static readonly ApiV1SecurityUsersPostPath = '/api/v1/security/users';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecurityUsersPost()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityUsersPost$Response(params: ApiV1SecurityUsersPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1SecurityUsersPost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecurityUsersPost$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityUsersPost(params: ApiV1SecurityUsersPost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1SecurityUsersPost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1SecurityTenantSwitchPost()` */
+  static readonly ApiV1SecurityTenantSwitchPostPath = '/api/v1/security/tenant-switch';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecurityTenantSwitchPost()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityTenantSwitchPost$Response(params: ApiV1SecurityTenantSwitchPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1SecurityTenantSwitchPost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecurityTenantSwitchPost$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityTenantSwitchPost(params: ApiV1SecurityTenantSwitchPost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1SecurityTenantSwitchPost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1SecuritySessionGet()` */
+  static readonly ApiV1SecuritySessionGetPath = '/api/v1/security/session';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecuritySessionGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecuritySessionGet$Response(params?: ApiV1SecuritySessionGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1SecuritySessionGet(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecuritySessionGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecuritySessionGet(params?: ApiV1SecuritySessionGet$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1SecuritySessionGet$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1SecurityAttendantProfilesGet()` */
+  static readonly ApiV1SecurityAttendantProfilesGetPath = '/api/v1/security/attendant-profiles';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecurityAttendantProfilesGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecurityAttendantProfilesGet$Response(params?: ApiV1SecurityAttendantProfilesGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1SecurityAttendantProfilesGet(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecurityAttendantProfilesGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecurityAttendantProfilesGet(params?: ApiV1SecurityAttendantProfilesGet$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1SecurityAttendantProfilesGet$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1SecurityAttendantProfilesPost()` */
+  static readonly ApiV1SecurityAttendantProfilesPostPath = '/api/v1/security/attendant-profiles';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecurityAttendantProfilesPost()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityAttendantProfilesPost$Response(params: ApiV1SecurityAttendantProfilesPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1SecurityAttendantProfilesPost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecurityAttendantProfilesPost$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityAttendantProfilesPost(params: ApiV1SecurityAttendantProfilesPost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1SecurityAttendantProfilesPost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1SecurityAttendantProfilesMeGet()` */
+  static readonly ApiV1SecurityAttendantProfilesMeGetPath = '/api/v1/security/attendant-profiles/me';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecurityAttendantProfilesMeGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecurityAttendantProfilesMeGet$Response(params?: ApiV1SecurityAttendantProfilesMeGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1SecurityAttendantProfilesMeGet(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecurityAttendantProfilesMeGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecurityAttendantProfilesMeGet(params?: ApiV1SecurityAttendantProfilesMeGet$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1SecurityAttendantProfilesMeGet$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1SecurityAttendantProfilesIdGet()` */
+  static readonly ApiV1SecurityAttendantProfilesIdGetPath = '/api/v1/security/attendant-profiles/{id}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecurityAttendantProfilesIdGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecurityAttendantProfilesIdGet$Response(params: ApiV1SecurityAttendantProfilesIdGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1SecurityAttendantProfilesIdGet(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecurityAttendantProfilesIdGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecurityAttendantProfilesIdGet(params: ApiV1SecurityAttendantProfilesIdGet$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1SecurityAttendantProfilesIdGet$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1SecurityAttendantProfilesIdPut()` */
+  static readonly ApiV1SecurityAttendantProfilesIdPutPath = '/api/v1/security/attendant-profiles/{id}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecurityAttendantProfilesIdPut()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityAttendantProfilesIdPut$Response(params: ApiV1SecurityAttendantProfilesIdPut$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1SecurityAttendantProfilesIdPut(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecurityAttendantProfilesIdPut$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityAttendantProfilesIdPut(params: ApiV1SecurityAttendantProfilesIdPut$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1SecurityAttendantProfilesIdPut$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1SecurityAttendantProfilesIdDeactivatePost()` */
+  static readonly ApiV1SecurityAttendantProfilesIdDeactivatePostPath = '/api/v1/security/attendant-profiles/{id}/deactivate';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecurityAttendantProfilesIdDeactivatePost()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecurityAttendantProfilesIdDeactivatePost$Response(params: ApiV1SecurityAttendantProfilesIdDeactivatePost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1SecurityAttendantProfilesIdDeactivatePost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecurityAttendantProfilesIdDeactivatePost$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecurityAttendantProfilesIdDeactivatePost(params: ApiV1SecurityAttendantProfilesIdDeactivatePost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1SecurityAttendantProfilesIdDeactivatePost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1SecurityShiftsGet()` */
+  static readonly ApiV1SecurityShiftsGetPath = '/api/v1/security/shifts';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecurityShiftsGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecurityShiftsGet$Response(params?: ApiV1SecurityShiftsGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1SecurityShiftsGet(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecurityShiftsGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecurityShiftsGet(params?: ApiV1SecurityShiftsGet$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1SecurityShiftsGet$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1SecurityShiftsPost()` */
+  static readonly ApiV1SecurityShiftsPostPath = '/api/v1/security/shifts';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecurityShiftsPost()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityShiftsPost$Response(params: ApiV1SecurityShiftsPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1SecurityShiftsPost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecurityShiftsPost$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityShiftsPost(params: ApiV1SecurityShiftsPost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1SecurityShiftsPost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1SecurityGatehousesGet()` */
+  static readonly ApiV1SecurityGatehousesGetPath = '/api/v1/security/gatehouses';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecurityGatehousesGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecurityGatehousesGet$Response(params?: ApiV1SecurityGatehousesGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1SecurityGatehousesGet(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecurityGatehousesGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecurityGatehousesGet(params?: ApiV1SecurityGatehousesGet$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1SecurityGatehousesGet$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1SecurityGatehousesPost()` */
+  static readonly ApiV1SecurityGatehousesPostPath = '/api/v1/security/gatehouses';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecurityGatehousesPost()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityGatehousesPost$Response(params: ApiV1SecurityGatehousesPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1SecurityGatehousesPost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecurityGatehousesPost$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityGatehousesPost(params: ApiV1SecurityGatehousesPost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1SecurityGatehousesPost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+}

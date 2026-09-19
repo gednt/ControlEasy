@@ -378,6 +378,65 @@ public sealed class ReportEndpointTests
         rowsB!.Should().NotContain(r => r.SubjectName == "Tenant A Only");
     }
 
+    [Fact]
+    public async Task History_pending_visit_checked_in_today_shows_on_today_at_checkin_timestamp()
+    {
+        var tenant = Guid.NewGuid();
+        var block = "H" + Guid.NewGuid().ToString("N")[..6];
+        var unit = Guid.NewGuid().ToString("N")[..6];
+        var apt = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenant, block, unit);
+        var client = ForTenant(_factory, tenant);
+
+        // 1. Create a Pending visit
+        var createResponse = await client.PostAsJsonAsync("/api/v1/visits",
+            new CreateVisitRequest("Delayed Arrival Visitor", "77788899900", null, apt, "Meeting"));
+        createResponse.EnsureSuccessStatusCode();
+        var created = await createResponse.Content.ReadFromJsonAsync<VisitResponse>();
+        created.Should().NotBeNull();
+
+        // 2. Backdate its CreatedAtUtc to 2 days ago in the database
+        var pastUtc = DateTime.UtcNow.AddDays(-2);
+        await using (var conn = new MySqlConnection(_mySql.ConnectionString))
+        {
+            await conn.OpenAsync();
+            await using var cmd = new MySqlCommand(
+                "UPDATE Visits SET CreatedAtUtc = @past WHERE Id = @id", conn);
+            cmd.Parameters.AddWithValue("@past", pastUtc);
+            cmd.Parameters.AddWithValue("@id", created!.Id.ToString());
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        // 3. Check in the visit today
+        var checkInResponse = await client.PostAsync($"/api/v1/visits/{created.Id}/checkin", null);
+        checkInResponse.EnsureSuccessStatusCode();
+        var checkedIn = await checkInResponse.Content.ReadFromJsonAsync<VisitResponse>();
+        checkedIn.Should().NotBeNull();
+        checkedIn!.CheckedInAtUtc.Should().NotBeNull();
+
+        // 4. Query history for today's date range
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var historyResponse = await client.GetAsync($"/api/v1/reports/history?from={today:yyyy-MM-dd}&to={today:yyyy-MM-dd}");
+        historyResponse.EnsureSuccessStatusCode();
+
+        var rows = await historyResponse.Content.ReadFromJsonAsync<List<HistoryRowResponse>>();
+        rows.Should().NotBeNull();
+        var row = rows!.SingleOrDefault(r => r.Id == created.Id);
+        row.Should().NotBeNull();
+        row!.Kind.Should().Be("visit");
+        row.NativeState.Should().Be("CheckedIn");
+        row.Source.Should().Be("pre-registration");
+        // OccurredAt must reflect the check-in time (today), not CreatedAtUtc (2 days ago)
+        row.OccurredAt.Should().BeCloseTo(checkedIn.CheckedInAtUtc!.Value, TimeSpan.FromSeconds(5));
+
+        // 5. Query history for 2 days ago (creation day) — must NOT contain this visit since it checked in today
+        var pastDate = DateOnly.FromDateTime(pastUtc);
+        var pastHistoryResponse = await client.GetAsync($"/api/v1/reports/history?from={pastDate:yyyy-MM-dd}&to={pastDate:yyyy-MM-dd}");
+        pastHistoryResponse.EnsureSuccessStatusCode();
+        var pastRows = await pastHistoryResponse.Content.ReadFromJsonAsync<List<HistoryRowResponse>>();
+        pastRows.Should().NotBeNull();
+        pastRows!.Should().NotContain(r => r.Id == created.Id);
+    }
+
     private async Task SeedLegacyConsentRowAsync(Guid tenantId, string subjectName, DateTime recordedAtUtc)
     {
         await using var conn = new MySqlConnection(_mySql.ConnectionString);

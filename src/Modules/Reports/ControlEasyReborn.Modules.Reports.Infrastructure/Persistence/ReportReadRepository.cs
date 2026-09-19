@@ -243,7 +243,7 @@ public sealed class ReportReadRepository : IReportReadRepository
         // parameterized (@paramN); identifiers are compile-time constants.
         var pageOffset = (query.Page - 1) * query.PageSize;
 
-        var visitRange = BuildRangeClause("v.CreatedAtUtc", query.FromUtc, query.ToUtc, 1);
+        var visitRange = BuildRangeClause("COALESCE(v.CheckedInAtUtc, v.CreatedAtUtc)", query.FromUtc, query.ToUtc, 1);
         var eventRange = BuildRangeClause("ae.OccurredAtUtc", query.FromUtc, query.ToUtc, visitRange.ParamCount);
         var refusalRange = BuildRangeClause("rs.OccurredAtUtc", query.FromUtc, query.ToUtc, eventRange.ParamCount);
         var legacyRange = BuildRangeClause("ca.RecordedAt", query.FromUtc, query.ToUtc, refusalRange.ParamCount);
@@ -266,7 +266,7 @@ WITH ledger AS (
         CAST(NULL AS CHAR(500)) COLLATE utf8mb4_unicode_ci AS PackageDescription,
         CAST(NULL AS CHAR(64)) COLLATE utf8mb4_unicode_ci AS PackageCarrierCode,
         v.ApartmentId AS ApartmentId,
-        v.CreatedAtUtc AS OccurredAt
+        COALESCE(v.CheckedInAtUtc, v.CreatedAtUtc) AS OccurredAt
     FROM Visits v
     WHERE v.tenant_id = @param0 {visitRange.Sql}
 
@@ -394,7 +394,7 @@ FROM filtered";
         var db = _factory.Create(_ctx);
         var tenantId = query.TenantId;
 
-        var visitRange = BuildRangeClause("v.CreatedAtUtc", query.FromUtc, query.ToUtc, 1);
+        var visitRange = BuildRangeClause("COALESCE(v.CheckedInAtUtc, v.CreatedAtUtc)", query.FromUtc, query.ToUtc, 1);
         var eventRange = BuildRangeClause("ae.OccurredAtUtc", query.FromUtc, query.ToUtc, visitRange.ParamCount);
         var refusalRange = BuildRangeClause("rs.OccurredAtUtc", query.FromUtc, query.ToUtc, eventRange.ParamCount);
         var legacyRange = BuildRangeClause("ca.RecordedAt", query.FromUtc, query.ToUtc, refusalRange.ParamCount);

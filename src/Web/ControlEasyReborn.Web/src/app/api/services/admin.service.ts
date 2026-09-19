@@ -1,0 +1,46 @@
+/* tslint:disable */
+/* eslint-disable */
+import { HttpClient, HttpContext } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+
+import { BaseService } from '../base-service';
+import { ApiConfiguration } from '../api-configuration';
+import { StrictHttpResponse } from '../strict-http-response';
+
+import { apiV1AdminBackupsTenantIdPost } from '../fn/admin/api-v-1-admin-backups-tenant-id-post';
+import { ApiV1AdminBackupsTenantIdPost$Params } from '../fn/admin/api-v-1-admin-backups-tenant-id-post';
+
+@Injectable({ providedIn: 'root' })
+export class AdminService extends BaseService {
+  constructor(config: ApiConfiguration, http: HttpClient) {
+    super(config, http);
+  }
+
+  /** Path part for operation `apiV1AdminBackupsTenantIdPost()` */
+  static readonly ApiV1AdminBackupsTenantIdPostPath = '/api/v1/admin/backups/{tenantId}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1AdminBackupsTenantIdPost()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1AdminBackupsTenantIdPost$Response(params: ApiV1AdminBackupsTenantIdPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1AdminBackupsTenantIdPost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1AdminBackupsTenantIdPost$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1AdminBackupsTenantIdPost(params: ApiV1AdminBackupsTenantIdPost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1AdminBackupsTenantIdPost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+}

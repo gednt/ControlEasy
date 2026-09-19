@@ -12,15 +12,18 @@ public sealed class CreateVisitHandler
     private readonly IVisitRepository _visits;
     private readonly IApartmentRepository _apartments;
     private readonly IValidator<CreateVisitRequest> _validator;
+    private readonly VisitorArrivalHandler _arrivalHandler;
 
     public CreateVisitHandler(
         IVisitRepository visits,
         IApartmentRepository apartments,
-        IValidator<CreateVisitRequest> validator)
+        IValidator<CreateVisitRequest> validator,
+        VisitorArrivalHandler arrivalHandler)
     {
         _visits = visits;
         _apartments = apartments;
         _validator = validator;
+        _arrivalHandler = arrivalHandler;
     }
 
     public async Task<VisitResponse> HandleAsync(CreateVisitRequest request, Guid tenantId, Guid? attendantProfileId = null, Guid? gatehouseId = null, CancellationToken ct = default)
@@ -54,11 +57,27 @@ public sealed class CreateVisitHandler
             });
         }
 
-        // Walk-in (D-02/VISIT-02): CheckInNow lands the Visit directly CheckedIn —
-        // the person is physically present at the gate. AttendantProfileId and
-        // GatehouseId are stamped server-side from the JWT tenant context.
+        // Walk-in (D-02/VISIT-02): CheckInNow routes through the shared VisitorArrivalHandler
+        // so deduplication against already CheckedIn or Pending visits by document is enforced.
+        if (request.CheckInNow)
+        {
+            var arrivalResult = await _arrivalHandler.HandleAsync(new VisitorArrivalCommand(
+                TenantId: tenantId,
+                VisitorName: request.VisitorName,
+                VisitorDocument: request.VisitorDocument,
+                VisitorPhone: request.VisitorPhone,
+                DestinationApartmentId: apartment.Id,
+                DestinationBlock: apartment.Block,
+                DestinationUnit: apartment.Unit,
+                Purpose: request.Purpose,
+                AttendantProfileId: attendantProfileId,
+                GatehouseId: gatehouseId,
+                OccurredAtUtc: DateTime.UtcNow), ct);
+
+            return ToResponse(arrivalResult.Visit);
+        }
+
         var nowUtc = DateTime.UtcNow;
-        var checkInNow = request.CheckInNow;
         var visit = new Visit(
             id: Guid.NewGuid(),
             tenantId: tenantId,
@@ -69,10 +88,10 @@ public sealed class CreateVisitHandler
             destinationBlock: apartment.Block,
             destinationUnit: apartment.Unit,
             purpose: request.Purpose,
-            status: checkInNow ? VisitStatus.CheckedIn : VisitStatus.Pending,
-            attendantProfileId: checkInNow ? attendantProfileId : null,
-            gatehouseId: checkInNow ? gatehouseId : null,
-            checkedInAtUtc: checkInNow ? nowUtc : null,
+            status: VisitStatus.Pending,
+            attendantProfileId: null,
+            gatehouseId: null,
+            checkedInAtUtc: null,
             checkedOutAtUtc: null,
             createdAtUtc: nowUtc);
 

@@ -1,0 +1,127 @@
+/* tslint:disable */
+/* eslint-disable */
+import { HttpClient, HttpContext } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+
+import { BaseService } from '../base-service';
+import { ApiConfiguration } from '../api-configuration';
+import { StrictHttpResponse } from '../strict-http-response';
+
+import { apiV1PhotosGet } from '../fn/photos/api-v-1-photos-get';
+import { ApiV1PhotosGet$Params } from '../fn/photos/api-v-1-photos-get';
+import { apiV1PhotosIdDelete } from '../fn/photos/api-v-1-photos-id-delete';
+import { ApiV1PhotosIdDelete$Params } from '../fn/photos/api-v-1-photos-id-delete';
+import { apiV1PhotosIdGet } from '../fn/photos/api-v-1-photos-id-get';
+import { ApiV1PhotosIdGet$Params } from '../fn/photos/api-v-1-photos-id-get';
+import { apiV1PhotosPost } from '../fn/photos/api-v-1-photos-post';
+import { ApiV1PhotosPost$Params } from '../fn/photos/api-v-1-photos-post';
+
+@Injectable({ providedIn: 'root' })
+export class PhotosService extends BaseService {
+  constructor(config: ApiConfiguration, http: HttpClient) {
+    super(config, http);
+  }
+
+  /** Path part for operation `apiV1PhotosGet()` */
+  static readonly ApiV1PhotosGetPath = '/api/v1/photos';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1PhotosGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1PhotosGet$Response(params: ApiV1PhotosGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1PhotosGet(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1PhotosGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1PhotosGet(params: ApiV1PhotosGet$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1PhotosGet$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1PhotosPost()` */
+  static readonly ApiV1PhotosPostPath = '/api/v1/photos';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1PhotosPost()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1PhotosPost$Response(params?: ApiV1PhotosPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1PhotosPost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1PhotosPost$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1PhotosPost(params?: ApiV1PhotosPost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1PhotosPost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1PhotosIdGet()` */
+  static readonly ApiV1PhotosIdGetPath = '/api/v1/photos/{id}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1PhotosIdGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1PhotosIdGet$Response(params: ApiV1PhotosIdGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1PhotosIdGet(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1PhotosIdGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1PhotosIdGet(params: ApiV1PhotosIdGet$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1PhotosIdGet$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1PhotosIdDelete()` */
+  static readonly ApiV1PhotosIdDeletePath = '/api/v1/photos/{id}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1PhotosIdDelete()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1PhotosIdDelete$Response(params: ApiV1PhotosIdDelete$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1PhotosIdDelete(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1PhotosIdDelete$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1PhotosIdDelete(params: ApiV1PhotosIdDelete$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1PhotosIdDelete$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+}

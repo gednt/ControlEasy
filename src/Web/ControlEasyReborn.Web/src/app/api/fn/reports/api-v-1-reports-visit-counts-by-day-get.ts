@@ -7,13 +7,14 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
+import { VisitCountByDayResponse } from '../../models/visit-count-by-day-response';
 
 export interface ApiV1ReportsVisitCountsByDayGet$Params {
   from?: string;
   to?: string;
 }
 
-export function apiV1ReportsVisitCountsByDayGet(http: HttpClient, rootUrl: string, params?: ApiV1ReportsVisitCountsByDayGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+export function apiV1ReportsVisitCountsByDayGet(http: HttpClient, rootUrl: string, params?: ApiV1ReportsVisitCountsByDayGet$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<VisitCountByDayResponse>>> {
   const rb = new RequestBuilder(rootUrl, apiV1ReportsVisitCountsByDayGet.PATH, 'get');
   if (params) {
     rb.query('from', params.from, {});
@@ -21,11 +22,11 @@ export function apiV1ReportsVisitCountsByDayGet(http: HttpClient, rootUrl: strin
   }
 
   return http.request(
-    rb.build({ responseType: 'text', accept: '*/*', context })
+    rb.build({ responseType: 'json', accept: 'application/json', context })
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
+      return r as StrictHttpResponse<Array<VisitCountByDayResponse>>;
     })
   );
 }

@@ -1,0 +1,316 @@
+/* tslint:disable */
+/* eslint-disable */
+import { HttpClient, HttpContext } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+
+import { BaseService } from '../base-service';
+import { ApiConfiguration } from '../api-configuration';
+import { StrictHttpResponse } from '../strict-http-response';
+
+import { apiV1AdministrationAuditLogsEntityEntityIdGet } from '../fn/administration/api-v-1-administration-audit-logs-entity-entity-id-get';
+import { ApiV1AdministrationAuditLogsEntityEntityIdGet$Params } from '../fn/administration/api-v-1-administration-audit-logs-entity-entity-id-get';
+import { apiV1AdministrationAuditLogsGet } from '../fn/administration/api-v-1-administration-audit-logs-get';
+import { ApiV1AdministrationAuditLogsGet$Params } from '../fn/administration/api-v-1-administration-audit-logs-get';
+import { apiV1AdministrationAuditLogsIdGet } from '../fn/administration/api-v-1-administration-audit-logs-id-get';
+import { ApiV1AdministrationAuditLogsIdGet$Params } from '../fn/administration/api-v-1-administration-audit-logs-id-get';
+import { apiV1AdministrationAuditLogsPost } from '../fn/administration/api-v-1-administration-audit-logs-post';
+import { ApiV1AdministrationAuditLogsPost$Params } from '../fn/administration/api-v-1-administration-audit-logs-post';
+import { apiV1AdministrationConfigurationsGet } from '../fn/administration/api-v-1-administration-configurations-get';
+import { ApiV1AdministrationConfigurationsGet$Params } from '../fn/administration/api-v-1-administration-configurations-get';
+import { apiV1AdministrationConfigurationsIdGet } from '../fn/administration/api-v-1-administration-configurations-id-get';
+import { ApiV1AdministrationConfigurationsIdGet$Params } from '../fn/administration/api-v-1-administration-configurations-id-get';
+import { apiV1AdministrationConfigurationsIdPut } from '../fn/administration/api-v-1-administration-configurations-id-put';
+import { ApiV1AdministrationConfigurationsIdPut$Params } from '../fn/administration/api-v-1-administration-configurations-id-put';
+import { apiV1AdministrationConfigurationsKeyKeyGet } from '../fn/administration/api-v-1-administration-configurations-key-key-get';
+import { ApiV1AdministrationConfigurationsKeyKeyGet$Params } from '../fn/administration/api-v-1-administration-configurations-key-key-get';
+import { apiV1AdministrationConfigurationsPost } from '../fn/administration/api-v-1-administration-configurations-post';
+import { ApiV1AdministrationConfigurationsPost$Params } from '../fn/administration/api-v-1-administration-configurations-post';
+import { apiV1AdministrationSettingsGet } from '../fn/administration/api-v-1-administration-settings-get';
+import { ApiV1AdministrationSettingsGet$Params } from '../fn/administration/api-v-1-administration-settings-get';
+import { apiV1AdministrationSettingsPut } from '../fn/administration/api-v-1-administration-settings-put';
+import { ApiV1AdministrationSettingsPut$Params } from '../fn/administration/api-v-1-administration-settings-put';
+
+@Injectable({ providedIn: 'root' })
+export class AdministrationService extends BaseService {
+  constructor(config: ApiConfiguration, http: HttpClient) {
+    super(config, http);
+  }
+
+  /** Path part for operation `apiV1AdministrationSettingsGet()` */
+  static readonly ApiV1AdministrationSettingsGetPath = '/api/v1/administration/settings';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1AdministrationSettingsGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1AdministrationSettingsGet$Response(params?: ApiV1AdministrationSettingsGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1AdministrationSettingsGet(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1AdministrationSettingsGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1AdministrationSettingsGet(params?: ApiV1AdministrationSettingsGet$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1AdministrationSettingsGet$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1AdministrationSettingsPut()` */
+  static readonly ApiV1AdministrationSettingsPutPath = '/api/v1/administration/settings';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1AdministrationSettingsPut()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1AdministrationSettingsPut$Response(params: ApiV1AdministrationSettingsPut$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1AdministrationSettingsPut(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1AdministrationSettingsPut$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1AdministrationSettingsPut(params: ApiV1AdministrationSettingsPut$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1AdministrationSettingsPut$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1AdministrationAuditLogsGet()` */
+  static readonly ApiV1AdministrationAuditLogsGetPath = '/api/v1/administration/audit-logs';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1AdministrationAuditLogsGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1AdministrationAuditLogsGet$Response(params?: ApiV1AdministrationAuditLogsGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1AdministrationAuditLogsGet(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1AdministrationAuditLogsGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1AdministrationAuditLogsGet(params?: ApiV1AdministrationAuditLogsGet$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1AdministrationAuditLogsGet$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1AdministrationAuditLogsPost()` */
+  static readonly ApiV1AdministrationAuditLogsPostPath = '/api/v1/administration/audit-logs';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1AdministrationAuditLogsPost()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1AdministrationAuditLogsPost$Response(params: ApiV1AdministrationAuditLogsPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1AdministrationAuditLogsPost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1AdministrationAuditLogsPost$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1AdministrationAuditLogsPost(params: ApiV1AdministrationAuditLogsPost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1AdministrationAuditLogsPost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1AdministrationAuditLogsIdGet()` */
+  static readonly ApiV1AdministrationAuditLogsIdGetPath = '/api/v1/administration/audit-logs/{id}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1AdministrationAuditLogsIdGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1AdministrationAuditLogsIdGet$Response(params: ApiV1AdministrationAuditLogsIdGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1AdministrationAuditLogsIdGet(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1AdministrationAuditLogsIdGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1AdministrationAuditLogsIdGet(params: ApiV1AdministrationAuditLogsIdGet$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1AdministrationAuditLogsIdGet$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1AdministrationAuditLogsEntityEntityIdGet()` */
+  static readonly ApiV1AdministrationAuditLogsEntityEntityIdGetPath = '/api/v1/administration/audit-logs/entity/{entityId}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1AdministrationAuditLogsEntityEntityIdGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1AdministrationAuditLogsEntityEntityIdGet$Response(params: ApiV1AdministrationAuditLogsEntityEntityIdGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1AdministrationAuditLogsEntityEntityIdGet(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1AdministrationAuditLogsEntityEntityIdGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1AdministrationAuditLogsEntityEntityIdGet(params: ApiV1AdministrationAuditLogsEntityEntityIdGet$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1AdministrationAuditLogsEntityEntityIdGet$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1AdministrationConfigurationsGet()` */
+  static readonly ApiV1AdministrationConfigurationsGetPath = '/api/v1/administration/configurations';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1AdministrationConfigurationsGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1AdministrationConfigurationsGet$Response(params?: ApiV1AdministrationConfigurationsGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1AdministrationConfigurationsGet(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1AdministrationConfigurationsGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1AdministrationConfigurationsGet(params?: ApiV1AdministrationConfigurationsGet$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1AdministrationConfigurationsGet$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1AdministrationConfigurationsPost()` */
+  static readonly ApiV1AdministrationConfigurationsPostPath = '/api/v1/administration/configurations';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1AdministrationConfigurationsPost()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1AdministrationConfigurationsPost$Response(params: ApiV1AdministrationConfigurationsPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1AdministrationConfigurationsPost(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1AdministrationConfigurationsPost$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1AdministrationConfigurationsPost(params: ApiV1AdministrationConfigurationsPost$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1AdministrationConfigurationsPost$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1AdministrationConfigurationsIdGet()` */
+  static readonly ApiV1AdministrationConfigurationsIdGetPath = '/api/v1/administration/configurations/{id}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1AdministrationConfigurationsIdGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1AdministrationConfigurationsIdGet$Response(params: ApiV1AdministrationConfigurationsIdGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1AdministrationConfigurationsIdGet(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1AdministrationConfigurationsIdGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1AdministrationConfigurationsIdGet(params: ApiV1AdministrationConfigurationsIdGet$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1AdministrationConfigurationsIdGet$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1AdministrationConfigurationsIdPut()` */
+  static readonly ApiV1AdministrationConfigurationsIdPutPath = '/api/v1/administration/configurations/{id}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1AdministrationConfigurationsIdPut()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1AdministrationConfigurationsIdPut$Response(params: ApiV1AdministrationConfigurationsIdPut$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1AdministrationConfigurationsIdPut(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1AdministrationConfigurationsIdPut$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1AdministrationConfigurationsIdPut(params: ApiV1AdministrationConfigurationsIdPut$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1AdministrationConfigurationsIdPut$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1AdministrationConfigurationsKeyKeyGet()` */
+  static readonly ApiV1AdministrationConfigurationsKeyKeyGetPath = '/api/v1/administration/configurations/key/{key}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1AdministrationConfigurationsKeyKeyGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1AdministrationConfigurationsKeyKeyGet$Response(params: ApiV1AdministrationConfigurationsKeyKeyGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    return apiV1AdministrationConfigurationsKeyKeyGet(this.http, this.rootUrl, params, context);
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1AdministrationConfigurationsKeyKeyGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1AdministrationConfigurationsKeyKeyGet(params: ApiV1AdministrationConfigurationsKeyKeyGet$Params, context?: HttpContext): Observable<void> {
+    return this.apiV1AdministrationConfigurationsKeyKeyGet$Response(params, context).pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+}

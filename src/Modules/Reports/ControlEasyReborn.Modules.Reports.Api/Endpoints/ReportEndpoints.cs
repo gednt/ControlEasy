@@ -1,3 +1,4 @@
+using ControlEasyReborn.Modules.Reports.Application.Contracts;
 using ControlEasyReborn.Modules.Reports.Application.Handlers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -22,7 +23,8 @@ public static class ReportEndpoints
         {
             var response = await handler.HandleAsync(from, to, ct);
             return Results.Ok(response);
-        });
+        })
+        .Produces<IReadOnlyList<VisitCountByDayResponse>>(StatusCodes.Status200OK);
 
         group.MapGet("/history", async (
             [FromQuery] int? page,
@@ -46,7 +48,8 @@ public static class ReportEndpoints
                 status, carrierCode, q, apartmentId, ct);
             httpContext.Response.Headers["X-Total-Count"] = total.ToString();
             return Results.Ok(rows);
-        });
+        })
+        .Produces<IReadOnlyList<HistoryRowResponse>>(StatusCodes.Status200OK);
 
         group.MapGet("/residents-per-apartment", async (
             GetResidentsPerApartmentHandler handler,
@@ -54,7 +57,8 @@ public static class ReportEndpoints
         {
             var response = await handler.HandleAsync(ct);
             return Results.Ok(response);
-        });
+        })
+        .Produces<IReadOnlyList<ResidentsPerApartmentResponse>>(StatusCodes.Status200OK);
 
         return app;
     }
