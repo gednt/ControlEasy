@@ -24,6 +24,8 @@ import { apiV1SecurityAttendantProfilesPost } from '../fn/security/api-v-1-secur
 import { ApiV1SecurityAttendantProfilesPost$Params } from '../fn/security/api-v-1-security-attendant-profiles-post';
 import { apiV1SecurityAuthChangePasswordPost } from '../fn/security/api-v-1-security-auth-change-password-post';
 import { ApiV1SecurityAuthChangePasswordPost$Params } from '../fn/security/api-v-1-security-auth-change-password-post';
+import { apiV1SecurityAuthForgotPasswordPost } from '../fn/security/api-v-1-security-auth-forgot-password-post';
+import { ApiV1SecurityAuthForgotPasswordPost$Params } from '../fn/security/api-v-1-security-auth-forgot-password-post';
 import { apiV1SecurityAuthLoginPost } from '../fn/security/api-v-1-security-auth-login-post';
 import { ApiV1SecurityAuthLoginPost$Params } from '../fn/security/api-v-1-security-auth-login-post';
 import { apiV1SecurityAuthRefreshPost } from '../fn/security/api-v-1-security-auth-refresh-post';
@@ -46,6 +48,8 @@ import { apiV1SecurityTenantSwitchPost } from '../fn/security/api-v-1-security-t
 import { ApiV1SecurityTenantSwitchPost$Params } from '../fn/security/api-v-1-security-tenant-switch-post';
 import { apiV1SecurityUsersPost } from '../fn/security/api-v-1-security-users-post';
 import { ApiV1SecurityUsersPost$Params } from '../fn/security/api-v-1-security-users-post';
+import { apiV1SecurityUsersUserIdResetPasswordPost } from '../fn/security/api-v-1-security-users-user-id-reset-password-post';
+import { ApiV1SecurityUsersUserIdResetPasswordPost$Params } from '../fn/security/api-v-1-security-users-user-id-reset-password-post';
 
 @Injectable({ providedIn: 'root' })
 export class SecurityService extends BaseService {
@@ -102,6 +106,33 @@ export class SecurityService extends BaseService {
    */
   apiV1SecurityAuthLoginPost(params: ApiV1SecurityAuthLoginPost$Params, context?: HttpContext): Observable<void> {
     const resp = this.apiV1SecurityAuthLoginPost$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1SecurityAuthForgotPasswordPost()` */
+  static readonly ApiV1SecurityAuthForgotPasswordPostPath = '/api/v1/security/auth/forgot-password';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecurityAuthForgotPasswordPost()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityAuthForgotPasswordPost$Response(params: ApiV1SecurityAuthForgotPasswordPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = apiV1SecurityAuthForgotPasswordPost(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecurityAuthForgotPasswordPost$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityAuthForgotPasswordPost(params: ApiV1SecurityAuthForgotPasswordPost$Params, context?: HttpContext): Observable<void> {
+    const resp = this.apiV1SecurityAuthForgotPasswordPost$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<void>): void => r.body)
     );
@@ -210,6 +241,33 @@ export class SecurityService extends BaseService {
    */
   apiV1SecurityUsersPost(params: ApiV1SecurityUsersPost$Params, context?: HttpContext): Observable<void> {
     const resp = this.apiV1SecurityUsersPost$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1SecurityUsersUserIdResetPasswordPost()` */
+  static readonly ApiV1SecurityUsersUserIdResetPasswordPostPath = '/api/v1/security/users/{userId}/reset-password';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecurityUsersUserIdResetPasswordPost()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecurityUsersUserIdResetPasswordPost$Response(params: ApiV1SecurityUsersUserIdResetPasswordPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = apiV1SecurityUsersUserIdResetPasswordPost(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecurityUsersUserIdResetPasswordPost$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecurityUsersUserIdResetPasswordPost(params: ApiV1SecurityUsersUserIdResetPasswordPost$Params, context?: HttpContext): Observable<void> {
+    const resp = this.apiV1SecurityUsersUserIdResetPasswordPost$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<void>): void => r.body)
     );

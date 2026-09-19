@@ -99,6 +99,8 @@ export type { ApiV1SecurityBootstrapGet$Params as ApiV1SecurityBootstrapGet$Para
 export { apiV1SecurityBootstrapGet as apiV1SecurityBootstrapGet } from './fn/security/api-v-1-security-bootstrap-get';
 export type { ApiV1SecurityAuthLoginPost$Params as ApiV1SecurityAuthLoginPost$Params } from './fn/security/api-v-1-security-auth-login-post';
 export { apiV1SecurityAuthLoginPost as apiV1SecurityAuthLoginPost } from './fn/security/api-v-1-security-auth-login-post';
+export type { ApiV1SecurityAuthForgotPasswordPost$Params as ApiV1SecurityAuthForgotPasswordPost$Params } from './fn/security/api-v-1-security-auth-forgot-password-post';
+export { apiV1SecurityAuthForgotPasswordPost as apiV1SecurityAuthForgotPasswordPost } from './fn/security/api-v-1-security-auth-forgot-password-post';
 export type { ApiV1SecurityAuthRefreshPost$Params as ApiV1SecurityAuthRefreshPost$Params } from './fn/security/api-v-1-security-auth-refresh-post';
 export { apiV1SecurityAuthRefreshPost as apiV1SecurityAuthRefreshPost } from './fn/security/api-v-1-security-auth-refresh-post';
 export type { ApiV1SecurityAuthChangePasswordPost$Params as ApiV1SecurityAuthChangePasswordPost$Params } from './fn/security/api-v-1-security-auth-change-password-post';
@@ -107,6 +109,8 @@ export type { ApiV1SecurityTenantsGet$Params as ApiV1SecurityTenantsGet$Params }
 export { apiV1SecurityTenantsGet as apiV1SecurityTenantsGet } from './fn/security/api-v-1-security-tenants-get';
 export type { ApiV1SecurityUsersPost$Params as ApiV1SecurityUsersPost$Params } from './fn/security/api-v-1-security-users-post';
 export { apiV1SecurityUsersPost as apiV1SecurityUsersPost } from './fn/security/api-v-1-security-users-post';
+export type { ApiV1SecurityUsersUserIdResetPasswordPost$Params as ApiV1SecurityUsersUserIdResetPasswordPost$Params } from './fn/security/api-v-1-security-users-user-id-reset-password-post';
+export { apiV1SecurityUsersUserIdResetPasswordPost as apiV1SecurityUsersUserIdResetPasswordPost } from './fn/security/api-v-1-security-users-user-id-reset-password-post';
 export type { ApiV1SecurityTenantSwitchPost$Params as ApiV1SecurityTenantSwitchPost$Params } from './fn/security/api-v-1-security-tenant-switch-post';
 export { apiV1SecurityTenantSwitchPost as apiV1SecurityTenantSwitchPost } from './fn/security/api-v-1-security-tenant-switch-post';
 export type { ApiV1SecuritySessionGet$Params as ApiV1SecuritySessionGet$Params } from './fn/security/api-v-1-security-session-get';

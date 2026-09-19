@@ -27,6 +27,16 @@ public static class SecurityEndpoints
             return Results.Ok(response);
         }).AllowAnonymous();
 
+        group.MapPost("/auth/forgot-password", async (
+            [FromBody] ForgotPasswordRequest request,
+            ForgotPasswordHandler handler,
+            CancellationToken ct) =>
+        {
+            var response = await handler.HandleAsync(request, ct);
+            return Results.Ok(response);
+        }).AllowAnonymous()
+          .RequireRateLimiting("forgot-password");
+
         group.MapPost("/auth/refresh", async (
             [FromBody] RefreshRequest request,
             RefreshHandler handler,

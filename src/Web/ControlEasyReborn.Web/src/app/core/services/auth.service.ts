@@ -1,10 +1,10 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, of, throwError, switchMap, tap, catchError } from 'rxjs';
-import { SecurityApiService, LoginResponse, TenantLookupResponse } from './security-api.service';
+import { SecurityApiService, LoginResponse, TenantLookupResponse, ForgotPasswordResponse, ResetUserPasswordResponse } from './security-api.service';
 import { TenantSessionService } from './tenant-session.service';
 
-export type { LoginResponse, TenantLookupResponse } from './security-api.service';
+export type { LoginResponse, TenantLookupResponse, ForgotPasswordResponse, ResetUserPasswordResponse } from './security-api.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -110,6 +110,14 @@ export class AuthService {
 
   getPendingCurrentPassword(): string | null {
     return this.pendingCurrentPassword;
+  }
+
+  forgotPassword(email: string): Observable<ForgotPasswordResponse> {
+    return this.api.forgotPassword(email);
+  }
+
+  resetUserPassword(userId: string): Observable<ResetUserPasswordResponse> {
+    return this.api.resetUserPassword(userId);
   }
 
   refreshAuth(): Observable<string | null> {

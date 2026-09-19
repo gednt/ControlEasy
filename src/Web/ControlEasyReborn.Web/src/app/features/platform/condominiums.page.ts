@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, inject, signal } from '@angular/cor
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { TenantsApiService, TenantResponse, TenantAdminResponse, PorteiroResponse } from './tenants-api.service';
+import { AuthService } from '../../core/services/auth.service';
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
 
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/;
@@ -249,6 +250,11 @@ const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/;
                                           [disabled]="actingAdminId() === admin.userId">
                                     Revoke
                                   </button>
+                                  <button class="ce-button variant-ghost size-sm"
+                                          (click)="onResetUserPassword(admin.userId, admin.displayName || admin.email)"
+                                          [disabled]="resettingUserId() === admin.userId">
+                                    Reset pw
+                                  </button>
                                   <button class="ce-button variant-ghost size-sm danger-action"
                                           (click)="onDeleteAdmin(admin)"
                                           [disabled]="actingAdminId() === admin.userId">
@@ -358,6 +364,11 @@ const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/;
                                       Resume
                                     </button>
                                   }
+                                  <button class="ce-button variant-ghost size-sm"
+                                          (click)="onResetUserPassword(porteiro.userId, porteiro.displayName || porteiro.email)"
+                                          [disabled]="resettingUserId() === porteiro.userId">
+                                    Reset pw
+                                  </button>
                                   <button class="ce-button variant-ghost size-sm danger-action"
                                           (click)="onDeletePorteiro(porteiro)"
                                           [disabled]="actingPorteiroId() === porteiro.userId">
@@ -411,6 +422,34 @@ const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/;
           </div>
           <div class="ce-modal-footer">
             <button class="ce-button variant-ghost size-sm" (click)="closeManageModal()">Close</button>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (resetResultModalOpen()) {
+      <div class="ce-modal-backdrop" (click)="closeResetResultModal()">
+        <div class="ce-modal size-sm" role="dialog" aria-modal="true" aria-labelledby="reset-modal-title" (click)="$event.stopPropagation()">
+          <div class="ce-modal-header">
+            <h3 id="reset-modal-title" class="ce-modal-title">Password Reset</h3>
+            <button class="ce-modal-close" (click)="closeResetResultModal()" aria-label="Close">&#10005;</button>
+          </div>
+          <div class="ce-modal-body">
+            <p class="reset-modal-desc">
+              Temporary password for <strong>{{ resetResultUser() }}</strong>:
+            </p>
+            <div class="temp-password-box">
+              <code class="temp-password-text">{{ resetResultPassword() }}</code>
+              <button type="button" class="ce-button variant-ghost size-sm copy-btn" (click)="copyTempPassword()">
+                {{ passwordCopied() ? 'Copied!' : 'Copy' }}
+              </button>
+            </div>
+            <p class="reset-modal-notice text-secondary">
+              The user will be required to choose a new password upon sign-in. This password will not be shown again.
+            </p>
+          </div>
+          <div class="ce-modal-footer">
+            <button class="ce-button variant-primary size-sm" (click)="closeResetResultModal()">Done</button>
           </div>
         </div>
       </div>
@@ -514,13 +553,47 @@ const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/;
       .porteiro-form-grid { grid-template-columns: 1fr 1fr; }
       .porteiro-form-grid .ce-input-group:last-child { grid-column: 1 / -1; }
     }
+    .temp-password-box {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-3) var(--space-4);
+      margin: var(--space-3) 0;
+    }
+    .temp-password-text {
+      font-family: monospace;
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-bold);
+      color: var(--color-primary);
+      letter-spacing: 0.05em;
+    }
+    .reset-modal-desc {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      margin: 0;
+    }
+    .reset-modal-notice {
+      font-size: var(--font-size-xs);
+      line-height: 1.4;
+      margin-top: var(--space-2);
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CondominiumsPage {
   private readonly api = inject(TenantsApiService);
+  private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
+
+  resettingUserId = signal<string | null>(null);
+  resetResultModalOpen = signal(false);
+  resetResultUser = signal('');
+  resetResultPassword = signal('');
+  passwordCopied = signal(false);
 
   tenants = signal<TenantResponse[]>([]);
   loading = signal(true);
@@ -1000,5 +1073,43 @@ export class CondominiumsPage {
         this.pageError.set(getApiErrorMessage(err, 'Failed to resume condominium'));
       },
     });
+  }
+
+  onResetUserPassword(userId: string, userName: string): void {
+    if (!confirm(`Are you sure you want to reset the password for ${userName}? A new temporary password will be generated.`)) {
+      return;
+    }
+    this.resettingUserId.set(userId);
+    this.manageError.set(null);
+    this.authService.resetUserPassword(userId).subscribe({
+      next: (res) => {
+        this.resettingUserId.set(null);
+        this.resetResultUser.set(userName);
+        this.resetResultPassword.set(res.tempPassword);
+        this.passwordCopied.set(false);
+        this.resetResultModalOpen.set(true);
+      },
+      error: (err) => {
+        this.resettingUserId.set(null);
+        this.manageError.set(getApiErrorMessage(err, 'Failed to reset user password'));
+      },
+    });
+  }
+
+  copyTempPassword(): void {
+    const pwd = this.resetResultPassword();
+    if (pwd) {
+      navigator.clipboard.writeText(pwd).then(() => {
+        this.passwordCopied.set(true);
+        setTimeout(() => this.passwordCopied.set(false), 2000);
+      });
+    }
+  }
+
+  closeResetResultModal(): void {
+    this.resetResultModalOpen.set(false);
+    this.resetResultUser.set('');
+    this.resetResultPassword.set('');
+    this.passwordCopied.set(false);
   }
 }

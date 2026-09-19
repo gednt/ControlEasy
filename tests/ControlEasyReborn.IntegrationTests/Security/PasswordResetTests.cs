@@ -219,4 +219,68 @@ public sealed class PasswordResetTests
         var result = await cmd.ExecuteScalarAsync();
         return result is not null && result != DBNull.Value;
     }
+
+    [Fact]
+    public async Task ForgotPassword_WhenAdminUser_ReturnsUniformOkAndPersistsResetRequest()
+    {
+        var adminUserId = Guid.NewGuid();
+        var tenantId = TenantAwareWebApplicationFactory.TenantAId;
+        var email = $"forgot-admin-{adminUserId}@tenanta.test";
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+            var initialHash = passwordHasher.Hash("InitialAdminPass123!");
+            await SeedUserAsync(adminUserId, tenantId, email, initialHash, "TenantAdmin");
+            await SeedAttendantProfileAsync(Guid.NewGuid(), tenantId, adminUserId, "Forgot Admin");
+        }
+
+        var client = _factory.CreateClient();
+        var response = await client.PostAsJsonAsync("/api/v1/security/auth/forgot-password", new ForgotPasswordRequest(email));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<ForgotPasswordResponse>();
+        result.Should().NotBeNull();
+        result!.Message.Should().Be("If an account matches that email, instructions have been sent.");
+
+        // Verify PasswordResetRequests record exists
+        var connectionString = _mySql.ConnectionString;
+        await using var conn = new MySqlConnection(connectionString);
+        await conn.OpenAsync();
+        await using var cmd = new MySqlCommand(
+            "SELECT COUNT(*) FROM PasswordResetRequests WHERE NormalizedEmail = @email;", conn);
+        cmd.Parameters.AddWithValue("@email", email.ToUpperInvariant());
+        var count = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+        count.Should().BeGreaterThanOrEqualTo(1);
+    }
+
+    [Fact]
+    public async Task ForgotPassword_WhenUserNotFound_ReturnsIdenticalUniformOk()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.PostAsJsonAsync("/api/v1/security/auth/forgot-password", new ForgotPasswordRequest("doesnotexist@unknown.test"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var result = await response.Content.ReadFromJsonAsync<ForgotPasswordResponse>();
+        result.Should().NotBeNull();
+        result!.Message.Should().Be("If an account matches that email, instructions have been sent.");
+    }
+
+    [Fact]
+    public async Task ForgotPassword_WhenExceedingRateLimit_Returns429TooManyRequests()
+    {
+        var client = _factory.CreateClient();
+        var email = $"ratelimit-{Guid.NewGuid()}@flood.test";
+
+        // First 3 requests should pass (200 OK)
+        for (var i = 0; i < 3; i++)
+        {
+            var res = await client.PostAsJsonAsync("/api/v1/security/auth/forgot-password", new ForgotPasswordRequest(email));
+            res.StatusCode.Should().Be(HttpStatusCode.OK);
+        }
+
+        // 4th request exceeds the 3 requests per 15-minute window limit
+        var throttledRes = await client.PostAsJsonAsync("/api/v1/security/auth/forgot-password", new ForgotPasswordRequest(email));
+        throttledRes.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+    }
 }

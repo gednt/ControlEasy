@@ -17,6 +17,7 @@ export type { CreateTenantRequest } from './models/create-tenant-request';
 export type { CreateUserRequest } from './models/create-user-request';
 export type { CreateVehicleRequest } from './models/create-vehicle-request';
 export type { CreateVisitRequest } from './models/create-visit-request';
+export type { ForgotPasswordRequest } from './models/forgot-password-request';
 export type { HistoryRowResponse } from './models/history-row-response';
 export type { IssueCredentialRequest } from './models/issue-credential-request';
 export type { LoginRequest } from './models/login-request';

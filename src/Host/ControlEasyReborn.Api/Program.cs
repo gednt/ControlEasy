@@ -36,6 +36,8 @@ using ControlEasyReborn.Modules.Photos.Infrastructure.DI;
 using ControlEasyReborn.Modules.AccessControl.Api.Endpoints;
 using ControlEasyReborn.Modules.AccessControl.Infrastructure.DI;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 using Microsoft.FeatureManagement;
 using Serilog;
 
@@ -166,6 +168,36 @@ try
         });
     });
 
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        options.AddPolicy("forgot-password", httpContext =>
+        {
+            string partitionKey;
+            if (httpContext.Items.TryGetValue("ForgotPasswordEmail", out var val) && val is string email && !string.IsNullOrWhiteSpace(email))
+            {
+                partitionKey = email;
+            }
+            else if (httpContext.Request.Headers.TryGetValue("X-Reset-Email", out var headerEmail) && !string.IsNullOrWhiteSpace(headerEmail))
+            {
+                partitionKey = headerEmail.ToString().Trim().ToUpperInvariant();
+            }
+            else
+            {
+                partitionKey = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            }
+
+            return RateLimitPartition.GetFixedWindowLimiter(
+                partitionKey,
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 3,
+                    Window = TimeSpan.FromMinutes(15),
+                    QueueLimit = 0
+                });
+        });
+    });
+
     var app = builder.Build();
 
     if (app.Environment.IsDevelopment())
@@ -178,6 +210,34 @@ try
     app.UseSerilogRequestLogging();
 
     app.UseCors("AngularDev");
+
+    app.Use(async (context, next) =>
+    {
+        if (context.Request.Path.StartsWithSegments("/api/v1/security/auth/forgot-password", StringComparison.OrdinalIgnoreCase)
+            && HttpMethods.IsPost(context.Request.Method))
+        {
+            context.Request.EnableBuffering();
+            using var reader = new System.IO.StreamReader(context.Request.Body, System.Text.Encoding.UTF8, leaveOpen: true);
+            var body = await reader.ReadToEndAsync();
+            context.Request.Body.Position = 0;
+            try
+            {
+                using var doc = System.Text.Json.JsonDocument.Parse(body);
+                if (doc.RootElement.TryGetProperty("email", out var emailProp))
+                {
+                    var email = emailProp.GetString();
+                    if (!string.IsNullOrWhiteSpace(email))
+                    {
+                        context.Items["ForgotPasswordEmail"] = email.Trim().ToUpperInvariant();
+                    }
+                }
+            }
+            catch { }
+        }
+        await next();
+    });
+
+    app.UseRateLimiter();
 
     app.UseAuthentication();
     app.UseMiddleware<TenantResolutionMiddleware>();

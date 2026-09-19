@@ -53,3 +53,7 @@ public sealed record SessionResponse(
     IReadOnlyList<SessionTenantResponse> SwitchableTenants);
 
 public sealed record ResetUserPasswordResponse(Guid UserId, string TempPassword, bool MustChangePassword);
+
+public sealed record ForgotPasswordRequest(string Email);
+
+public sealed record ForgotPasswordResponse(string Message);
