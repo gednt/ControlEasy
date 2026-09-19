@@ -4,17 +4,17 @@ milestone: v2.1
 milestone_name: Integrated Visits & Account Operations (started 2026-09-19)
 current_phase: 18
 current_phase_name: Password Management
-status: ready
-stopped_at: Phase 17 verified complete — ready for Phase 18 planning.
-last_updated: "2026-09-19T18:40:00.000Z"
+status: complete
+stopped_at: Milestone v2.1 complete — Phase 18 verified with full local CI gate passing.
+last_updated: "2026-09-19T19:35:00.000Z"
 last_activity: 2026-09-19
-last_activity_desc: Phase 17 verified complete with full local CI gate passing; Phase 18 next
+last_activity_desc: Phase 18 verified complete with full local CI gate passing; Milestone v2.1 finished
 state_head: HEAD
 progress:
   total_phases: 3
-  completed_phases: 2
-  total_plans: 3
-  completed_plans: 3
+  completed_phases: 3
+  total_plans: 9
+  completed_plans: 9
 ---
 
 # Project State
@@ -24,32 +24,38 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-19)
 
 **Core value:** Gatehouse staff can reliably register and control access through a fast, tenant-isolated web UI.
-**Current focus:** Phase 18 — Password Management
+**Current focus:** Milestone v2.1 — Complete
 
 ## Current Position
 
-Phase: 18 (Password Management) — READY
-Plan: 0 of TBD
-Status: Phase 17 complete; Phase 18 ready
-Last activity: 2026-09-19 — Phase 17 verified complete with full local CI gate passing; Phase 18 next
+Phase: 18 (Password Management) — COMPLETE
+Plan: 3 of 3
+Status: Milestone v2.1 complete; all phases (16, 17, 18) verified green
+Last activity: 2026-09-19 — Phase 18 verified complete with full local CI gate passing
 
-Progress: [███████░░░] 67%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed (cumulative): 14 (11 v1.0 + 1 v1.1 + 3 v2.0)
-- v2.0 milestone: 3 plans, 3 summaries, 3 verifications, 1 audit, 26 atomic commits
-- Average duration per plan: ~5 min (autonomous execution)
+- Total plans completed (cumulative): 17 (11 v1.0 + 1 v1.1 + 3 v2.0 + 9 v2.1)
+- v2.1 milestone: 9 plans, 9 summaries, 3 verifications, full local CI verification passing
+- Average duration per plan: ~5-15 min (autonomous execution)
 
 **Per-Plan Metrics:**
 
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
-| Phase 16 P01 | 35 | 3 tasks | 16 files |
-| Phase 16 P02 | 25 | 2 tasks | 8 files |
-| Phase 16 P03 |  | 2 tasks | 26+ files |
+| Phase 16 P01 | 35 min | 3 tasks | 16 files |
+| Phase 16 P02 | 25 min | 2 tasks | 8 files |
+| Phase 16 P03 | 30 min | 2 tasks | 26+ files |
+| Phase 17 P01 | 20 min | 3 tasks | 7 files |
+| Phase 17 P02 | 15 min | 2 tasks | 3 files |
+| Phase 17 P03 | 25 min | 4 tasks | 7 files |
+| Phase 18 P01 | 25 min | 4 tasks | 16 files |
+| Phase 18 P02 | 25 min | 5 tasks | 12 files |
+| Phase 18 P03 | 30 min | 5 tasks | 22 files |
 
 ## Accumulated Context
 

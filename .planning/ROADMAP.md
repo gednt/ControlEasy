@@ -18,7 +18,7 @@
 
 - [x] **Phase 16: Visits Unification Backend** - Visitor QR scans and walk-ins land as Visit rows; entry-log re-scoped; unified ledger read model lands with the write-path fold (no double-counting window)
 - [x] **Phase 17: Gatehouse Panel + Reports Page** - Consolidated `/gatehouse` operator panel, `/reports` route fixing the dead dashboard link, ledger filtering/search, CSV export
-- [ ] **Phase 18: Password Management** - Enumeration-safe forgot-password for admins (SMTP temp password), scoped admin resets, durable delivery-state machinery
+- [x] **Phase 18: Password Management** - Enumeration-safe forgot-password for admins (SMTP temp password), scoped admin resets, durable delivery-state machinery
 
 ## Phase Details
 
@@ -81,13 +81,13 @@ Plans:
   4. Password hashing uses BCrypt with work factor explicitly pinned ≥ 11, and temp passwords are generated from an unambiguous charset (no 0/O/o, 1/l/I) via `RandomNumberGenerator.GetString` (PASS-05)
   5. In dev, emails land in Mailpit (SMTP 1025 / UI 8025 via docker-compose); demo mode sends nothing (no-op sender behind `Demo.DisableOutboundEmail`); SMTP config comes from environment variables through the `IEmailSender` abstraction (INFRA-01)
 
-**Plans**: 3 plans
+**Plans**: 3/3 plans executed
 
 Plans:
 
-- [ ] 18-01-PLAN.md — Infrastructure & Security Primitives (INFRA-01, PASS-05, PASS-04 schema)
-- [ ] 18-02-PLAN.md — Administrative Password Reset Endpoints & Token Revocation (PASS-02, PASS-03, PASS-04)
-- [ ] 18-03-PLAN.md — Self-Service Forgot Password & Frontend Flows (PASS-01, PASS-04)
+- [x] 18-01-PLAN.md — Infrastructure & Security Primitives (INFRA-01, PASS-05, PASS-04 schema)
+- [x] 18-02-PLAN.md — Administrative Password Reset Endpoints & Token Revocation (PASS-02, PASS-03, PASS-04)
+- [x] 18-03-PLAN.md — Self-Service Forgot Password & Frontend Flows (PASS-01, PASS-04)
 
 **UI hint**: yes
 
@@ -100,7 +100,7 @@ Phases 16 and 18 can start in parallel (18 has zero data dependency on 16); Phas
 |-------|----------------|--------|-----------|
 | 16. Visits Unification Backend | 3/3 | Complete | 2026-09-19 |
 | 17. Gatehouse Panel + Reports Page | 3/3 | Complete | 2026-09-19 |
-| 18. Password Management | 0/TBD | Not started | - |
+| 18. Password Management | 3/3 | Complete | 2026-09-19 |
 
 ## Future Milestones
 

@@ -26,15 +26,15 @@
 
 ### Password Management
 
-- [ ] **PASS-01**: Login-screen "Forgot my password" flow for admins (TenantAdmin, PlatformAdmin) — temporary password delivered via SMTP email; enumeration-safe (uniform response body + constant-cost decoy verify); rate-limited (named ASP.NET Core 8 policy partitioned on normalized email + durable per-account counter)
-- [ ] **PASS-02**: Platform admin can reset any user's password from the condominium management page — generates a one-time temp password, re-arms `MustChangePassword`, revokes the user's refresh tokens, audit-logged; cross-tenant attempts get 403 (not 404)
-- [ ] **PASS-03**: Tenant admin can reset their own gatekeepers' passwords — same temp-password + `MustChangePassword` + revocation semantics, scoped to own tenant
-- [ ] **PASS-04**: Delivery safety — hashed temp password + delivery state (Pending/Sent/Failed) persisted in the same transaction as the hash change; idempotent resend re-delivers the same temp password; temp passwords never logged (redaction arch test); accounts never locked out in response to reset floods
-- [ ] **PASS-05**: Password hashing uses BCrypt with work factor pinned explicitly ≥ 11; temp passwords generated via `RandomNumberGenerator.GetString` with an unambiguous charset (no 0/O/o, 1/l/I)
+- [x] **PASS-01**: Login-screen "Forgot my password" flow for admins (TenantAdmin, PlatformAdmin) — temporary password delivered via SMTP email; enumeration-safe (uniform response body + constant-cost decoy verify); rate-limited (named ASP.NET Core 8 policy partitioned on normalized email + durable per-account counter)
+- [x] **PASS-02**: Platform admin can reset any user's password from the condominium management page — generates a one-time temp password, re-arms `MustChangePassword`, revokes the user's refresh tokens, audit-logged; cross-tenant attempts get 403 (not 404)
+- [x] **PASS-03**: Tenant admin can reset their own gatekeepers' passwords — same temp-password + `MustChangePassword` + revocation semantics, scoped to own tenant
+- [x] **PASS-04**: Delivery safety — hashed temp password + delivery state (Pending/Sent/Failed) persisted in the same transaction as the hash change; idempotent resend re-delivers the same temp password; temp passwords never logged (redaction arch test); accounts never locked out in response to reset floods
+- [x] **PASS-05**: Password hashing uses BCrypt with work factor pinned explicitly ≥ 11; temp passwords generated via `RandomNumberGenerator.GetString` with an unambiguous charset (no 0/O/o, 1/l/I)
 
 ### Infrastructure
 
-- [ ] **INFRA-01**: `IEmailSender` abstraction + MailKit SMTP adapter; Mailpit dev catch-all service in docker-compose (SMTP 1025 / UI 8025); demo mode sends nothing (`Demo.DisableOutboundEmail` no-op sender); SMTP config via environment variables
+- [x] **INFRA-01**: `IEmailSender` abstraction + MailKit SMTP adapter; Mailpit dev catch-all service in docker-compose (SMTP 1025 / UI 8025); demo mode sends nothing (`Demo.DisableOutboundEmail` no-op sender); SMTP config via environment variables
 - [x] **INFRA-02**: `Visits(tenant_id, CreatedAtUtc)` index migration; tenant-local day-boundary helper shared by ledger and reports (no UTC-vs-local "today" bugs)
 
 ## Future Requirements (deferred)
@@ -74,10 +74,10 @@ Phase mapping per `.planning/ROADMAP.md` (v2.1 starts at Phase 16; Phases 14–1
 | PANEL-03 | Phase 17 | Complete |
 | PANEL-04 | Phase 17 | Complete |
 | PANEL-05 | Phase 17 | Complete |
-| PASS-01 | Phase 18 | Pending |
-| PASS-02 | Phase 18 | Pending |
-| PASS-03 | Phase 18 | Pending |
-| PASS-04 | Phase 18 | Pending |
-| PASS-05 | Phase 18 | Pending |
-| INFRA-01 | Phase 18 | Pending |
+| PASS-01 | Phase 18 | Complete |
+| PASS-02 | Phase 18 | Complete |
+| PASS-03 | Phase 18 | Complete |
+| PASS-04 | Phase 18 | Complete |
+| PASS-05 | Phase 18 | Complete |
+| INFRA-01 | Phase 18 | Complete |
 | INFRA-02 | Phase 16 | Complete |
