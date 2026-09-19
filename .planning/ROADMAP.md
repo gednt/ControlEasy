@@ -12,7 +12,7 @@
 
 **TBD** — awaiting decision on:
 - v1.1 Phase 9 completion (login/dashboard/showcase/visits/vehicles/etc. UI parity)
-- v2.1 Door Integration (gated on real hardware)
+- v2.2 Door Integration (gated on real hardware; renumbered from v2.1 on 2026-09-19 — v2.1 reassigned to the active milestone)
 - Multi-arch Docker/CI (fast-cycle)
 
 Run `/gsd-new-milestone` to define the next milestone.

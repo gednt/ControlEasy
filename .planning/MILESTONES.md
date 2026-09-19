@@ -73,7 +73,7 @@ All shims are documented inline and in each phase VERIFICATION.md. Future backen
 
 ---
 
-## v2.1 Door Integration — Optional (Defined: 2026-08-23)
+## v2.2 Door Integration — Optional (Defined: 2026-08-23; renumbered from v2.1 on 2026-09-19 — v2.1 reassigned to the Integrated Visits & Account Operations milestone)
 
 **Phases:** 14, 15
 **Status:** Defined (gated on real condominium with hardware)
