@@ -23,6 +23,12 @@ public sealed record VisitorArrivalCommand(
     DateTime OccurredAtUtc);
 
 /// <summary>
+/// The arrival outcome distinguishes an operational Visit mutation from an
+/// idempotent re-scan. Consumers retain the audit event for a no-op scan.
+/// </summary>
+public sealed record VisitorArrivalResult(Visit Visit, bool VisitMutated);
+
+/// <summary>
 /// Single source of truth for visitor dedupe and status transitions:
 /// (1) latest Visit by normalized document is CheckedIn → no-op, return it (idempotent re-arrival);
 /// (2) latest Visit is Pending → CheckIn on the existing row;
@@ -43,19 +49,19 @@ public sealed class VisitorArrivalHandler
         _visits = visits;
     }
 
-    public async Task<Visit> HandleAsync(VisitorArrivalCommand command, CancellationToken ct)
+    public async Task<VisitorArrivalResult> HandleAsync(VisitorArrivalCommand command, CancellationToken ct)
     {
         var latest = await _directory.FindLatestByDocumentAsync(command.TenantId, command.VisitorDocument, ct);
         if (latest is not null && latest.Status == VisitStatus.CheckedIn)
         {
-            return latest;
+            return new VisitorArrivalResult(latest, VisitMutated: false);
         }
 
         if (latest is not null && latest.Status == VisitStatus.Pending)
         {
             latest.CheckIn(command.AttendantProfileId ?? Guid.Empty, command.GatehouseId);
             await _visits.UpdateAsync(latest, ct);
-            return latest;
+            return new VisitorArrivalResult(latest, VisitMutated: true);
         }
 
         var created = new Visit(
@@ -76,6 +82,6 @@ public sealed class VisitorArrivalHandler
             createdAtUtc: command.OccurredAtUtc);
 
         await _visits.AddAsync(created, ct);
-        return created;
+        return new VisitorArrivalResult(created, VisitMutated: true);
     }
 }

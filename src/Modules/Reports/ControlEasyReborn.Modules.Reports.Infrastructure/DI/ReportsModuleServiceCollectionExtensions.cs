@@ -19,6 +19,7 @@ public static class ReportsModuleServiceCollectionExtensions
         services.AddScoped<GetVisitCountsByDayHandler>();
         services.AddScoped<GetResidentsPerApartmentHandler>();
         services.AddScoped<GetDashboardStatsHandler>();
+        services.AddScoped<GetHistoryHandler>();
 
         return services;
     }

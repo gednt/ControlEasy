@@ -104,6 +104,28 @@ public sealed class RecordManualAccessHandler
             });
         }
 
+        Guid? visitId = null;
+        if (command.SubjectType == SubjectType.Visitor && command.Direction == CycleDirection.Entrance && _visits is not null)
+        {
+            // Persist the operational Visit first and carry its id on the audit
+            // event. This makes ledger deduplication deterministic.
+            var visitorProfile = await _resolver.ResolveVisitorProfileAsync(command.TenantId, command.SubjectId, ct);
+            var arrival = new ControlEasyReborn.Modules.Visits.Application.Handlers.VisitorArrivalCommand(
+                TenantId: command.TenantId,
+                VisitorName: visitorProfile?.Name ?? "Visitor",
+                VisitorDocument: visitorProfile?.Document ?? string.Empty,
+                VisitorPhone: visitorProfile?.Phone,
+                DestinationApartmentId: destination.ApartmentId!.Value,
+                DestinationBlock: destination.Block,
+                DestinationUnit: destination.Unit,
+                Purpose: visitorProfile?.Purpose,
+                AttendantProfileId: command.PerformedByProfileId,
+                GatehouseId: command.GatehouseId,
+                OccurredAtUtc: nowUtc);
+            var arrivalResult = await _visits.RegisterArrivalAsync(arrival, ct);
+            visitId = arrivalResult.VisitMutated ? arrivalResult.Visit.Id : null;
+        }
+
         var accessEvent = AccessEvent.Record(
             tenantId: command.TenantId,
             subjectType: command.SubjectType,
@@ -122,31 +144,10 @@ public sealed class RecordManualAccessHandler
             policyOutcome: policyFinal,
             destinationApartmentId: destination.ApartmentId!.Value,
             destinationBlock: destination.Block,
-            destinationUnit: destination.Unit);
+            destinationUnit: destination.Unit,
+            visitId: visitId);
 
         await _events.AddAsync(accessEvent, ct);
-
-        if (command.SubjectType == SubjectType.Visitor && command.Direction == CycleDirection.Entrance && _visits is not null)
-        {
-            // Single check-in path (D-01/D-02): route the manual-lookup arrival
-            // through the shared VisitorArrivalHandler so QR and manual paths
-            // produce identical Visit rows. The visitor profile comes from the
-            // looked-up visit the audit points at.
-            var visitorProfile = await _resolver.ResolveVisitorProfileAsync(command.TenantId, command.SubjectId, ct);
-            var arrival = new ControlEasyReborn.Modules.Visits.Application.Handlers.VisitorArrivalCommand(
-                TenantId: command.TenantId,
-                VisitorName: visitorProfile?.Name ?? "Visitor",
-                VisitorDocument: visitorProfile?.Document ?? string.Empty,
-                VisitorPhone: visitorProfile?.Phone,
-                DestinationApartmentId: destination.ApartmentId!.Value,
-                DestinationBlock: destination.Block,
-                DestinationUnit: destination.Unit,
-                Purpose: visitorProfile?.Purpose,
-                AttendantProfileId: command.PerformedByProfileId,
-                GatehouseId: command.GatehouseId,
-                OccurredAtUtc: nowUtc);
-            await _visits.RegisterArrivalAsync(arrival, ct);
-        }
 
         stopwatch.Stop();
         using (AccessControlLogContext.PushDuration(stopwatch.ElapsedMilliseconds))

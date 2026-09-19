@@ -11,26 +11,23 @@ import { ReplaceCredentialRequest } from '../../models/replace-credential-reques
 
 export interface ApiV1AccessCredentialsIdReplacePost$Params {
   id: string;
-  body: ReplaceCredentialRequest;
+      body: ReplaceCredentialRequest
 }
 
-export function apiV1AccessCredentialsIdReplacePost(
-  http: HttpClient,
-  rootUrl: string,
-  params: ApiV1AccessCredentialsIdReplacePost$Params,
-  context?: HttpContext,
-): Observable<StrictHttpResponse<void>> {
+export function apiV1AccessCredentialsIdReplacePost(http: HttpClient, rootUrl: string, params: ApiV1AccessCredentialsIdReplacePost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1AccessCredentialsIdReplacePost.PATH, 'post');
   if (params) {
     rb.path('id', params.id, {});
     rb.body(params.body, 'application/json');
   }
 
-  return http.request(rb.build({ responseType: 'text', accept: '*/*', context })).pipe(
+  return http.request(
+    rb.build({ responseType: 'text', accept: '*/*', context })
+  ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
-    }),
+    })
   );
 }
 

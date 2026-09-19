@@ -11,26 +11,23 @@ import { UpdateConfigurationRequest } from '../../models/update-configuration-re
 
 export interface ApiV1AdministrationConfigurationsIdPut$Params {
   id: string;
-  body: UpdateConfigurationRequest;
+      body: UpdateConfigurationRequest
 }
 
-export function apiV1AdministrationConfigurationsIdPut(
-  http: HttpClient,
-  rootUrl: string,
-  params: ApiV1AdministrationConfigurationsIdPut$Params,
-  context?: HttpContext,
-): Observable<StrictHttpResponse<void>> {
+export function apiV1AdministrationConfigurationsIdPut(http: HttpClient, rootUrl: string, params: ApiV1AdministrationConfigurationsIdPut$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1AdministrationConfigurationsIdPut.PATH, 'put');
   if (params) {
     rb.path('id', params.id, {});
     rb.body(params.body, 'application/json');
   }
 
-  return http.request(rb.build({ responseType: 'text', accept: '*/*', context })).pipe(
+  return http.request(
+    rb.build({ responseType: 'text', accept: '*/*', context })
+  ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
-    }),
+    })
   );
 }
 

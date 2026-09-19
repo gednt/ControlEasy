@@ -15,5 +15,5 @@ public interface IVisitDirectory
     /// Registers a visitor arrival through the shared VisitorArrivalHandler —
     /// the single check-in path for QR scan, manual lookup, and walk-in arrivals.
     /// </summary>
-    Task<Visit> RegisterArrivalAsync(VisitorArrivalCommand command, CancellationToken ct);
+    Task<VisitorArrivalResult> RegisterArrivalAsync(VisitorArrivalCommand command, CancellationToken ct);
 }

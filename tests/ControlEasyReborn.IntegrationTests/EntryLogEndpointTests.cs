@@ -73,6 +73,23 @@ public sealed class EntryLogEndpointTests
     }
 
     [Fact]
+    public async Task Create_WhenGatehouseOnly_ReturnsBadRequest()
+    {
+        var client = _factory.AsTenantA();
+
+        var request = new CreateEntryLogRequest(
+            EntryState: "gatehouse_only",
+            SubjectType: "service_provider",
+            SubjectName: "Legacy Walk-in Probe",
+            SubjectDocument: "12345678901",
+            PhotoId: null,
+            OverrideReason: null);
+
+        var response = await client.PostAsJsonAsync("/api/v1/entry-log", request);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
     public async Task Create_WhenEnteredOverride_RequiresValidReason()
     {
         var client = _factory.AsTenantA();

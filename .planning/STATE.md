@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Integrated Visits & Account Operations (started 2026-09-19)
-current_phase: 16
-current_phase_name: Visits Unification Backend
-status: executing
-stopped_at: v2.1 roadmap created — Phases 16–18 defined with full requirement coverage (VISIT-01..07, PANEL-01..05, PASS-01..05, INFRA-01..02); REQUIREMENTS.md traceability updated; Phase 16 ready for `/gsd-discuss-phase 16`.
-last_updated: "2026-09-19T13:47:24.213Z"
+current_phase: 17
+current_phase_name: Gatehouse Panel + Reports Page
+status: planning
+stopped_at: Phase 16 complete — Phase 17 is ready for planning.
+last_updated: "2026-09-19T16:20:00.000Z"
 last_activity: 2026-09-19
-last_activity_desc: Phase 16 execution started
+last_activity_desc: Phase 16 unified ledger and consent-only entry-log completed
 state_head: 9533dae97b8875a1dca76ad3b976e73663847999
 progress:
   total_phases: 3
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 1
+  completed_plans: 3
 ---
 
 # Project State
@@ -24,16 +24,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-19)
 
 **Core value:** Gatehouse staff can reliably register and control access through a fast, tenant-isolated web UI.
-**Current focus:** Phase 16 — Visits Unification Backend
+**Current focus:** Phase 17 — Gatehouse Panel + Reports Page
 
 ## Current Position
 
-Phase: 16 (Visits Unification Backend) — EXECUTING
-Plan: 1 of 3
-Status: Executing Phase 16
-Last activity: 2026-09-19 — Phase 16 execution started
+Phase: 17 (Gatehouse Panel + Reports Page) — PLANNING
+Plan: 0 of TBD
+Status: Phase 16 complete; Phase 17 ready for planning
+Last activity: 2026-09-19 — Phase 16 unified ledger and consent-only entry-log completed
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
 
@@ -48,6 +48,8 @@ Progress: [░░░░░░░░░░] 0%
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 16 P01 | 35 | 3 tasks | 16 files |
+| Phase 16 P02 | 25 | 2 tasks | 8 files |
+| Phase 16 P03 |  | 2 tasks | 26+ files |
 
 ## Accumulated Context
 

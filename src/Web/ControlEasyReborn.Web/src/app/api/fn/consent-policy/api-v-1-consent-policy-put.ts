@@ -10,25 +10,22 @@ import { RequestBuilder } from '../../request-builder';
 import { UpdateConsentPolicyRequest } from '../../models/update-consent-policy-request';
 
 export interface ApiV1ConsentPolicyPut$Params {
-  body: UpdateConsentPolicyRequest;
+      body: UpdateConsentPolicyRequest
 }
 
-export function apiV1ConsentPolicyPut(
-  http: HttpClient,
-  rootUrl: string,
-  params: ApiV1ConsentPolicyPut$Params,
-  context?: HttpContext,
-): Observable<StrictHttpResponse<void>> {
+export function apiV1ConsentPolicyPut(http: HttpClient, rootUrl: string, params: ApiV1ConsentPolicyPut$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1ConsentPolicyPut.PATH, 'put');
   if (params) {
     rb.body(params.body, 'application/json');
   }
 
-  return http.request(rb.build({ responseType: 'text', accept: '*/*', context })).pipe(
+  return http.request(
+    rb.build({ responseType: 'text', accept: '*/*', context })
+  ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
-    }),
+    })
   );
 }
 

@@ -157,6 +157,8 @@ public sealed class RecordManualAccessHandlerTests
             .Returns(AccessLookupAudit.Hydrate(lookupAuditId, _tenantId, LookupCriterionType.Cpf, ResultCountBand.One, SubjectType.Visitor, visitId, _profileId, DateTime.UtcNow, Guid.NewGuid()));
         _visits.FindByIdAsync(_tenantId, visitId, Arg.Any<CancellationToken>())
             .Returns(visit);
+        _visits.RegisterArrivalAsync(Arg.Any<ControlEasyReborn.Modules.Visits.Application.Handlers.VisitorArrivalCommand>(), Arg.Any<CancellationToken>())
+            .Returns(new ControlEasyReborn.Modules.Visits.Application.Handlers.VisitorArrivalResult(visit, VisitMutated: true));
         _policy.EvaluateAsync("visitor", visitId, "manual", Arg.Any<CancellationToken>())
             .Returns(ConsentOutcome.Permitted);
 

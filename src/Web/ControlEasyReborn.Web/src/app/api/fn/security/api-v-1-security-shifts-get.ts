@@ -7,23 +7,22 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-export interface ApiV1SecurityShiftsGet$Params {}
 
-export function apiV1SecurityShiftsGet(
-  http: HttpClient,
-  rootUrl: string,
-  params?: ApiV1SecurityShiftsGet$Params,
-  context?: HttpContext,
-): Observable<StrictHttpResponse<void>> {
+export interface ApiV1SecurityShiftsGet$Params {
+}
+
+export function apiV1SecurityShiftsGet(http: HttpClient, rootUrl: string, params?: ApiV1SecurityShiftsGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1SecurityShiftsGet.PATH, 'get');
   if (params) {
   }
 
-  return http.request(rb.build({ responseType: 'text', accept: '*/*', context })).pipe(
+  return http.request(
+    rb.build({ responseType: 'text', accept: '*/*', context })
+  ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
-    }),
+    })
   );
 }
 

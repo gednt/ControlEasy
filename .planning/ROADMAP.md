@@ -16,7 +16,7 @@
 
 🚧 **v2.1 — Integrated Visits & Account Operations**
 
-- [ ] **Phase 16: Visits Unification Backend** - Visitor QR scans and walk-ins land as Visit rows; entry-log re-scoped; unified ledger read model lands with the write-path fold (no double-counting window)
+- [x] **Phase 16: Visits Unification Backend** - Visitor QR scans and walk-ins land as Visit rows; entry-log re-scoped; unified ledger read model lands with the write-path fold (no double-counting window)
 - [ ] **Phase 17: Gatehouse Panel + Reports Page** - Consolidated `/gatehouse` operator panel, `/reports` route fixing the dead dashboard link, ledger filtering/search, CSV export
 - [ ] **Phase 18: Password Management** - Enumeration-safe forgot-password for admins (SMTP temp password), scoped admin resets, durable delivery-state machinery
 
@@ -94,7 +94,7 @@ Phases 16 and 18 can start in parallel (18 has zero data dependency on 16); Phas
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 16. Visits Unification Backend | 2/3 | In Progress|  |
+| 16. Visits Unification Backend | 3/3 | Complete | 2026-09-19 |
 | 17. Gatehouse Panel + Reports Page | 0/TBD | Not started | - |
 | 18. Password Management | 0/TBD | Not started | - |
 

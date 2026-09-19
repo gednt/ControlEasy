@@ -151,29 +151,12 @@ public sealed class EntryLogHandlersTests
     }
 
     [Fact]
-    public async Task CreateEntry_WhenGatehouseOnlyForServiceProvider_SucceedsWithoutPhoto()
+    public async Task CreateEntry_WhenGatehouseOnly_ThrowsValidationException()
     {
         var request = new CreateEntryLogRequest(
-            EntryState: EntryStates.GatehouseOnly,
+            EntryState: "gatehouse_only",
             SubjectType: SubjectCategories.ServiceProvider,
             SubjectName: "Delivery",
-            SubjectDocument: "999",
-            PhotoId: null,
-            OverrideReason: null);
-
-        var response = await _createHandler.HandleAsync(request, _tenantId, _profileId, CancellationToken.None);
-
-        response.Should().NotBeNull();
-        response.EntryState.Should().Be(EntryStates.GatehouseOnly);
-    }
-
-    [Fact]
-    public async Task CreateEntry_WhenGatehouseOnlyForNonServiceProvider_ThrowsValidationException()
-    {
-        var request = new CreateEntryLogRequest(
-            EntryState: EntryStates.GatehouseOnly,
-            SubjectType: SubjectCategories.Visitor,
-            SubjectName: "Visitor",
             SubjectDocument: "999",
             PhotoId: null,
             OverrideReason: null);
@@ -181,7 +164,7 @@ public sealed class EntryLogHandlersTests
         var act = () => _createHandler.HandleAsync(request, _tenantId, _profileId, CancellationToken.None);
 
         await act.Should().ThrowAsync<ValidationException>()
-            .Where(ex => ex.Errors.ContainsKey("SubjectType"));
+            .Where(ex => ex.Errors.ContainsKey("EntryState"));
     }
 
     [Theory]
@@ -269,7 +252,7 @@ public sealed class EntryLogHandlersTests
         var entry = new ConsentAuditLogEntry(
             id: Guid.NewGuid(),
             tenantId: _tenantId,
-            entryState: EntryStates.GatehouseOnly,
+            entryState: EntryStates.EnteredWithoutConsent,
             overrideReason: null,
             photoId: null,
             subjectType: SubjectCategories.ServiceProvider,
@@ -278,10 +261,10 @@ public sealed class EntryLogHandlersTests
             performedByProfileId: _profileId,
             recordedAt: DateTime.UtcNow);
 
-        _auditLogRepo.ListAsync(EntryStates.GatehouseOnly, null, null, null, 0, 10, Arg.Any<CancellationToken>())
+        _auditLogRepo.ListAsync(EntryStates.EnteredWithoutConsent, null, null, null, 0, 10, Arg.Any<CancellationToken>())
             .Returns(new[] { entry });
 
-        var results = await _listHandler.HandleAsync(EntryStates.GatehouseOnly, null, null, null, 0, 10, CancellationToken.None);
+        var results = await _listHandler.HandleAsync(EntryStates.EnteredWithoutConsent, null, null, null, 0, 10, CancellationToken.None);
 
         results.Should().ContainSingle();
         results[0].Id.Should().Be(entry.Id);

@@ -11,26 +11,23 @@ import { UpdateServiceProviderRequest } from '../../models/update-service-provid
 
 export interface ApiV1ServiceProvidersIdPut$Params {
   id: string;
-  body: UpdateServiceProviderRequest;
+      body: UpdateServiceProviderRequest
 }
 
-export function apiV1ServiceProvidersIdPut(
-  http: HttpClient,
-  rootUrl: string,
-  params: ApiV1ServiceProvidersIdPut$Params,
-  context?: HttpContext,
-): Observable<StrictHttpResponse<void>> {
+export function apiV1ServiceProvidersIdPut(http: HttpClient, rootUrl: string, params: ApiV1ServiceProvidersIdPut$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1ServiceProvidersIdPut.PATH, 'put');
   if (params) {
     rb.path('id', params.id, {});
     rb.body(params.body, 'application/json');
   }
 
-  return http.request(rb.build({ responseType: 'text', accept: '*/*', context })).pipe(
+  return http.request(
+    rb.build({ responseType: 'text', accept: '*/*', context })
+  ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
-    }),
+    })
   );
 }
 

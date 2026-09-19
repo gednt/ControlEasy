@@ -4,7 +4,10 @@
 export interface RecordManualAccessRequest {
   direction?: string | null;
   gatehouseId?: string | null;
+  kind?: string | null;
   lookupAuditId?: string;
+  packageCarrierCode?: string | null;
+  packageDescription?: string | null;
   subjectId?: string;
   subjectType?: string | null;
 }

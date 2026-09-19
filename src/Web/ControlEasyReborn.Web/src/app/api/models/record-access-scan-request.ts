@@ -7,4 +7,6 @@ export interface RecordAccessScanRequest {
   gatehouseId?: string | null;
   qrPayload?: string | null;
   scanAttemptId?: string;
+  visitorDocument?: string | null;
+  visitorName?: string | null;
 }

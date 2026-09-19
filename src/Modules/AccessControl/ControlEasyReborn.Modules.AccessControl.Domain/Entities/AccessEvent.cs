@@ -26,6 +26,7 @@ public sealed class AccessEvent
     public AccessEventKind EventKind { get; private set; }
     public string? PackageDescription { get; private set; }
     public string? PackageCarrierCode { get; private set; }
+    public Guid? VisitId { get; private set; }
 
     private AccessEvent() { }
 
@@ -51,7 +52,8 @@ public sealed class AccessEvent
         string destinationUnit,
         AccessEventKind eventKind = AccessEventKind.Access,
         string? packageDescription = null,
-        string? packageCarrierCode = null)
+        string? packageCarrierCode = null,
+        Guid? visitId = null)
     {
         if (destinationApartmentId == Guid.Empty && eventKind != AccessEventKind.PackageDrop)
             throw new InvalidOperationException("Destination apartment is required.");
@@ -89,6 +91,7 @@ public sealed class AccessEvent
         EventKind = eventKind;
         PackageDescription = packageDescription;
         PackageCarrierCode = packageCarrierCode;
+        VisitId = visitId;
     }
 
     public static AccessEvent Record(
@@ -112,7 +115,8 @@ public sealed class AccessEvent
         string destinationUnit,
         AccessEventKind eventKind = AccessEventKind.Access,
         string? packageDescription = null,
-        string? packageCarrierCode = null)
+        string? packageCarrierCode = null,
+        Guid? visitId = null)
     {
         return new AccessEvent(
             id: Guid.NewGuid(),
@@ -136,7 +140,8 @@ public sealed class AccessEvent
             destinationUnit: destinationUnit,
             eventKind: eventKind,
             packageDescription: packageDescription,
-            packageCarrierCode: packageCarrierCode);
+            packageCarrierCode: packageCarrierCode,
+            visitId: visitId);
     }
 
     public static AccessEvent Hydrate(
@@ -161,7 +166,8 @@ public sealed class AccessEvent
         string destinationUnit,
         AccessEventKind eventKind = AccessEventKind.Access,
         string? packageDescription = null,
-        string? packageCarrierCode = null)
+        string? packageCarrierCode = null,
+        Guid? visitId = null)
     {
         return new AccessEvent(
             id: id,
@@ -185,6 +191,7 @@ public sealed class AccessEvent
             destinationUnit: destinationUnit,
             eventKind: eventKind,
             packageDescription: packageDescription,
-            packageCarrierCode: packageCarrierCode);
+            packageCarrierCode: packageCarrierCode,
+            visitId: visitId);
     }
 }

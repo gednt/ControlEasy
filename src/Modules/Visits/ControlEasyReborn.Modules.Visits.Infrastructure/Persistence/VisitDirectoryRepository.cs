@@ -94,7 +94,7 @@ public sealed class VisitDirectoryRepository : IVisitDirectory
         return true;
     }
 
-    public async Task<Visit> RegisterArrivalAsync(Application.Handlers.VisitorArrivalCommand command, CancellationToken ct)
+    public async Task<Application.Handlers.VisitorArrivalResult> RegisterArrivalAsync(Application.Handlers.VisitorArrivalCommand command, CancellationToken ct)
     {
         var handler = new Application.Handlers.VisitorArrivalHandler(this, _visits);
         return await handler.HandleAsync(command, ct);

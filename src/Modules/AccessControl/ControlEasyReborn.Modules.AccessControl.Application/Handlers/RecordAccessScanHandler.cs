@@ -171,6 +171,29 @@ public sealed class RecordAccessScanHandler
             return refusal;
         }
 
+        Guid? visitId = null;
+        if (credential.SubjectType == SubjectType.Visitor && command.Direction == CycleDirection.Entrance && _visits is not null)
+        {
+            // The durable VisitId link is the ledger's double-count guard. Create
+            // or advance the single operational Visit before persisting its audit
+            // AccessEvent, so concurrent same-timestamp arrivals cannot hide one
+            // another through a timestamp-only heuristic.
+            var arrival = new ControlEasyReborn.Modules.Visits.Application.Handlers.VisitorArrivalCommand(
+                TenantId: command.TenantId,
+                VisitorName: command.VisitorName ?? "Visitor",
+                VisitorDocument: command.VisitorDocument ?? string.Empty,
+                VisitorPhone: null,
+                DestinationApartmentId: destination.ApartmentId!.Value,
+                DestinationBlock: destination.Block,
+                DestinationUnit: destination.Unit,
+                Purpose: null,
+                AttendantProfileId: command.PerformedByProfileId,
+                GatehouseId: command.GatehouseId,
+                OccurredAtUtc: nowUtc);
+            var arrivalResult = await _visits.RegisterArrivalAsync(arrival, ct);
+            visitId = arrivalResult.VisitMutated ? arrivalResult.Visit.Id : null;
+        }
+
         var accessEvent = AccessEvent.Record(
             tenantId: command.TenantId,
             subjectType: credential.SubjectType,
@@ -189,31 +212,10 @@ public sealed class RecordAccessScanHandler
             policyOutcome: policyFinal,
             destinationApartmentId: destination.ApartmentId!.Value,
             destinationBlock: destination.Block,
-            destinationUnit: destination.Unit);
+            destinationUnit: destination.Unit,
+            visitId: visitId);
 
         await _events.AddAsync(accessEvent, ct);
-
-        if (credential.SubjectType == SubjectType.Visitor && command.Direction == CycleDirection.Entrance && _visits is not null)
-        {
-            // Single check-in path (D-01): route the arrival through the shared
-            // VisitorArrivalHandler instead of calling CheckInAsync directly.
-            // Destination comes from the already-resolved destination snapshot
-            // (ACCESS-05 semantics preserved); profile fields come from the
-            // gatehouse-supplied scan payload (credential alone carries no name).
-            var arrival = new ControlEasyReborn.Modules.Visits.Application.Handlers.VisitorArrivalCommand(
-                TenantId: command.TenantId,
-                VisitorName: command.VisitorName ?? "Visitor",
-                VisitorDocument: command.VisitorDocument ?? string.Empty,
-                VisitorPhone: null,
-                DestinationApartmentId: destination.ApartmentId!.Value,
-                DestinationBlock: destination.Block,
-                DestinationUnit: destination.Unit,
-                Purpose: null,
-                AttendantProfileId: command.PerformedByProfileId,
-                GatehouseId: command.GatehouseId,
-                OccurredAtUtc: nowUtc);
-            await _visits.RegisterArrivalAsync(arrival, ct);
-        }
 
         var accepted = new ScanDecisionResult(
             Decision: ScanDecisionKind.Recorded,

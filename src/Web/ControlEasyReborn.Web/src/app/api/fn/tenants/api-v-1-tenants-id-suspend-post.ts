@@ -11,26 +11,23 @@ import { SuspendTenantRequest } from '../../models/suspend-tenant-request';
 
 export interface ApiV1TenantsIdSuspendPost$Params {
   id: string;
-  body?: SuspendTenantRequest;
+      body?: SuspendTenantRequest
 }
 
-export function apiV1TenantsIdSuspendPost(
-  http: HttpClient,
-  rootUrl: string,
-  params: ApiV1TenantsIdSuspendPost$Params,
-  context?: HttpContext,
-): Observable<StrictHttpResponse<void>> {
+export function apiV1TenantsIdSuspendPost(http: HttpClient, rootUrl: string, params: ApiV1TenantsIdSuspendPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1TenantsIdSuspendPost.PATH, 'post');
   if (params) {
     rb.path('id', params.id, {});
     rb.body(params.body, 'application/json');
   }
 
-  return http.request(rb.build({ responseType: 'text', accept: '*/*', context })).pipe(
+  return http.request(
+    rb.build({ responseType: 'text', accept: '*/*', context })
+  ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
-    }),
+    })
   );
 }
 

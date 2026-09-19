@@ -107,10 +107,11 @@ public sealed class VisitorScanVisitUnificationTests
         var factory = NewFactory();
         var client = QrScanTestClient.ForTenant(factory, tenantId);
 
+        var firstScanAttemptId = Guid.NewGuid();
         var first = new RecordAccessScanRequest(
             QrPayload: issued.Token,
             Direction: "entrance",
-            ScanAttemptId: Guid.NewGuid(),
+            ScanAttemptId: firstScanAttemptId,
             GatehouseId: null,
             ConfirmDuplicate: false,
             VisitorName: visitorName,
@@ -120,10 +121,11 @@ public sealed class VisitorScanVisitUnificationTests
 
         // Re-scan by the same visitor while their latest Visit is still CheckedIn:
         // no second Visit row is created (idempotent), but a new AccessEvent is recorded.
+        var secondScanAttemptId = Guid.NewGuid();
         var second = new RecordAccessScanRequest(
             QrPayload: issued.Token,
             Direction: "entrance",
-            ScanAttemptId: Guid.NewGuid(),
+            ScanAttemptId: secondScanAttemptId,
             GatehouseId: null,
             ConfirmDuplicate: false,
             VisitorName: visitorName,
@@ -135,6 +137,10 @@ public sealed class VisitorScanVisitUnificationTests
         visitCount.Should().Be(1, "re-scan while CheckedIn must be a no-op for Visits");
         var eventCount = await CountAccessEventsForVisitorAsync(tenantId, visitorSubjectId);
         eventCount.Should().Be(2, "each scan attempt still records its own AccessEvent");
+        (await CountAccessEventsWithVisitLinkAsync(tenantId, firstScanAttemptId)).Should().Be(1,
+            "the scan that created the Visit must link its duplicate audit context");
+        (await CountAccessEventsWithVisitLinkAsync(tenantId, secondScanAttemptId)).Should().Be(0,
+            "a no-op re-scan remains a standalone audit event in the ledger");
         _ = apartmentId;
     }
 
@@ -216,6 +222,17 @@ public sealed class VisitorScanVisitUnificationTests
             "SELECT COUNT(*) FROM AccessEvents WHERE tenant_id = @tid AND SubjectId = @sid", conn);
         cmd.Parameters.AddWithValue("@tid", tenantId.ToString());
         cmd.Parameters.AddWithValue("@sid", subjectId.ToString());
+        return Convert.ToInt32(await cmd.ExecuteScalarAsync());
+    }
+
+    private async Task<int> CountAccessEventsWithVisitLinkAsync(Guid tenantId, Guid scanAttemptId)
+    {
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        await using var cmd = new MySqlCommand(
+            "SELECT COUNT(*) FROM AccessEvents WHERE tenant_id = @tid AND ScanAttemptId = @sa AND VisitId IS NOT NULL", conn);
+        cmd.Parameters.AddWithValue("@tid", tenantId.ToString());
+        cmd.Parameters.AddWithValue("@sa", scanAttemptId.ToString());
         return Convert.ToInt32(await cmd.ExecuteScalarAsync());
     }
 

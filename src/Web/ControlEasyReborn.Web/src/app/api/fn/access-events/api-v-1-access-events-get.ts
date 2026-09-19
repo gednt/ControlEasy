@@ -7,6 +7,7 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
+
 export interface ApiV1AccessEventsGet$Params {
   fromUtc?: string;
   toUtc?: string;
@@ -20,12 +21,7 @@ export interface ApiV1AccessEventsGet$Params {
   take?: number;
 }
 
-export function apiV1AccessEventsGet(
-  http: HttpClient,
-  rootUrl: string,
-  params?: ApiV1AccessEventsGet$Params,
-  context?: HttpContext,
-): Observable<StrictHttpResponse<void>> {
+export function apiV1AccessEventsGet(http: HttpClient, rootUrl: string, params?: ApiV1AccessEventsGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1AccessEventsGet.PATH, 'get');
   if (params) {
     rb.query('fromUtc', params.fromUtc, {});
@@ -40,11 +36,13 @@ export function apiV1AccessEventsGet(
     rb.query('take', params.take, {});
   }
 
-  return http.request(rb.build({ responseType: 'text', accept: '*/*', context })).pipe(
+  return http.request(
+    rb.build({ responseType: 'text', accept: '*/*', context })
+  ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
-    }),
+    })
   );
 }
 

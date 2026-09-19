@@ -83,6 +83,8 @@ export type { ApiV1PhotosIdDelete$Params as ApiV1PhotosIdDelete$Params } from '.
 export { apiV1PhotosIdDelete as apiV1PhotosIdDelete } from './fn/photos/api-v-1-photos-id-delete';
 export type { ApiV1ReportsVisitCountsByDayGet$Params as ApiV1ReportsVisitCountsByDayGet$Params } from './fn/reports/api-v-1-reports-visit-counts-by-day-get';
 export { apiV1ReportsVisitCountsByDayGet as apiV1ReportsVisitCountsByDayGet } from './fn/reports/api-v-1-reports-visit-counts-by-day-get';
+export type { ApiV1ReportsHistoryGet$Params as ApiV1ReportsHistoryGet$Params } from './fn/reports/api-v-1-reports-history-get';
+export { apiV1ReportsHistoryGet as apiV1ReportsHistoryGet } from './fn/reports/api-v-1-reports-history-get';
 export type { ApiV1ReportsResidentsPerApartmentGet$Params as ApiV1ReportsResidentsPerApartmentGet$Params } from './fn/reports/api-v-1-reports-residents-per-apartment-get';
 export { apiV1ReportsResidentsPerApartmentGet as apiV1ReportsResidentsPerApartmentGet } from './fn/reports/api-v-1-reports-residents-per-apartment-get';
 export type { ApiV1ResidentsGet$Params as ApiV1ResidentsGet$Params } from './fn/residents/api-v-1-residents-get';
