@@ -37,6 +37,7 @@ decisions:
 metrics:
   completed: 2026-09-19
 status: complete
+commit: 18c9a77
 ---
 
 # Phase 16 Plan 03: Unified Ledger and Consent-only Entry Log Summary
