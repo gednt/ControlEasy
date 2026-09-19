@@ -27,8 +27,10 @@ public static class SecurityModuleServiceCollectionExtensions
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<ITempPasswordGenerator, TempPasswordGenerator>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.AddScoped<IPasswordResetRequestRepository, PasswordResetRequestRepository>();
 
         services.AddScoped<LoginHandler>();
+        services.AddScoped<ResetUserPasswordHandler>();
         services.AddScoped<RefreshHandler>();
         services.AddScoped<ChangePasswordHandler>();
         services.AddScoped<CreateUserHandler>();

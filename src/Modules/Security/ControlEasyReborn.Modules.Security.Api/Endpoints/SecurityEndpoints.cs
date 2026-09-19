@@ -63,6 +63,15 @@ public static class SecurityEndpoints
             return Results.Created($"/api/v1/security/users/{user.Id}", new { user.Id, user.Email, user.DisplayName, user.Roles });
         }).RequireAuthorization(PlatformAdminRequirement.PolicyName);
 
+        group.MapPost("/users/{userId:guid}/reset-password", async (
+            Guid userId,
+            ResetUserPasswordHandler handler,
+            CancellationToken ct) =>
+        {
+            var response = await handler.HandleAsync(userId, ct);
+            return Results.Ok(response);
+        }).RequireAuthorization();
+
         var attendantGroup = group.MapGroup("/attendant-profiles")
             .RequireAuthorization();
 

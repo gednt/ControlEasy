@@ -24,3 +24,8 @@ public sealed class UnauthorizedException : Exception
 {
     public UnauthorizedException(string message) : base(message) { }
 }
+
+public sealed class ForbiddenException : Exception
+{
+    public ForbiddenException(string message = "Forbidden") : base(message) { }
+}

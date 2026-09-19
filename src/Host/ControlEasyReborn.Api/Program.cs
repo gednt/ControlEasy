@@ -235,6 +235,7 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
             ControlEasyReborn.Modules.Security.Application.Errors.ConflictException => (StatusCodes.Status409Conflict, "Conflict"),
             ControlEasyReborn.Modules.Security.Application.Errors.ValidationException => (StatusCodes.Status400BadRequest, "Validation failed"),
             ControlEasyReborn.Modules.Security.Application.Errors.UnauthorizedException => (StatusCodes.Status401Unauthorized, "Unauthorized"),
+            ControlEasyReborn.Modules.Security.Application.Errors.ForbiddenException => (StatusCodes.Status403Forbidden, "Forbidden"),
             ControlEasyReborn.Modules.ServiceProviders.Application.Errors.NotFoundException => (StatusCodes.Status404NotFound, "Not found"),
             ControlEasyReborn.Modules.ServiceProviders.Application.Errors.ConflictException => (StatusCodes.Status409Conflict, "Conflict"),
             ControlEasyReborn.Modules.ServiceProviders.Application.Errors.ValidationException => (StatusCodes.Status400BadRequest, "Validation failed"),
