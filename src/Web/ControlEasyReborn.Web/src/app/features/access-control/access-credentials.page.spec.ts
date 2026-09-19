@@ -4,6 +4,9 @@ import { provideHttpClientTesting, HttpTestingController } from '@angular/common
 import { AccessCredentialsPage } from './access-credentials.page';
 import { GatewayControlService } from './gateway-control.service';
 import { AuthService } from '../../core/services/auth.service';
+import { ApartmentsApiService } from '../apartments/apartments-api.service';
+import { ResidentsApiService } from '../residents/residents-api.service';
+import { VehiclesApiService } from '../vehicles/vehicles-api.service';
 
 describe('AccessCredentialsPage', () => {
   let fixture: ComponentFixture<AccessCredentialsPage>;
@@ -21,6 +24,9 @@ describe('AccessCredentialsPage', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         GatewayControlService,
+        ApartmentsApiService,
+        ResidentsApiService,
+        VehiclesApiService,
         { provide: AuthService, useValue: authServiceMock },
       ],
     }).compileComponents();
@@ -34,36 +40,58 @@ describe('AccessCredentialsPage', () => {
     httpMock.verify();
   });
 
-  it('renders credentials heading and loads credentials list', () => {
+  function flushInitialRequests(
+    credentials: any[] = [],
+    apartments: any[] = [],
+    residents: any[] = [],
+    vehicles: any[] = []
+  ): void {
+    const credReq = httpMock.expectOne('/api/v1/access-credentials');
+    expect(credReq.request.method).toBe('GET');
+    credReq.flush(credentials);
+
+    const aptReq = httpMock.expectOne((req) => req.url.includes('/api/v1/apartments'));
+    aptReq.flush(apartments);
+
+    const resReq = httpMock.expectOne('/api/v1/residents');
+    resReq.flush(residents);
+
+    const vehReq = httpMock.expectOne((req) => req.url.includes('/api/v1/vehicles'));
+    vehReq.flush(vehicles);
+  }
+
+  it('renders credentials heading and loads credentials list with resolved owner and apartment', () => {
     fixture.detectChanges();
 
-    const req = httpMock.expectOne('/api/v1/access-credentials');
-    expect(req.request.method).toBe('GET');
-    req.flush([
-      {
-        id: '00000000-0000-0000-0000-000000000001',
-        subjectType: 'visitor',
-        subjectId: '00000000-0000-0000-0000-0000000000aa',
-        method: 'qr',
-        status: 'active',
-        validFromUtc: '2026-09-18T12:00:00Z',
-        expiresAtUtc: '2026-09-19T12:00:00Z',
-        createdAtUtc: '2026-09-18T12:00:00Z',
-      },
-    ]);
+    flushInitialRequests(
+      [
+        {
+          id: '00000000-0000-0000-0000-000000000001',
+          subjectType: 'resident',
+          subjectId: '00000000-0000-0000-0000-0000000000aa',
+          method: 'qr',
+          status: 'active',
+          validFromUtc: '2026-09-18T12:00:00Z',
+          expiresAtUtc: '2026-09-19T12:00:00Z',
+          createdAtUtc: '2026-09-18T12:00:00Z',
+        },
+      ],
+      [{ id: 'apt-1', block: '1', unit: '51', active: true }],
+      [{ id: '00000000-0000-0000-0000-0000000000aa', name: 'Felipe Silva', apartmentId: 'apt-1', active: true }],
+      []
+    );
 
     fixture.detectChanges();
     const html = (fixture.nativeElement as HTMLElement).innerHTML;
     expect(html).toContain('Access credentials');
-    expect(html).toContain('Visitor');
+    expect(html).toContain('Felipe Silva');
+    expect(html).toContain('Block 1, Unit 51');
     expect(html).toContain('active');
   });
 
   it('issues a credential and opens QR pass modal with returned token', () => {
     fixture.detectChanges();
-
-    const initialReq = httpMock.expectOne('/api/v1/access-credentials');
-    initialReq.flush([]);
+    flushInitialRequests();
     fixture.detectChanges();
 
     component.openIssueModal({
@@ -87,7 +115,7 @@ describe('AccessCredentialsPage', () => {
       oneTimeDisplay: true,
     });
 
-    // It reloads credentials
+    // Reloads credentials after issuing
     const reloadReq = httpMock.expectOne('/api/v1/access-credentials');
     reloadReq.flush([]);
 
@@ -98,8 +126,7 @@ describe('AccessCredentialsPage', () => {
 
   it('pre-fills subjectId with a valid random UUID when opened without prefill', () => {
     fixture.detectChanges();
-    const initialReq = httpMock.expectOne('/api/v1/access-credentials');
-    initialReq.flush([]);
+    flushInitialRequests();
 
     component.openIssueModal();
     fixture.detectChanges();
@@ -111,8 +138,7 @@ describe('AccessCredentialsPage', () => {
 
   it('generates a new random UUID when regenerateSubjectId is called', () => {
     fixture.detectChanges();
-    const initialReq = httpMock.expectOne('/api/v1/access-credentials');
-    initialReq.flush([]);
+    flushInitialRequests();
 
     component.openIssueModal();
     const firstUuid = component.issueForm.get('subjectId')?.value;
@@ -125,24 +151,140 @@ describe('AccessCredentialsPage', () => {
     expect(secondUuid).not.toBe(firstUuid);
   });
 
-  it('loads residents and selects a resident when subjectType is resident', () => {
+  it('selects a resident and explicitly displays their apartment in the summary card', () => {
     fixture.detectChanges();
-    const initialReq = httpMock.expectOne('/api/v1/access-credentials');
-    initialReq.flush([]);
+    flushInitialRequests(
+      [],
+      [{ id: 'apt-1', block: '1', unit: '51', active: true }],
+      [
+        { id: '00000000-0000-0000-0000-000000000011', name: 'Felipe Silva', apartmentId: 'apt-1', active: true },
+        { id: '00000000-0000-0000-0000-000000000022', name: 'Maria Souza', apartmentId: null, active: true },
+      ],
+      []
+    );
 
     component.openIssueModal({
       subjectType: 'resident',
       subjectId: '00000000-0000-0000-0000-000000000011',
     });
-    const residentsReq = httpMock.expectOne('/api/v1/residents');
-    expect(residentsReq.request.method).toBe('GET');
-    residentsReq.flush([
-      { id: '00000000-0000-0000-0000-000000000011', name: 'Felipe Silva' },
-      { id: '00000000-0000-0000-0000-000000000022', name: 'Maria Souza' },
-    ]);
     fixture.detectChanges();
 
     expect(component.residents().length).toBe(2);
     expect(component.selectedResidentId()).toBe('00000000-0000-0000-0000-000000000011');
+    expect(component.selectedResident()?.name).toBe('Felipe Silva');
+    expect(component.residentApartmentLabel()).toBe('Block 1, Unit 51');
+
+    const html = (fixture.nativeElement as HTMLElement).innerHTML;
+    expect(html).toContain('Felipe Silva');
+    expect(html).toContain('Block 1, Unit 51');
+  });
+
+  it('selects a vehicle and explicitly displays vehicle details, owner, and apartment', () => {
+    fixture.detectChanges();
+    flushInitialRequests(
+      [],
+      [{ id: 'apt-1', block: '2', unit: '102', active: true }],
+      [{ id: 'res-1', name: 'Joao Resident', apartmentId: 'apt-1', active: true }],
+      [
+        {
+          id: 'veh-1',
+          plate: 'ABC1D23',
+          brand: 'Toyota',
+          model: 'Corolla',
+          color: 'Silver',
+          apartmentId: 'apt-1',
+          ownerName: 'Joao Resident',
+          ownerResidentId: 'res-1',
+          active: true,
+        },
+      ]
+    );
+
+    component.openIssueModal({
+      subjectType: 'vehicle',
+      subjectId: 'veh-1',
+    });
+    fixture.detectChanges();
+
+    expect(component.vehicleMode()).toBe('select');
+    expect(component.selectedVehicleId()).toBe('veh-1');
+    expect(component.selectedVehicle()?.plate).toBe('ABC1D23');
+    expect(component.vehicleApartmentLabel()).toBe('Block 2, Unit 102');
+    expect(component.vehicleOwnerDisplay()).toBe('Joao Resident');
+
+    const html = (fixture.nativeElement as HTMLElement).innerHTML;
+    expect(html).toContain('ABC1D23');
+    expect(html).toContain('Block 2, Unit 102');
+    expect(html).toContain('Joao Resident');
+  });
+
+  it('registers a new vehicle inline and issues vehicle credential with owner and apartment', () => {
+    fixture.detectChanges();
+    flushInitialRequests(
+      [],
+      [{ id: 'apt-1', block: '1', unit: '51', active: true }],
+      [{ id: 'res-1', name: 'Felipe Silva', apartmentId: 'apt-1', active: true }],
+      []
+    );
+
+    component.openIssueModal();
+    component.setSubjectType('vehicle');
+    expect(component.vehicleMode()).toBe('new');
+
+    component.newVehicleForm.patchValue({
+      plate: 'BRA2E19',
+      brand: 'Honda',
+      model: 'Civic',
+      color: 'Black',
+      ownerResidentId: 'res-1',
+      ownerName: 'Felipe Silva',
+      apartmentId: 'apt-1',
+    });
+    fixture.detectChanges();
+
+    component.submitIssue();
+
+    // 1. Vehicle creation request
+    const createVehReq = httpMock.expectOne('/api/v1/vehicles');
+    expect(createVehReq.request.method).toBe('POST');
+    expect(createVehReq.request.body).toEqual({
+      plate: 'BRA2E19',
+      brand: 'Honda',
+      model: 'Civic',
+      color: 'Black',
+      apartmentId: 'apt-1',
+      ownerName: 'Felipe Silva',
+      vehicleType: 'car',
+    });
+    createVehReq.flush({
+      id: 'veh-new-99',
+      plate: 'BRA2E19',
+      brand: 'Honda',
+      model: 'Civic',
+      color: 'Black',
+      apartmentId: 'apt-1',
+      ownerName: 'Felipe Silva',
+      active: true,
+    });
+
+    // 2. Issue credential request for the new vehicle ID
+    const issueReq = httpMock.expectOne('/api/v1/access-credentials');
+    expect(issueReq.request.method).toBe('POST');
+    expect(issueReq.request.body.subjectType).toBe('vehicle');
+    expect(issueReq.request.body.subjectId).toBe('veh-new-99');
+    issueReq.flush({
+      id: 'cred-new-99',
+      qrPayload: 'veh-qr-payload-token-12345',
+      oneTimeDisplay: true,
+    });
+
+    // Reloads credentials after issuing
+    const reloadReq = httpMock.expectOne('/api/v1/access-credentials');
+    reloadReq.flush([]);
+
+    fixture.detectChanges();
+    expect(component.qrPassModalOpen()).toBeTrue();
+    expect(component.activeSubjectName()).toContain('BRA2E19');
+    expect(component.activeDestination()).toBe('Block 1, Unit 51');
   });
 });

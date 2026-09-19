@@ -10,6 +10,7 @@ export interface VehicleResponse {
   model: string | null;
   color: string | null;
   apartmentId: string | null;
+  ownerResidentId?: string | null;
   ownerName: string | null;
   vehicleType: string;
   active: boolean;
@@ -22,6 +23,7 @@ export interface CreateVehicleRequest {
   model?: string | null;
   color?: string | null;
   apartmentId?: string | null;
+  ownerResidentId?: string | null;
   ownerName?: string | null;
   vehicleType?: string | null;
 }
@@ -32,6 +34,7 @@ export interface UpdateVehicleRequest {
   model?: string | null;
   color?: string | null;
   apartmentId?: string | null;
+  ownerResidentId?: string | null;
   ownerName?: string | null;
   vehicleType?: string | null;
 }
