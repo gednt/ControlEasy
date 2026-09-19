@@ -32,10 +32,12 @@
   3. A manual lookup of a visitor by document/name/apartment/block creates or checks in the same Visit row as the QR path; manual resident/vehicle entries and walk-outs still record as AccessEvents only (VISIT-03)
   4. `GET /api/v1/reports/history` returns one chronological stream (Visits + visitor AccessEvents + legacy entry-log segment) with per-row native state stamps, source origin, and `kind` discriminator — counted exactly once per real-world entry, tenant-predicated per UNION branch, server-side paginated; refused scans and security events appear as context rows in their native decision state, never coerced into Visit status enums (VISIT-04, VISIT-05)
   5. A package-delivery visit carries an optional free-text description and a structured carrier code; both show on ledger rows, appear in visit history, and carrier codes are filterable in the ledger and reports (VISIT-06, VISIT-07)
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 16-01: TBD
+- [ ] 16-01-PLAN.md — Visitor write-path fold: shared VisitorArrivalHandler (QR/manual/walk-in), migration 14 (Visits index + AccessEvents package columns), TenantDayBoundary helper
+- [ ] 16-02-PLAN.md — Package drops as AccessEvents PackageDrop rows (description + carrier code, optional apartment destination, no Visit rows)
+- [ ] 16-03-PLAN.md — Unified honest ledger: GET /api/v1/reports/history (single UNION, native stamps, pagination + filters) and entry-log consent-only re-scope
 
 **UI hint**: no
 
