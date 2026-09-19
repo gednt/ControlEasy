@@ -3,6 +3,7 @@ using ControlEasyReborn.Infrastructure.Data;
 using ControlEasyReborn.Infrastructure.Storage;
 using ControlEasyReborn.Infrastructure.Bootstrap;
 using ControlEasyReborn.Infrastructure.Demo;
+using ControlEasyReborn.Infrastructure.Email;
 using ControlEasyReborn.Infrastructure.MultiTenancy;
 using ControlEasyReborn.Modules.Apartments.Api.Endpoints;
 using ControlEasyReborn.Modules.Apartments.Infrastructure.DI;
@@ -67,6 +68,7 @@ try
 
     builder.Services.AddControlEasyDbTools(builder.Configuration);
     builder.Services.AddControlEasyStorage(builder.Configuration);
+    builder.Services.AddEmailInfrastructure(builder.Configuration);
 
     builder.Services.AddAuthentication()
         .AddJwtBearer(options =>

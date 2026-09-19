@@ -25,6 +25,7 @@ public static class SecurityModuleServiceCollectionExtensions
         services.AddScoped<IGatehouseRepository, GatehouseRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
+        services.AddScoped<ITempPasswordGenerator, TempPasswordGenerator>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
 
         services.AddScoped<LoginHandler>();

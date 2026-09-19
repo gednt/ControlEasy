@@ -25,5 +25,6 @@
 -- ALTER TABLE RefusedScanAttempts ADD COLUMN tenant_id CHAR(36) NOT NULL;
 -- ALTER TABLE AccessLookupAudits ADD COLUMN tenant_id CHAR(36) NOT NULL;
 -- ALTER TABLE ResidentIdentityDocuments ADD COLUMN tenant_id CHAR(36) NOT NULL;
+-- ALTER TABLE PasswordResetRequests ADD COLUMN tenant_id CHAR(36) NOT NULL;
 
 SELECT 1;
