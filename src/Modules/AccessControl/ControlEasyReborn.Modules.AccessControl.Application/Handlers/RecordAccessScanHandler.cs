@@ -195,7 +195,24 @@ public sealed class RecordAccessScanHandler
 
         if (credential.SubjectType == SubjectType.Visitor && command.Direction == CycleDirection.Entrance && _visits is not null)
         {
-            await _visits.CheckInAsync(command.TenantId, credential.SubjectId, command.PerformedByProfileId, command.GatehouseId, ct);
+            // Single check-in path (D-01): route the arrival through the shared
+            // VisitorArrivalHandler instead of calling CheckInAsync directly.
+            // Destination comes from the already-resolved destination snapshot
+            // (ACCESS-05 semantics preserved); profile fields come from the
+            // gatehouse-supplied scan payload (credential alone carries no name).
+            var arrival = new ControlEasyReborn.Modules.Visits.Application.Handlers.VisitorArrivalCommand(
+                TenantId: command.TenantId,
+                VisitorName: command.VisitorName ?? "Visitor",
+                VisitorDocument: command.VisitorDocument ?? string.Empty,
+                VisitorPhone: null,
+                DestinationApartmentId: destination.ApartmentId!.Value,
+                DestinationBlock: destination.Block,
+                DestinationUnit: destination.Unit,
+                Purpose: null,
+                AttendantProfileId: command.PerformedByProfileId,
+                GatehouseId: command.GatehouseId,
+                OccurredAtUtc: nowUtc);
+            await _visits.RegisterArrivalAsync(arrival, ct);
         }
 
         var accepted = new ScanDecisionResult(

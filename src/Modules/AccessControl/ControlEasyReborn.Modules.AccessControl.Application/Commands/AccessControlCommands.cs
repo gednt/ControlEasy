@@ -9,7 +9,9 @@ public sealed record RecordAccessScanCommand(
     Guid ScanAttemptId,
     Guid PerformedByProfileId,
     Guid? GatehouseId,
-    bool ConfirmDuplicate);
+    bool ConfirmDuplicate,
+    string? VisitorName = null,
+    string? VisitorDocument = null);
 
 public sealed record LookupSubjectCommand(
     Guid TenantId,

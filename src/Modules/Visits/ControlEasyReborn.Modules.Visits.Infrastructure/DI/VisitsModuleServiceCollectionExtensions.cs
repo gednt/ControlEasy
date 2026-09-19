@@ -21,6 +21,7 @@ public static class VisitsModuleServiceCollectionExtensions
 
         services.AddScoped<IVisitRepository, VisitRepository>();
         services.AddScoped<IVisitDirectory, VisitDirectoryRepository>();
+        services.AddScoped<VisitorArrivalHandler>();
         services.AddScoped<CreateVisitHandler>();
         services.AddScoped<GetVisitHandler>();
         services.AddScoped<ListVisitsHandler>();

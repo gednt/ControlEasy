@@ -35,6 +35,25 @@ public sealed class VisitDirectoryRepository : IVisitDirectory
         return MapFirstOrDefault(rows);
     }
 
+    public async Task<Visit?> FindLatestByDocumentAsync(Guid tenantId, string document, CancellationToken ct)
+    {
+        var raw = (document ?? string.Empty).Trim();
+        var normalized = raw.Replace(".", "").Replace("-", "");
+        if (normalized.Length == 0)
+        {
+            return null;
+        }
+
+        var db = _factory.Create(_ctx);
+        var rows = await db.SelectAsync(
+            fields: Fields,
+            table: TableName,
+            whereClause: "(VisitorDocument = @param0 OR REPLACE(REPLACE(VisitorDocument, '.', ''), '-', '') = @param1)",
+            parameters: new object[] { raw, normalized },
+            ct: ct);
+        return MapList(rows).OrderByDescending(v => v.CreatedAtUtc).FirstOrDefault();
+    }
+
     public async Task<IReadOnlyList<Visit>> SearchPendingByDocumentAsync(Guid tenantId, string document, CancellationToken ct)
     {
         var raw = (document ?? string.Empty).Trim();
@@ -73,6 +92,12 @@ public sealed class VisitDirectoryRepository : IVisitDirectory
         visit.CheckIn(attendantProfileId, gatehouseId);
         await _visits.UpdateAsync(visit, ct);
         return true;
+    }
+
+    public async Task<Visit> RegisterArrivalAsync(Application.Handlers.VisitorArrivalCommand command, CancellationToken ct)
+    {
+        var handler = new Application.Handlers.VisitorArrivalHandler(this, _visits);
+        return await handler.HandleAsync(command, ct);
     }
 
     private static Visit? MapFirstOrDefault(DataTable table)

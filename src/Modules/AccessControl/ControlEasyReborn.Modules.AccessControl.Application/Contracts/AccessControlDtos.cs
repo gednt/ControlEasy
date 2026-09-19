@@ -5,7 +5,9 @@ public sealed record RecordAccessScanRequest(
     string Direction,
     Guid ScanAttemptId,
     Guid? GatehouseId,
-    bool ConfirmDuplicate);
+    bool ConfirmDuplicate,
+    string? VisitorName = null,
+    string? VisitorDocument = null);
 
 public sealed record ScanResponse(
     string Decision,

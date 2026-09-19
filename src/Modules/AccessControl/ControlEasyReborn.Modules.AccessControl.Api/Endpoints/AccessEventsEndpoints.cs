@@ -38,7 +38,9 @@ public static class AccessEventsEndpoints
                 ScanAttemptId: request.ScanAttemptId,
                 PerformedByProfileId: profileId,
                 GatehouseId: request.GatehouseId,
-                ConfirmDuplicate: request.ConfirmDuplicate), ct);
+                ConfirmDuplicate: request.ConfirmDuplicate,
+                VisitorName: request.VisitorName,
+                VisitorDocument: request.VisitorDocument), ct);
 
             if (!validation.IsValid)
             {
@@ -54,7 +56,9 @@ public static class AccessEventsEndpoints
                 ScanAttemptId: request.ScanAttemptId,
                 PerformedByProfileId: profileId,
                 GatehouseId: request.GatehouseId,
-                ConfirmDuplicate: request.ConfirmDuplicate);
+                ConfirmDuplicate: request.ConfirmDuplicate,
+                VisitorName: request.VisitorName,
+                VisitorDocument: request.VisitorDocument);
 
             var result = await handler.HandleAsync(cmd, ct);
 

@@ -17,6 +17,16 @@ public sealed class RecordAccessScanCommandValidator : AbstractValidator<RecordA
         RuleFor(c => c.Direction)
             .Must(d => d == CycleDirection.Entrance || d == CycleDirection.Exit)
             .WithMessage("Direction must be 'entrance' or 'exit'.");
+
+        // Threat T-16-01-01: gatehouse-entered visitor profile fields are
+        // operational data only (never used for authz); length-constrained to
+        // mirror the Visits schema (200 / 20).
+        RuleFor(c => c.VisitorName)
+            .MaximumLength(200)
+            .When(c => !string.IsNullOrEmpty(c.VisitorName));
+        RuleFor(c => c.VisitorDocument)
+            .MaximumLength(20)
+            .When(c => !string.IsNullOrEmpty(c.VisitorDocument));
     }
 }
 
