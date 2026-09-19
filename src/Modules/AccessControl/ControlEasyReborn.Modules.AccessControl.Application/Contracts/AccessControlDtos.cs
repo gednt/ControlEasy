@@ -61,7 +61,10 @@ public sealed record RecordManualAccessRequest(
     string SubjectType,
     Guid SubjectId,
     string Direction,
-    Guid? GatehouseId);
+    Guid? GatehouseId,
+    string? Kind = null,
+    string? PackageDescription = null,
+    string? PackageCarrierCode = null);
 
 public sealed record ManualAccessResponse(
     Guid AccessEventId,
@@ -73,4 +76,7 @@ public sealed record ManualAccessResponse(
     string PolicyOutcome,
     Guid DestinationApartmentId,
     string DestinationBlock,
-    string DestinationUnit);
+    string DestinationUnit,
+    string? Kind = null,
+    string? PackageDescription = null,
+    string? PackageCarrierCode = null);
