@@ -279,8 +279,11 @@ WITH ledger AS (
         (CASE WHEN ae.EventKind = 1 THEN 'package-drop' ELSE
             CASE ae.AccessMethod WHEN 0 THEN 'qr-scan' ELSE 'manual-lookup' END
         END) COLLATE utf8mb4_unicode_ci AS Source,
-        'visitor' COLLATE utf8mb4_unicode_ci AS SubjectType,
-        COALESCE(NULLIF(ae.PackageDescription, ''), 'Visitor') COLLATE utf8mb4_unicode_ci AS SubjectName,
+        (CASE ae.SubjectType WHEN 0 THEN 'resident' WHEN 1 THEN 'vehicle' WHEN 2 THEN 'visitor' ELSE 'unknown' END) COLLATE utf8mb4_unicode_ci AS SubjectType,
+        COALESCE(
+            NULLIF(ae.PackageDescription, ''),
+            CASE ae.SubjectType WHEN 0 THEN 'Resident' WHEN 1 THEN 'Vehicle' WHEN 2 THEN 'Visitor' ELSE 'Access subject' END
+        ) COLLATE utf8mb4_unicode_ci AS SubjectName,
         CAST(NULL AS CHAR(20)) COLLATE utf8mb4_unicode_ci AS SubjectDocument,
         CAST(NULL AS CHAR(500)) COLLATE utf8mb4_unicode_ci AS Purpose,
         CONCAT(ae.DestinationBlock, '-', ae.DestinationUnit) COLLATE utf8mb4_unicode_ci AS DestinationLabel,
@@ -291,12 +294,11 @@ WITH ledger AS (
     FROM AccessEvents ae
     WHERE ae.tenant_id = @param0 {eventRange.Sql}
       AND (
-          ae.EventKind = 1
-          OR (
-              ae.EventKind = 0
-              AND ae.SubjectType = 2
-              AND ae.VisitId IS NULL
-          )
+           ae.EventKind = 1
+            OR (
+                ae.EventKind = 0
+                AND ae.VisitId IS NULL
+            )
       )
 
     UNION ALL
@@ -414,7 +416,10 @@ SELECT COUNT(*) FROM (
     UNION ALL
     SELECT
         ae.PackageDescription,
-        COALESCE(NULLIF(ae.PackageDescription, ''), 'Visitor') AS SubjectName,
+        COALESCE(
+            NULLIF(ae.PackageDescription, ''),
+            CASE ae.SubjectType WHEN 0 THEN 'Resident' WHEN 1 THEN 'Vehicle' WHEN 2 THEN 'Visitor' ELSE 'Access subject' END
+        ) AS SubjectName,
         CAST(NULL AS CHAR(500)) AS Purpose,
         ae.PackageCarrierCode,
         NULLIF(ae.DestinationApartmentId, '00000000-0000-0000-0000-000000000000') AS ApartmentId,
@@ -422,12 +427,11 @@ SELECT COUNT(*) FROM (
     FROM AccessEvents ae
     WHERE ae.tenant_id = @param0 {eventRange.Sql}
       AND (
-          ae.EventKind = 1
-          OR (
-              ae.EventKind = 0
-              AND ae.SubjectType = 2
-              AND ae.VisitId IS NULL
-          )
+           ae.EventKind = 1
+            OR (
+                ae.EventKind = 0
+                AND ae.VisitId IS NULL
+            )
       )
     UNION ALL
     SELECT

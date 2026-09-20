@@ -293,7 +293,7 @@ function toLocalDateString(d: Date): string {
                 </tr>
               </thead>
               <tbody>
-                @for (row of historyRows(); track row.id ?? $index) {
+                @for (row of historyRows(); track row.id) {
                   <tr>
                     <td>
                       <div class="timestamp-cell">

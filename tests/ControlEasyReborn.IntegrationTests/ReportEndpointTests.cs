@@ -321,6 +321,36 @@ public sealed class ReportEndpointTests
     }
 
     [Fact]
+    public async Task History_includes_unlinked_resident_qr_scan_events()
+    {
+        var tenantId = Guid.NewGuid();
+        var block = "H" + Guid.NewGuid().ToString("N")[..6];
+        var unit = Guid.NewGuid().ToString("N")[..6];
+        var apartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, block, unit);
+        var residentId = await AccessControlFixture.SeedActiveResidentAsync(
+            _mySql.ConnectionString, tenantId, "Ledger Resident", Guid.NewGuid().ToString("N")[..11], apartmentId);
+        var issued = new OpaqueTokenIssuer().Issue(System.Text.Encoding.UTF8.GetBytes(TestHmacKey));
+        await AccessControlFixture.SeedActiveCredentialAsync(
+            _mySql.ConnectionString, tenantId, SubjectType.Resident, residentId, issued.Verifier, issued.KeyVersion, Guid.NewGuid());
+
+        var scanClient = QrScanTestClient.ForTenant(_factory, tenantId);
+        var scanResponse = await scanClient.PostAsJsonAsync("/api/v1/access-events/scans", new RecordAccessScanRequest(
+            QrPayload: issued.Token,
+            Direction: "entrance",
+            ScanAttemptId: Guid.NewGuid(),
+            GatehouseId: null,
+            ConfirmDuplicate: false));
+        scanResponse.EnsureSuccessStatusCode();
+
+        var response = await ForTenant(_factory, tenantId).GetAsync("/api/v1/reports/history");
+        response.EnsureSuccessStatusCode();
+        var rows = await response.Content.ReadFromJsonAsync<List<HistoryRowResponse>>();
+
+        rows.Should().Contain(r =>
+            r.Kind == "access-event" && r.Source == "qr-scan" && r.SubjectType == "resident" && r.SubjectName == "Resident");
+    }
+
+    [Fact]
     public async Task History_pagination_slices_with_total_count()
     {
         var tenantId = Guid.NewGuid();

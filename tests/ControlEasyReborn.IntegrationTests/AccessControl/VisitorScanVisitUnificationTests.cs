@@ -145,6 +145,46 @@ public sealed class VisitorScanVisitUnificationTests
     }
 
     [Fact]
+    public async Task Pre_registered_visit_qr_scan_without_profile_fields_checks_in_the_credential_visit()
+    {
+        var tenantId = NewTenantId();
+        var block = "U" + Guid.NewGuid().ToString("N")[..6];
+        var unit = Guid.NewGuid().ToString("N")[..6];
+        var apartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, block, unit);
+        var visitId = Guid.NewGuid();
+        var visitorName = "Pre-registered " + Guid.NewGuid().ToString("N")[..6];
+        var document = Guid.NewGuid().ToString("N")[..11];
+        await SeedPendingVisitAsync(tenantId, visitId, visitorName, document, apartmentId, block, unit);
+
+        var issuer = new OpaqueTokenIssuer();
+        var issued = issuer.Issue(System.Text.Encoding.UTF8.GetBytes(TestHmacKey));
+        await AccessControlFixture.SeedActiveCredentialAsync(
+            _mySql.ConnectionString,
+            tenantId,
+            SubjectType.Visitor,
+            visitId,
+            issued.Verifier,
+            issued.KeyVersion,
+            Guid.NewGuid());
+
+        var client = QrScanTestClient.ForTenant(NewFactory(), tenantId);
+        var scanAttemptId = Guid.NewGuid();
+        var response = await client.PostAsJsonAsync("/api/v1/access-events/scans", new RecordAccessScanRequest(
+            QrPayload: issued.Token,
+            Direction: "entrance",
+            ScanAttemptId: scanAttemptId,
+            GatehouseId: null,
+            ConfirmDuplicate: false));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var (visitCount, checkedInAt, status) = await CountVisitsByDocumentAsync(tenantId, document);
+        visitCount.Should().Be(1, "the QR subject is the pre-registered Visit, not a new walk-in visitor");
+        status.Should().Be(1);
+        checkedInAt.Should().NotBeNull();
+        (await CountAccessEventsWithVisitLinkAsync(tenantId, scanAttemptId)).Should().Be(1);
+    }
+
+    [Fact]
     public async Task Resident_scan_creates_no_visit_rows()
     {
         var tenantId = NewTenantId();
@@ -212,6 +252,31 @@ public sealed class VisitorScanVisitUnificationTests
         cmd.Parameters.AddWithValue("@tid", tenantId.ToString());
         cmd.Parameters.AddWithValue("@sa", scanAttemptId.ToString());
         return Convert.ToInt32(await cmd.ExecuteScalarAsync());
+    }
+
+    private async Task SeedPendingVisitAsync(
+        Guid tenantId,
+        Guid visitId,
+        string visitorName,
+        string document,
+        Guid apartmentId,
+        string block,
+        string unit)
+    {
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        await using var cmd = new MySqlCommand(
+            "INSERT INTO Visits (Id, TenantId, VisitorName, VisitorDocument, ApartmentId, DestinationBlock, DestinationUnit, Status, CreatedAtUtc, tenant_id) " +
+            "VALUES (@id, @tenantId, @visitorName, @document, @apartmentId, @block, @unit, 0, @createdAtUtc, @tenantId)", conn);
+        cmd.Parameters.AddWithValue("@id", visitId.ToString());
+        cmd.Parameters.AddWithValue("@tenantId", tenantId.ToString());
+        cmd.Parameters.AddWithValue("@visitorName", visitorName);
+        cmd.Parameters.AddWithValue("@document", document);
+        cmd.Parameters.AddWithValue("@apartmentId", apartmentId.ToString());
+        cmd.Parameters.AddWithValue("@block", block);
+        cmd.Parameters.AddWithValue("@unit", unit);
+        cmd.Parameters.AddWithValue("@createdAtUtc", DateTime.UtcNow);
+        await cmd.ExecuteNonQueryAsync();
     }
 
     private async Task<int> CountAccessEventsForVisitorAsync(Guid tenantId, Guid subjectId)

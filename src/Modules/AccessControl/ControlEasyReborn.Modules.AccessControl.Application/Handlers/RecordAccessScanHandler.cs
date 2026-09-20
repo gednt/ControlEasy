@@ -178,15 +178,22 @@ public sealed class RecordAccessScanHandler
             // or advance the single operational Visit before persisting its audit
             // AccessEvent, so concurrent same-timestamp arrivals cannot hide one
             // another through a timestamp-only heuristic.
+            //
+            // A visitor credential issued from the administrative Visits screen
+            // has SubjectId == Visit.Id. The scanner sends only the opaque token,
+            // so request-supplied profile fields are absent in that normal flow.
+            // Resolve the visit profile first; otherwise an empty document makes
+            // VisitorArrivalHandler create an unrelated walk-in Visit.
+            var visitorProfile = await _resolver.ResolveVisitorProfileAsync(command.TenantId, credential.SubjectId, ct);
             var arrival = new ControlEasyReborn.Modules.Visits.Application.Handlers.VisitorArrivalCommand(
                 TenantId: command.TenantId,
-                VisitorName: command.VisitorName ?? "Visitor",
-                VisitorDocument: command.VisitorDocument ?? string.Empty,
-                VisitorPhone: null,
+                VisitorName: visitorProfile?.Name ?? command.VisitorName ?? "Visitor",
+                VisitorDocument: visitorProfile?.Document ?? command.VisitorDocument ?? string.Empty,
+                VisitorPhone: visitorProfile?.Phone,
                 DestinationApartmentId: destination.ApartmentId!.Value,
                 DestinationBlock: destination.Block,
                 DestinationUnit: destination.Unit,
-                Purpose: null,
+                Purpose: visitorProfile?.Purpose,
                 AttendantProfileId: command.PerformedByProfileId,
                 GatehouseId: command.GatehouseId,
                 OccurredAtUtc: nowUtc);
