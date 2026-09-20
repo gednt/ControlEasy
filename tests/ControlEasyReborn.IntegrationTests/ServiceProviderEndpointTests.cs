@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using ControlEasyReborn.Modules.ServiceProviders.Application.Contracts;
 using FluentAssertions;
@@ -45,5 +46,56 @@ public sealed class ServiceProviderEndpointTests
 
         var getResponse = await clientB.GetAsync($"/api/v1/service-providers/{created!.Id}");
         getResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task DeactivateServiceProvider_AsOwningTenant_ReturnsInactive()
+    {
+        var client = _factory.AsTenantA();
+        var createResponse = await client.PostAsJsonAsync(
+            "/api/v1/service-providers",
+            new CreateServiceProviderRequest("Active Provider", "11222333000182", null, null, "Cleaning", null));
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        var created = await createResponse.Content.ReadFromJsonAsync<ServiceProviderResponse>();
+
+        var getResponse = await client.GetAsync($"/api/v1/service-providers/{created!.Id}");
+        getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var deactivateResponse = await client.PostAsync($"/api/v1/service-providers/{created.Id}/deactivate", null);
+
+        deactivateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var deactivated = await deactivateResponse.Content.ReadFromJsonAsync<ServiceProviderResponse>();
+        deactivated.Should().NotBeNull();
+        deactivated!.Active.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DeactivateServiceProvider_WithoutWritePermission_ReturnsForbidden()
+    {
+        var tenantAdmin = _factory.AsTenantA();
+        var createResponse = await tenantAdmin.PostAsJsonAsync(
+            "/api/v1/service-providers",
+            new CreateServiceProviderRequest("Protected Provider", "11222333000183", null, null, "Cleaning", null));
+        var created = await createResponse.Content.ReadFromJsonAsync<ServiceProviderResponse>();
+
+        var readOnlyClient = CreateClientWithPermissions(
+            TenantAwareWebApplicationFactory.TenantAId,
+            "ServiceProviders.Read");
+        var deactivateResponse = await readOnlyClient.PostAsync($"/api/v1/service-providers/{created!.Id}/deactivate", null);
+
+        deactivateResponse.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    private HttpClient CreateClientWithPermissions(Guid tenantId, params string[] permissions)
+    {
+        var client = _factory.CreateClient();
+        var token = JwtTestHelper.GenerateTenantToken(
+            Guid.NewGuid(),
+            "operator@tenanta.test",
+            tenantId,
+            roles: ["Operator"],
+            permissions: permissions);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        return client;
     }
 }

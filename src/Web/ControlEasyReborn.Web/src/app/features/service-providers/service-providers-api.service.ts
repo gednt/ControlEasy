@@ -24,15 +24,22 @@ export interface CreateServiceProviderRequest {
   company?: string | null;
 }
 
+export interface UpdateServiceProviderRequest {
+  name: string;
+  document: string;
+  phone?: string | null;
+  email?: string | null;
+  serviceType?: string | null;
+  company?: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ServiceProvidersApiService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = '/api/v1/service-providers';
 
   list(search?: string, skip = 0, take = 50): Observable<ServiceProviderResponse[]> {
-    let params = new HttpParams()
-      .set('skip', skip.toString())
-      .set('take', take.toString());
+    let params = new HttpParams().set('skip', skip.toString()).set('take', take.toString());
     if (search) {
       params = params.set('search', search);
     }
@@ -41,5 +48,13 @@ export class ServiceProvidersApiService {
 
   create(request: CreateServiceProviderRequest): Observable<ServiceProviderResponse> {
     return this.http.post<ServiceProviderResponse>(this.baseUrl, request);
+  }
+
+  update(id: string, request: UpdateServiceProviderRequest): Observable<ServiceProviderResponse> {
+    return this.http.put<ServiceProviderResponse>(`${this.baseUrl}/${id}`, request);
+  }
+
+  deactivate(id: string): Observable<ServiceProviderResponse> {
+    return this.http.post<ServiceProviderResponse>(`${this.baseUrl}/${id}/deactivate`, null);
   }
 }

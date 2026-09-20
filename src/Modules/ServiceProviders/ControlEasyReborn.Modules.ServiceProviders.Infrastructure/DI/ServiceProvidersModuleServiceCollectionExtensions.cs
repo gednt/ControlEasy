@@ -24,6 +24,7 @@ public static class ServiceProvidersModuleServiceCollectionExtensions
         services.AddScoped<GetServiceProviderHandler>();
         services.AddScoped<ListServiceProvidersHandler>();
         services.AddScoped<UpdateServiceProviderHandler>();
+        services.AddScoped<DeactivateServiceProviderHandler>();
         services.AddScoped<IValidator<CreateServiceProviderRequest>, CreateServiceProviderRequestValidator>();
         services.AddScoped<IValidator<UpdateServiceProviderRequest>, UpdateServiceProviderRequestValidator>();
         return services;

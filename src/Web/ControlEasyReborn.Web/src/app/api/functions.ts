@@ -143,6 +143,8 @@ export type { ApiV1ServiceProvidersIdGet$Params as ApiV1ServiceProvidersIdGet$Pa
 export { apiV1ServiceProvidersIdGet as apiV1ServiceProvidersIdGet } from './fn/service-providers/api-v-1-service-providers-id-get';
 export type { ApiV1ServiceProvidersIdPut$Params as ApiV1ServiceProvidersIdPut$Params } from './fn/service-providers/api-v-1-service-providers-id-put';
 export { apiV1ServiceProvidersIdPut as apiV1ServiceProvidersIdPut } from './fn/service-providers/api-v-1-service-providers-id-put';
+export type { ApiV1ServiceProvidersIdDeactivatePost$Params as ApiV1ServiceProvidersIdDeactivatePost$Params } from './fn/service-providers/api-v-1-service-providers-id-deactivate-post';
+export { apiV1ServiceProvidersIdDeactivatePost as apiV1ServiceProvidersIdDeactivatePost } from './fn/service-providers/api-v-1-service-providers-id-deactivate-post';
 export type { ApiV1TenantsGet$Params as ApiV1TenantsGet$Params } from './fn/tenants/api-v-1-tenants-get';
 export { apiV1TenantsGet as apiV1TenantsGet } from './fn/tenants/api-v-1-tenants-get';
 export type { ApiV1TenantsPost$Params as ApiV1TenantsPost$Params } from './fn/tenants/api-v-1-tenants-post';

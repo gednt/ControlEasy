@@ -79,6 +79,7 @@ Phase numbering continues from v1.1 (Phase 10). Old v1.0 placeholder phases (12,
 
 - [~] Mockup visual parity (v1.1, Phase 9) — `UI-03` — residents page done; other pages pending — `.specs/mockup-visual-parity/`
 - [~] Mockup functional fixes (v1.1, Phase 9) — `UI-04` — residents page interactions done; login form, toasts, other pages pending — `.specs/2-mockup-functional-fixes/`
+- [~] Service provider management — edit, search/filter, and soft-disable flow — `.specs/service-provider-management/`
 - [ ] Photo browser capture & display (v2.0, Phase 12) — `PHOTO-02` — `.specs/photo-capture/`
 - [~] Consent gatehouse workflow UI (v2.0, Phase 13) — `CONSENT-03` — backend done; audit review UI pending — `.specs/consent-gatehouse/`
 - [ ] Door integration (v2.2, gated on hardware; renumbered from v2.1 on 2026-09-19) — `.specs/door-integration/`

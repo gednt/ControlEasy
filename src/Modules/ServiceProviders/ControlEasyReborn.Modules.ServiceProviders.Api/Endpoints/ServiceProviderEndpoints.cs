@@ -47,7 +47,7 @@ public static class ServiceProviderEndpoints
                 ?? throw new InvalidOperationException("Tenant context is not resolved.");
             var response = await handler.HandleAsync(request, tenantId, ct);
             return Results.Created($"/api/v1/service-providers/{response.Id}", response);
-        });
+        }).RequireAuthorization("Permission_ServiceProviders.Write");
 
         group.MapPut("/{id:guid}", async (
             Guid id,
@@ -57,7 +57,16 @@ public static class ServiceProviderEndpoints
         {
             var response = await handler.HandleAsync(id, request, ct);
             return Results.Ok(response);
-        });
+        }).RequireAuthorization("Permission_ServiceProviders.Write");
+
+        group.MapPost("/{id:guid}/deactivate", async (
+            Guid id,
+            DeactivateServiceProviderHandler handler,
+            CancellationToken ct) =>
+        {
+            var response = await handler.HandleAsync(id, ct);
+            return Results.Ok(response);
+        }).RequireAuthorization("Permission_ServiceProviders.Write");
 
         return app;
     }

@@ -12,6 +12,8 @@ import { StrictHttpResponse } from '../strict-http-response';
 
 import { apiV1ServiceProvidersGet } from '../fn/service-providers/api-v-1-service-providers-get';
 import { ApiV1ServiceProvidersGet$Params } from '../fn/service-providers/api-v-1-service-providers-get';
+import { apiV1ServiceProvidersIdDeactivatePost } from '../fn/service-providers/api-v-1-service-providers-id-deactivate-post';
+import { ApiV1ServiceProvidersIdDeactivatePost$Params } from '../fn/service-providers/api-v-1-service-providers-id-deactivate-post';
 import { apiV1ServiceProvidersIdGet } from '../fn/service-providers/api-v-1-service-providers-id-get';
 import { ApiV1ServiceProvidersIdGet$Params } from '../fn/service-providers/api-v-1-service-providers-id-get';
 import { apiV1ServiceProvidersIdPut } from '../fn/service-providers/api-v-1-service-providers-id-put';
@@ -128,6 +130,33 @@ export class ServiceProvidersService extends BaseService {
    */
   apiV1ServiceProvidersIdPut(params: ApiV1ServiceProvidersIdPut$Params, context?: HttpContext): Observable<void> {
     const resp = this.apiV1ServiceProvidersIdPut$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1ServiceProvidersIdDeactivatePost()` */
+  static readonly ApiV1ServiceProvidersIdDeactivatePostPath = '/api/v1/service-providers/{id}/deactivate';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1ServiceProvidersIdDeactivatePost()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1ServiceProvidersIdDeactivatePost$Response(params: ApiV1ServiceProvidersIdDeactivatePost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = apiV1ServiceProvidersIdDeactivatePost(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1ServiceProvidersIdDeactivatePost$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1ServiceProvidersIdDeactivatePost(params: ApiV1ServiceProvidersIdDeactivatePost$Params, context?: HttpContext): Observable<void> {
+    const resp = this.apiV1ServiceProvidersIdDeactivatePost$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<void>): void => r.body)
     );

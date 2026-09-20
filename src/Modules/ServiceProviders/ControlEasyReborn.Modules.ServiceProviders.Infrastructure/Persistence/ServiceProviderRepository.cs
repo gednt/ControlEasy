@@ -56,9 +56,9 @@ public sealed class ServiceProviderRepository : IServiceProviderRepository
     {
         var db = _factory.Create(_ctx);
         await db.InsertAsync(
-            new[] { "Id", "TenantId", "Name", "Document", "Phone", "Email", "ServiceType", "Company", "Active", "CreatedAtUtc", "UpdatedAtUtc" },
+            new[] { "Id", "TenantId", "Name", "Document", "Phone", "Email", "ServiceType", "Company", "Active", "CreatedAtUtc", "UpdatedAtUtc", "tenant_id" },
             TableName,
-            new object?[] { provider.Id, provider.TenantId, provider.Name, provider.Document, (object?)provider.Phone ?? DBNull.Value, (object?)provider.Email ?? DBNull.Value, (object?)provider.ServiceType ?? DBNull.Value, (object?)provider.Company ?? DBNull.Value, provider.Active, provider.CreatedAtUtc, (object?)provider.UpdatedAtUtc ?? DBNull.Value },
+            new object?[] { provider.Id, provider.TenantId, provider.Name, provider.Document, (object?)provider.Phone ?? DBNull.Value, (object?)provider.Email ?? DBNull.Value, (object?)provider.ServiceType ?? DBNull.Value, (object?)provider.Company ?? DBNull.Value, provider.Active, provider.CreatedAtUtc, (object?)provider.UpdatedAtUtc ?? DBNull.Value, provider.TenantId },
             primaryKeyName: "Id",
             autoIncrement: false,
             ct: ct);
