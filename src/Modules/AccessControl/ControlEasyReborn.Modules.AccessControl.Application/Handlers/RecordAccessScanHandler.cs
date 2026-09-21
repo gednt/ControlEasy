@@ -7,6 +7,7 @@ using ControlEasyReborn.Modules.Apartments.Application.Abstractions;
 using ControlEasyReborn.Modules.Photos.Application.Abstractions;
 using ControlEasyReborn.Modules.Residents.Application.Abstractions;
 using ControlEasyReborn.Modules.Vehicles.Application.Abstractions;
+using ControlEasyReborn.SharedKernel.Auditing;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
@@ -40,6 +41,7 @@ public sealed class RecordAccessScanHandler
     private readonly IAccessControlClock _clock;
     private readonly AccessEventDestinationResolver _resolver;
     private readonly ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory? _visits;
+    private readonly IAuditLogWriter? _auditWriter;
     private readonly ILogger<RecordAccessScanHandler> _logger;
 
     public RecordAccessScanHandler(
@@ -54,6 +56,7 @@ public sealed class RecordAccessScanHandler
         IAccessControlClock clock,
         AccessEventDestinationResolver? resolver = null,
         ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory? visits = null,
+        IAuditLogWriter? auditWriter = null,
         ILogger<RecordAccessScanHandler>? logger = null)
     {
         _credentials = credentials;
@@ -67,6 +70,7 @@ public sealed class RecordAccessScanHandler
         _clock = clock;
         _visits = visits;
         _resolver = resolver ?? new AccessEventDestinationResolver(residents, vehicles, apartments, visits!);
+        _auditWriter = auditWriter;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<RecordAccessScanHandler>.Instance;
     }
 
@@ -223,6 +227,7 @@ public sealed class RecordAccessScanHandler
             visitId: visitId);
 
         await _events.AddAsync(accessEvent, ct);
+        await WriteAccessAuditAsync(accessEvent, ct);
 
         var accepted = new ScanDecisionResult(
             Decision: ScanDecisionKind.Recorded,
@@ -295,6 +300,23 @@ public sealed class RecordAccessScanHandler
             relatedSubjectId: relatedSubjectId);
 
         await _refusals.AddAsync(attempt, ct);
+        if (_auditWriter is not null)
+        {
+            await _auditWriter.WriteAsync(
+                tenantId: command.TenantId,
+                category: AuditCategory.Security,
+                action: "QrAccessRefused",
+                entityType: "RefusedScanAttempt",
+                entityId: attempt.Id,
+                severity: AuditSeverity.Warning,
+                details: $"QR access refused: {failureCode}.",
+                metadata: new
+                {
+                    direction = CycleDirectionCodes.ToWire(command.Direction),
+                    failureCode
+                },
+                ct: ct);
+        }
 
         return new ScanDecisionResult(
             Decision: decisionKind,
@@ -310,5 +332,28 @@ public sealed class RecordAccessScanHandler
             DestinationBlock: string.Empty,
             DestinationUnit: string.Empty,
             FailureCode: failureCode);
+    }
+
+    private Task WriteAccessAuditAsync(AccessEvent accessEvent, CancellationToken ct)
+    {
+        if (_auditWriter is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        return _auditWriter.WriteAsync(
+            tenantId: accessEvent.TenantId,
+            category: AuditCategory.Security,
+            action: "QrAccessGranted",
+            entityType: "AccessEvent",
+            entityId: accessEvent.Id,
+            severity: AuditSeverity.Info,
+            details: $"QR {CycleDirectionCodes.ToWire(accessEvent.Direction)} access recorded for {accessEvent.DestinationBlock}/{accessEvent.DestinationUnit}.",
+            metadata: new
+            {
+                direction = CycleDirectionCodes.ToWire(accessEvent.Direction),
+                method = AccessMethodCodes.ToWire(accessEvent.AccessMethod)
+            },
+            ct: ct);
     }
 }

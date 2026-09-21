@@ -223,14 +223,6 @@ public sealed class ReportReadRepository : IReportReadRepository
             CreatedAtUtc: Convert.ToDateTime(r["CreatedAtUtc"]));
     }
 
-    /// <summary>
-    /// Ledger cutoff for the legacy ConsentAuditLog segment (D-02): rows recorded
-    /// at/after this instant are NOT shown in the legacy branch — walk-in
-    /// operational records live in Visits from Phase 16 onward. Build constant,
-    /// no config.
-    /// </summary>
-    public static readonly DateTime LedgerCutoffUtc = new(2026, 9, 19, 0, 0, 0, DateTimeKind.Utc);
-
     public async Task<(IReadOnlyList<Application.Contracts.HistoryRowResponse> Rows, int TotalCount)> GetHistoryAsync(
         Application.Contracts.HistoryQuery query,
         CancellationToken ct)
@@ -248,8 +240,6 @@ public sealed class ReportReadRepository : IReportReadRepository
         var refusalRange = BuildRangeClause("rs.OccurredAtUtc", query.FromUtc, query.ToUtc, eventRange.ParamCount);
         var legacyRange = BuildRangeClause("ca.RecordedAt", query.FromUtc, query.ToUtc, refusalRange.ParamCount);
         var filterSql = BuildFilterWhere(query, "ledger", legacyRange.ParamCount, out var filterValues);
-
-        var cutoff = LedgerCutoffUtc.ToString("yyyy-MM-dd HH:mm:ss.ffffff");
 
         var sql = $@"
 WITH ledger AS (
@@ -342,7 +332,6 @@ WITH ledger AS (
         ca.RecordedAt AS OccurredAt
     FROM ConsentAuditLog ca
     WHERE ca.tenant_id = @param0 {legacyRange.Sql}
-      AND ca.RecordedAt < CAST('{cutoff}' AS DATETIME(6))
 ),
 filtered AS (
     SELECT * FROM ledger
@@ -401,8 +390,6 @@ FROM filtered";
         var refusalRange = BuildRangeClause("rs.OccurredAtUtc", query.FromUtc, query.ToUtc, eventRange.ParamCount);
         var legacyRange = BuildRangeClause("ca.RecordedAt", query.FromUtc, query.ToUtc, refusalRange.ParamCount);
 
-        var cutoff = LedgerCutoffUtc.ToString("yyyy-MM-dd HH:mm:ss.ffffff");
-
         var sql = $@"
 SELECT COUNT(*) FROM (
     SELECT
@@ -454,7 +441,7 @@ SELECT COUNT(*) FROM (
         CAST(NULL AS CHAR(64)) AS PackageCarrierCode,
         CAST(NULL AS CHAR(36)) AS ApartmentId,
         ca.EntryState AS NativeState
-    FROM ConsentAuditLog ca WHERE ca.tenant_id = @param0 {legacyRange.Sql} AND ca.RecordedAt < CAST('{cutoff}' AS DATETIME(6))
+    FROM ConsentAuditLog ca WHERE ca.tenant_id = @param0 {legacyRange.Sql}
 ) ledger
 {BuildFilterWhere(query, "ledger", legacyRange.ParamCount, out var filterValues)}";
 

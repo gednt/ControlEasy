@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using ControlEasyReborn.Modules.AccessControl.Application.Contracts;
 using ControlEasyReborn.Modules.AccessControl.Domain.ValueObjects;
 using ControlEasyReborn.Modules.AccessControl.Infrastructure.Services;
+using ControlEasyReborn.Modules.Administration.Application.Contracts;
 using ControlEasyReborn.Modules.Apartments.Application.Contracts;
 using ControlEasyReborn.Modules.Reports.Application.Contracts;
 using ControlEasyReborn.Modules.Residents.Application.Contracts;
@@ -228,9 +229,17 @@ public sealed class ReportEndpointTests
                 PackageCarrierCode: "Jadlog"));
         dropResponse.EnsureSuccessStatusCode();
 
-        // 3. Legacy consent row (pre-cutoff, RecordedAt < 2026-09-19) → legacy-entry-log row.
+        var auditResponse = await client.GetAsync("/api/v1/administration/audit-logs?action=PackageDropRecorded");
+        auditResponse.EnsureSuccessStatusCode();
+        var auditRows = await auditResponse.Content.ReadFromJsonAsync<List<AuditLogResponse>>();
+        auditRows.Should().ContainSingle(row =>
+            row.Category == "Gatehouse" &&
+            row.Action == "PackageDropRecorded" &&
+            row.EntityType == "AccessEvent");
+
+        // 3. Consent-audit rows remain reportable while the entry workflow writes to this ledger.
         await SeedLegacyConsentRowAsync(tenantId, "Legacy Subject", recordedAtUtc: new DateTime(2026, 9, 10, 12, 0, 0, DateTimeKind.Utc));
-        await SeedLegacyGatehouseOnlyRowAsync(tenantId, "Legacy Gatehouse", recordedAtUtc: new DateTime(2026, 9, 18, 12, 0, 0, DateTimeKind.Utc));
+        await SeedLegacyGatehouseOnlyRowAsync(tenantId, "Current Gatehouse", recordedAtUtc: DateTime.UtcNow);
 
         var response = await client.GetAsync("/api/v1/reports/history?page=1&pageSize=50");
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -249,8 +258,7 @@ public sealed class ReportEndpointTests
 
         // Double-count guard: the walk-in visit appears exactly once as a visit row.
         rows.Count(r => r.Kind == "visit" && r.SubjectName == "History Walker").Should().Be(1);
-        // Post-cutoff legacy rows are excluded.
-        rows.Should().NotContain(r => r.Kind == "legacy-entry-log" && r.OccurredAt >= new DateTime(2026, 9, 19, 0, 0, 0, DateTimeKind.Utc));
+        rows.Should().Contain(r => r.Kind == "legacy-entry-log" && r.SubjectName == "Current Gatehouse");
     }
 
     [Fact]

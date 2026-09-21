@@ -62,6 +62,10 @@ try
     {
         options.MultipartBodyLengthLimit = PhotosEndpoints.MaxRequestSizeBytes;
     });
+    builder.Services.ConfigureHttpJsonOptions(options =>
+    {
+        options.SerializerOptions.Converters.Add(new UtcDateTimeJsonConverter());
+    });
 
     builder.Host.UseSerilog((context, services, loggerConfig) =>
     {

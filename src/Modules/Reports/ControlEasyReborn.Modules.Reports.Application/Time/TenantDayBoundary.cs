@@ -3,13 +3,12 @@ namespace ControlEasyReborn.Modules.Reports.Application.Time;
 /// <summary>
 /// Resolves tenant-local day boundaries to UTC windows for report queries.
 /// The default timezone is America/Sao_Paulo until per-tenant timezone
-/// configuration exists (deferred to Phase 17 per phase CONTEXT.md — do not
-/// build a settings table for this).
+/// configuration exists. Deployments can override it with TimeZone__Id.
 /// </summary>
 public static class TenantDayBoundary
 {
     /// <summary>
-    /// IANA timezone id used while per-tenant timezone configuration is deferred.
+    /// IANA timezone id used when TimeZone__Id is not configured.
     /// </summary>
     public const string DefaultTimeZoneId = "America/Sao_Paulo";
 
@@ -33,9 +32,14 @@ public static class TenantDayBoundary
 
     private static TimeZoneInfo ResolveTimeZone()
     {
+        var configuredTimeZoneId = Environment.GetEnvironmentVariable("TimeZone__Id");
+        var timeZoneId = string.IsNullOrWhiteSpace(configuredTimeZoneId)
+            ? DefaultTimeZoneId
+            : configuredTimeZoneId.Trim();
+
         try
         {
-            return TimeZoneInfo.FindSystemTimeZoneById(DefaultTimeZoneId);
+            return TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
         }
         catch (TimeZoneNotFoundException)
         {

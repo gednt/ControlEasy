@@ -67,6 +67,24 @@ export class GatewayControlService {
     });
   }
 
+  recordPackageDrop(payload: {
+    lookupAuditId: string;
+    destinationApartmentId: string;
+    packageDescription: string;
+    packageCarrierCode?: string | null;
+  }): Observable<ManualAccessResponse> {
+    return this.http.post<ManualAccessResponse>('/api/v1/access-events/manual', {
+      lookupAuditId: payload.lookupAuditId,
+      subjectType: 'visitor',
+      subjectId: payload.destinationApartmentId,
+      direction: 'entrance',
+      gatehouseId: null,
+      kind: 'package-drop',
+      packageDescription: payload.packageDescription,
+      packageCarrierCode: payload.packageCarrierCode ?? null,
+    });
+  }
+
   listEvents(): Observable<AccessEventSummary[]> {
     return this.http.get<AccessEventSummary[]>('/api/v1/access-events');
   }

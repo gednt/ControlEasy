@@ -1,4 +1,5 @@
-import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { ComponentFixture, TestBed, fakeAsync, flush, tick } from '@angular/core/testing';
+import { importProvidersFrom } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
@@ -8,6 +9,7 @@ import { VisitsApiService } from '../visits/visits-api.service';
 import { ApartmentsApiService } from '../apartments/apartments-api.service';
 import { GatewayControlService } from '../access-control/gateway-control.service';
 import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
+import { CE_LUCIDE_ICONS } from '../../design-system/components/icon/icon.registry';
 
 describe('GatehousePanelPage', () => {
   let fixture: ComponentFixture<GatehousePanelPage>;
@@ -24,6 +26,7 @@ describe('GatehousePanelPage', () => {
     await TestBed.configureTestingModule({
       imports: [GatehousePanelPage],
       providers: [
+        importProvidersFrom(CE_LUCIDE_ICONS),
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -74,6 +77,86 @@ describe('GatehousePanelPage', () => {
     expect(html).toContain('Open visits');
   }));
 
+  it('opens the no-entry package-drop workflow from the gatehouse panel', fakeAsync(() => {
+    fixture.detectChanges();
+    flushInitialRequests();
+    tick();
+
+    const packageDropButton = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      '[data-testid="package-drop-btn"]',
+    );
+    expect(packageDropButton).withContext('package-drop action').not.toBeNull();
+
+    packageDropButton?.click();
+    fixture.detectChanges();
+    flush();
+
+    expect(component.packageDropOpen()).toBeTrue();
+  }));
+
+  it('records a package drop against the selected recipient apartment', fakeAsync(() => {
+    fixture.detectChanges();
+    flushInitialRequests();
+    tick();
+
+    component.openPackageDrop();
+    component.packageDropForm.setValue({
+      recipientQuery: 'Ana Souza',
+      packageDescription: 'Two boxes',
+      packageCarrierCode: 'Correios',
+    });
+    component.searchPackageRecipient();
+
+    const searchRequest = httpMock.expectOne('/api/v1/access-subjects/search');
+    expect(searchRequest.request.body).toEqual({ criterion: 'name', value: 'Ana Souza', unit: null });
+    searchRequest.flush({
+      lookupAuditId: '00000000-0000-0000-0000-000000000020',
+      criterion: 'name',
+      resultCountBand: 'one',
+      items: [
+        {
+          subjectType: 'resident',
+          subjectId: '00000000-0000-0000-0000-000000000010',
+          apartmentId: '00000000-0000-0000-0000-000000000001',
+          apartmentBlock: 'A',
+          apartmentUnit: '101',
+          displayName: 'Ana Souza',
+        },
+      ],
+    });
+    tick();
+
+    component.selectPackageRecipient(component.packageDropResults()[0]!);
+    component.submitPackageDrop();
+
+    const packageDropRequest = httpMock.expectOne('/api/v1/access-events/manual');
+    expect(packageDropRequest.request.body).toEqual({
+      lookupAuditId: '00000000-0000-0000-0000-000000000020',
+      subjectType: 'visitor',
+      subjectId: '00000000-0000-0000-0000-000000000001',
+      direction: 'entrance',
+      gatehouseId: null,
+      kind: 'package-drop',
+      packageDescription: 'Two boxes',
+      packageCarrierCode: 'Correios',
+    });
+    packageDropRequest.flush({
+      accessEventId: '00000000-0000-0000-0000-000000000030',
+      lookupAuditId: '00000000-0000-0000-0000-000000000020',
+      subjectType: 'visitor',
+      subjectId: '00000000-0000-0000-0000-000000000001',
+      accessMethod: 'manual_lookup',
+      direction: 'entrance',
+      destinationApartmentId: '00000000-0000-0000-0000-000000000001',
+      destinationBlock: 'A',
+      destinationUnit: '101',
+    });
+    tick();
+    flush();
+
+    expect(component.packageDropOpen()).toBeFalse();
+  }));
+
   it('switches tabs when tab buttons are clicked', fakeAsync(() => {
     fixture.detectChanges();
     flushInitialRequests();
@@ -85,6 +168,9 @@ describe('GatehousePanelPage', () => {
 
     component.selectTab('walkin');
     fixture.detectChanges();
+
+    const walkinApartmentsReq = httpMock.expectOne('/api/v1/apartments?skip=0&take=500');
+    walkinApartmentsReq.flush([]);
     expect(component.activeTab()).toBe('walkin');
 
     component.selectTab('visits');
@@ -102,6 +188,9 @@ describe('GatehousePanelPage', () => {
 
     component.selectTab('walkin');
     fixture.detectChanges();
+
+    const walkinApartmentsReq = httpMock.expectOne('/api/v1/apartments?skip=0&take=500');
+    walkinApartmentsReq.flush([]);
 
     component.walkinForm.setValue({
       visitorName: 'Carlos Silva',

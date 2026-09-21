@@ -6,8 +6,8 @@ namespace ControlEasyReborn.Modules.Reports.Application.Handlers;
 
 /// <summary>
 /// Serves the unified honest ledger: one chronological stream of Visits +
-/// AccessEvents + the legacy ConsentAuditLog cutoff segment, where each
-/// real-world entry appears exactly once. from/to are normalized through
+/// AccessEvents + ConsentAuditLog, where each real-world entry appears once.
+/// from/to are normalized through
 /// TenantDayBoundary so "today" filters use tenant-local day boundaries
 /// (INFRA-02; per-tenant timezone config deferred to Phase 17).
 /// </summary>

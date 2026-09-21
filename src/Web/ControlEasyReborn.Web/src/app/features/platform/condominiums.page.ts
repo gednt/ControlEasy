@@ -4,6 +4,7 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { TenantsApiService, TenantResponse, TenantAdminResponse, PorteiroResponse } from './tenants-api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
+import { formatRuntimeDate } from '../../core/config/runtime-config';
 
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/;
 
@@ -652,7 +653,7 @@ export class CondominiumsPage {
   }
 
   formatDate(value: string): string {
-    return new Date(value).toLocaleDateString();
+    return formatRuntimeDate(value, { dateStyle: 'short' });
   }
 
   load(): void {

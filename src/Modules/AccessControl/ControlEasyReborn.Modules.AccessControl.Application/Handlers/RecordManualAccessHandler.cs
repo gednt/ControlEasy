@@ -6,6 +6,7 @@ using ControlEasyReborn.Modules.AccessControl.Domain.ValueObjects;
 using ControlEasyReborn.Modules.Photos.Application.Abstractions;
 using ControlEasyReborn.Modules.Residents.Application.Abstractions;
 using ControlEasyReborn.Modules.Vehicles.Application.Abstractions;
+using ControlEasyReborn.SharedKernel.Auditing;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
@@ -31,6 +32,7 @@ public sealed class RecordManualAccessHandler
     private readonly IConsentPolicyEvaluator _policy;
     private readonly AccessEventDestinationResolver _resolver;
     private readonly ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory? _visits;
+    private readonly IAuditLogWriter? _auditWriter;
     private readonly ILogger<RecordManualAccessHandler> _logger;
 
     public RecordManualAccessHandler(
@@ -40,6 +42,7 @@ public sealed class RecordManualAccessHandler
         IConsentPolicyEvaluator policy,
         AccessEventDestinationResolver resolver,
         ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory? visits = null,
+        IAuditLogWriter? auditWriter = null,
         ILogger<RecordManualAccessHandler>? logger = null)
     {
         _audits = audits;
@@ -48,6 +51,7 @@ public sealed class RecordManualAccessHandler
         _policy = policy;
         _resolver = resolver;
         _visits = visits;
+        _auditWriter = auditWriter;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<RecordManualAccessHandler>.Instance;
     }
 
@@ -148,6 +152,7 @@ public sealed class RecordManualAccessHandler
             visitId: visitId);
 
         await _events.AddAsync(accessEvent, ct);
+        await WriteAuditAsync(accessEvent, "ManualAccessRecorded", AuditSeverity.Info, ct);
 
         stopwatch.Stop();
         using (AccessControlLogContext.PushDuration(stopwatch.ElapsedMilliseconds))
@@ -238,6 +243,7 @@ public sealed class RecordManualAccessHandler
             packageCarrierCode: command.PackageCarrierCode);
 
         await _events.AddAsync(accessEvent, ct);
+        await WriteAuditAsync(accessEvent, "PackageDropRecorded", AuditSeverity.Info, ct);
 
         stopwatch.Stop();
         using (AccessControlLogContext.PushDuration(stopwatch.ElapsedMilliseconds))
@@ -260,5 +266,33 @@ public sealed class RecordManualAccessHandler
             DestinationApartmentId: accessEvent.DestinationApartmentId,
             DestinationBlock: accessEvent.DestinationBlock,
             DestinationUnit: accessEvent.DestinationUnit);
+    }
+
+    private Task WriteAuditAsync(AccessEvent accessEvent, string action, AuditSeverity severity, CancellationToken ct)
+    {
+        if (_auditWriter is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        var details = accessEvent.EventKind == AccessEventKind.PackageDrop
+            ? $"Package drop recorded for {accessEvent.DestinationBlock}/{accessEvent.DestinationUnit}."
+            : $"Manual {CycleDirectionCodes.ToWire(accessEvent.Direction)} access recorded for {accessEvent.DestinationBlock}/{accessEvent.DestinationUnit}.";
+
+        return _auditWriter.WriteAsync(
+            tenantId: accessEvent.TenantId,
+            category: AuditCategory.Gatehouse,
+            action: action,
+            entityType: "AccessEvent",
+            entityId: accessEvent.Id,
+            severity: severity,
+            details: details,
+            metadata: new
+            {
+                direction = CycleDirectionCodes.ToWire(accessEvent.Direction),
+                method = AccessMethodCodes.ToWire(accessEvent.AccessMethod),
+                kind = accessEvent.EventKind == AccessEventKind.PackageDrop ? "package-drop" : "access"
+            },
+            ct: ct);
     }
 }

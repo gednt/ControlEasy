@@ -12,6 +12,7 @@ import { CeIconComponent } from '../icon/icon.component';
 import { CeButtonComponent } from '../button/button.component';
 import { CePhotoComponent } from './photo.component';
 import type { PhotoResponse } from '../../../features/photos/photos-api.service';
+import { formatRuntimeDate } from '../../../core/config/runtime-config';
 
 /**
  * Full-screen overlay that renders the source blob of a photo with prev/next
@@ -277,7 +278,7 @@ export class CePhotoLightboxComponent {
     try {
       const d = new Date(stamp);
       if (isNaN(d.getTime())) return stamp;
-      return d.toLocaleString();
+      return formatRuntimeDate(d);
     } catch {
       return stamp;
     }

@@ -1,10 +1,12 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { importProvidersFrom } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { ReportsPage, formatTimestampWithMs, escapeCsvField } from './reports.page';
 import { ReportsService } from '../../api/services/reports.service';
 import { ApartmentsApiService } from '../apartments/apartments-api.service';
+import { CE_LUCIDE_ICONS } from '../../design-system/components/icon/icon.registry';
 
 describe('ReportsPage', () => {
   let fixture: ComponentFixture<ReportsPage>;
@@ -15,6 +17,7 @@ describe('ReportsPage', () => {
     await TestBed.configureTestingModule({
       imports: [ReportsPage],
       providers: [
+        importProvidersFrom(CE_LUCIDE_ICONS),
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -73,6 +76,7 @@ describe('ReportsPage', () => {
     fixture.detectChanges();
     flushInitialRequests();
     tick();
+    fixture.detectChanges();
 
     expect(component.datePreset()).toBe('today');
     expect(component.totalPeriodVisits()).toBe(20);

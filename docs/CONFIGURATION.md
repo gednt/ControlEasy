@@ -56,6 +56,12 @@ The application can be configured via environment variables supplied in Docker C
 | `ASPNETCORE_ENVIRONMENT` | Optional | `Development` | ASP.NET Core environment mode (`Development`, `Staging`, `Production`) |
 | `Serilog__WriteTo__1__Args__serverUrl` | Optional | `http://seq:5341` | Endpoint URL for Seq structured log aggregator |
 
+### Timezone
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `TIME_ZONE` | Optional | `America/Sao_Paulo` | IANA timezone used by the web date formatting and mapped to the API's `TimeZone__Id` setting for tenant-local report date boundaries. For example: `TIME_ZONE=America/Fortaleza`. |
+
 ### Feature Management & Demo Mode
 
 | Variable | Required | Default | Description |

@@ -21,6 +21,7 @@ import { QrScanPage } from '../access-control/qr-scan.page';
 import { ManualLookupPage } from '../access-control/manual-lookup.page';
 import { VisitsApiService, VisitResponse } from '../visits/visits-api.service';
 import { GatewayControlService } from '../access-control/gateway-control.service';
+import { ManualLookupResult } from '../access-control/access-control.types';
 import { ApartmentPickerComponent } from '../../shared/apartment-picker/apartment-picker.component';
 import { formatApartmentLabel, ApartmentsApiService, ApartmentResponse } from '../apartments/apartments-api.service';
 import { QrPassModalComponent } from '../access-control/components/qr-pass-modal.component';
@@ -56,6 +57,16 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
           <div class="title-row">
             <h1 class="page-title">Gatehouse operator panel</h1>
             <div class="header-badges">
+              <ce-button
+                variant="secondary"
+                size="sm"
+                aria-label="Gatehouse only — package drop without entry"
+                (click)="openPackageDrop()"
+                data-testid="package-drop-btn"
+              >
+                <ce-icon name="package" [size]="16" />
+                Package drop (no entry)
+              </ce-button>
               <span class="live-pill" aria-live="polite">
                 <span class="pulse-dot"></span>
                 <span>Gate active</span>
@@ -389,6 +400,95 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
       [subjectName]="qrPassSubjectName()"
       (closed)="closeQrPassModal()"
     />
+
+    <ce-modal [open]="packageDropOpen()" title="Register package drop" size="md" (closed)="closePackageDrop()">
+      <form class="package-drop-form" [formGroup]="packageDropForm" (ngSubmit)="submitPackageDrop()">
+        <p class="package-drop-intro">
+          Record a package without registering a visitor or granting entry. Search for the recipient to set its destination.
+        </p>
+
+        <label class="field-label">
+          <span>Recipient name <span class="required">*</span></span>
+          <input
+            type="search"
+            class="ce-input"
+            formControlName="recipientQuery"
+            placeholder="Search resident name"
+            data-testid="package-drop-recipient"
+          />
+        </label>
+        <ce-button
+          variant="secondary"
+          size="sm"
+          type="button"
+          [disabled]="packageDropSearching() || packageDropForm.controls.recipientQuery.invalid"
+          (click)="searchPackageRecipient()"
+        >
+          {{ packageDropSearching() ? 'Searching…' : 'Find recipient' }}
+        </ce-button>
+
+        @if (packageDropResults().length) {
+          <div class="package-drop-results" role="listbox" aria-label="Package recipients">
+            @for (recipient of packageDropResults(); track recipient.subjectId) {
+              <button
+                type="button"
+                class="package-drop-recipient"
+                [class.selected]="packageDropRecipient()?.subjectId === recipient.subjectId"
+                (click)="selectPackageRecipient(recipient)"
+              >
+                <strong>{{ recipient.displayName }}</strong>
+                <span>{{ recipient.apartmentBlock }} / {{ recipient.apartmentUnit }}</span>
+              </button>
+            }
+          </div>
+        }
+
+        @if (packageDropRecipient(); as recipient) {
+          <p class="package-drop-destination" data-testid="package-drop-destination">
+            Deliver to <strong>{{ recipient.displayName }}</strong> — {{ recipient.apartmentBlock }} / {{ recipient.apartmentUnit }}
+          </p>
+        }
+
+        <label class="field-label">
+          <span>Package description <span class="required">*</span></span>
+          <input
+            type="text"
+            class="ce-input"
+            formControlName="packageDescription"
+            placeholder="e.g. Two boxes, envelope"
+            data-testid="package-drop-description"
+          />
+        </label>
+
+        <label class="field-label">
+          <span>Carrier (optional)</span>
+          <input
+            type="text"
+            class="ce-input"
+            formControlName="packageCarrierCode"
+            placeholder="e.g. Correios, DHL"
+            data-testid="package-drop-carrier"
+          />
+        </label>
+
+        @if (packageDropError()) {
+          <p class="form-error-banner" role="alert">{{ packageDropError() }}</p>
+        }
+
+        <div class="form-actions">
+          <ce-button variant="ghost" size="md" type="button" (click)="closePackageDrop()">Cancel</ce-button>
+          <ce-button
+            variant="primary"
+            size="md"
+            type="submit"
+            [disabled]="packageDropForm.invalid || !packageDropRecipient() || packageDropSubmitting()"
+            data-testid="package-drop-submit"
+          >
+            {{ packageDropSubmitting() ? 'Recording…' : 'Record package drop' }}
+          </ce-button>
+        </div>
+      </form>
+    </ce-modal>
   `,
   styles: [
     `
@@ -686,6 +786,55 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
         font-size: var(--font-size-sm);
       }
 
+      .package-drop-form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3);
+      }
+
+      .package-drop-intro,
+      .package-drop-destination {
+        margin: 0;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+      }
+
+      .package-drop-destination {
+        padding: var(--space-3);
+        background: var(--color-surface-muted);
+        color: var(--color-text-primary);
+      }
+
+      .package-drop-results {
+        display: grid;
+        max-height: 12rem;
+        overflow-y: auto;
+        border: 1px solid var(--color-border);
+      }
+
+      .package-drop-recipient {
+        display: flex;
+        justify-content: space-between;
+        gap: var(--space-3);
+        padding: var(--space-3);
+        border: 0;
+        border-bottom: 1px solid var(--color-border);
+        background: var(--color-surface);
+        color: var(--color-text-primary);
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+      }
+
+      .package-drop-recipient:last-child {
+        border-bottom: 0;
+      }
+
+      .package-drop-recipient.selected,
+      .package-drop-recipient:hover {
+        background: var(--color-surface-muted);
+      }
+
       .search-bar {
         display: flex;
         max-width: 400px;
@@ -799,6 +948,13 @@ export class GatehousePanelPage implements OnInit {
   readonly qrPassModalOpen = signal(false);
   readonly qrPassModalPayload = signal<string | null>(null);
   readonly qrPassSubjectName = signal<string>('');
+  readonly packageDropOpen = signal(false);
+  readonly packageDropSearching = signal(false);
+  readonly packageDropSubmitting = signal(false);
+  readonly packageDropError = signal<string | null>(null);
+  readonly packageDropResults = signal<ManualLookupResult[]>([]);
+  readonly packageDropRecipient = signal<ManualLookupResult | null>(null);
+  private packageDropLookupAuditId: string | null = null;
 
   private apartmentsMap = signal<Map<string, ApartmentResponse>>(new Map());
 
@@ -809,6 +965,12 @@ export class GatehousePanelPage implements OnInit {
     apartmentId: [null as string | null, Validators.required],
     purpose: [''],
     generateQrPass: [true],
+  });
+
+  readonly packageDropForm = this.fb.nonNullable.group({
+    recipientQuery: ['', [Validators.required, Validators.minLength(3)]],
+    packageDescription: ['', [Validators.required, Validators.minLength(1)]],
+    packageCarrierCode: [''],
   });
 
   readonly filteredOpenVisits = computed(() => {
@@ -935,6 +1097,81 @@ export class GatehousePanelPage implements OnInit {
   closeQrPassModal(): void {
     this.qrPassModalOpen.set(false);
     this.qrPassModalPayload.set(null);
+  }
+
+  openPackageDrop(): void {
+    this.packageDropOpen.set(true);
+  }
+
+  closePackageDrop(): void {
+    this.packageDropOpen.set(false);
+    this.packageDropForm.reset();
+    this.packageDropSearching.set(false);
+    this.packageDropSubmitting.set(false);
+    this.packageDropError.set(null);
+    this.packageDropResults.set([]);
+    this.packageDropRecipient.set(null);
+    this.packageDropLookupAuditId = null;
+  }
+
+  searchPackageRecipient(): void {
+    const recipientQuery = this.packageDropForm.controls.recipientQuery.value.trim();
+    if (recipientQuery.length < 3 || this.packageDropSearching()) return;
+
+    this.packageDropSearching.set(true);
+    this.packageDropError.set(null);
+    this.packageDropResults.set([]);
+    this.packageDropRecipient.set(null);
+    this.packageDropLookupAuditId = null;
+
+    this.gateway.searchSubject({ type: 'name', value: recipientQuery, unit: null }).subscribe({
+      next: (response) => {
+        const eligibleRecipients = response.items.filter((item) => item.apartmentId);
+        this.packageDropResults.set(eligibleRecipients);
+        this.packageDropLookupAuditId = response.lookupAuditId;
+        this.packageDropSearching.set(false);
+        if (!eligibleRecipients.length) {
+          this.packageDropError.set('No recipient with an active apartment was found.');
+        }
+      },
+      error: (err) => {
+        this.packageDropSearching.set(false);
+        this.packageDropError.set(getApiErrorMessage(err, 'Failed to search for a recipient.'));
+      },
+    });
+  }
+
+  selectPackageRecipient(recipient: ManualLookupResult): void {
+    if (!recipient.apartmentId) return;
+    this.packageDropRecipient.set(recipient);
+    this.packageDropError.set(null);
+  }
+
+  submitPackageDrop(): void {
+    const recipient = this.packageDropRecipient();
+    const lookupAuditId = this.packageDropLookupAuditId;
+    if (this.packageDropForm.invalid || !recipient?.apartmentId || !lookupAuditId || this.packageDropSubmitting()) return;
+
+    const value = this.packageDropForm.getRawValue();
+    this.packageDropSubmitting.set(true);
+    this.packageDropError.set(null);
+    this.gateway
+      .recordPackageDrop({
+        lookupAuditId,
+        destinationApartmentId: recipient.apartmentId,
+        packageDescription: value.packageDescription.trim(),
+        packageCarrierCode: value.packageCarrierCode.trim() || null,
+      })
+      .subscribe({
+        next: () => {
+          this.toast.success(`Package drop recorded for ${recipient.apartmentBlock} / ${recipient.apartmentUnit}.`);
+          this.closePackageDrop();
+        },
+        error: (err) => {
+          this.packageDropSubmitting.set(false);
+          this.packageDropError.set(getApiErrorMessage(err, 'Failed to record package drop.'));
+        },
+      });
   }
 
   loadOpenVisits(): void {
