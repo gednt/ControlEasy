@@ -178,6 +178,7 @@ Hard rules an agent must not violate, beyond what the workflows enforce.
 - **No MVC controllers.** Minimal API endpoint classes only.
 - **All tenant-scoped reads/writes via `ITenantAwareLinqFactory`.** No cross-tenant data access.
 - **Secrets never in `App.config`.** Use environment variables or Docker secrets.
+- **Synthetic test data only.** Never copy document numbers, names, contact details, or any other data supplied by users into tests, snapshots, seeders, or example payloads; use clearly synthetic mock values instead.
 - **BCrypt cost >= 11** for password hashing.
 - **`ProblemDetails` (RFC 7807)** for all error responses. Domain exceptions: `NotFoundException`, `ValidationException`, `ConflictException`.
 - **Serilog** structured logging to Console (JSON) + Seq.
