@@ -71,96 +71,21 @@ Rules of thumb:
 
 ## Build, test, and development commands
 
-Canonical commands an agent should run. The project uses Docker Compose for the full stack and .NET / npm for individual layers.
+Canonical commands live in `docs/DEVELOPMENT.md` (build, lint, worktree bring-up,
+first-run bootstrap) and `docs/TESTING.md` (test execution per layer). Quick
+reference:
 
-### Build
+- Build: `dotnet build src/ControlEasyReborn.sln` / `make build`
+- Tests: `dotnet test tests/ControlEasyReborn.UnitTests` (plus IntegrationTests, ArchitectureTests); Angular: `npm test -- --no-watch --browsers=ChromeHeadless`
+- Lint/format: `npm run lint` / `npm run format` (from `src/Web/ControlEasyReborn.Web`)
+- Stack: `docker compose -f docker/docker-compose.yml up -d --build` / `make up` / `make down`
+- Local CI gate: `scripts/verify-ci-local.sh` (full) / `--fast` (per-turn) — see Policy below
 
-- `dotnet build src/ControlEasyReborn.sln` — build the entire .NET solution.
-- `cd src/Web/ControlEasyReborn.Web && npm run build` — build the Angular SPA (runs `ng-openapi-gen` first via `prebuild`).
-- `docker compose -f docker/docker-compose.yml build` — build all container images.
-
-### Test
-
-- `dotnet test tests/ControlEasyReborn.UnitTests` — unit tests (xUnit + FluentAssertions + NSubstitute).
-- `dotnet test tests/ControlEasyReborn.IntegrationTests` — integration tests (Testcontainers.MySql).
-- `dotnet test tests/ControlEasyReborn.ArchitectureTests` — architecture rules (NetArchTest.Rules).
-- `cd src/Web/ControlEasyReborn.Web && npm test -- --no-watch --browsers=ChromeHeadless` — Angular unit tests (Karma + Jasmine).
-- `cd src/Web/ControlEasyReborn.Web && npm run e2e` — Playwright E2E tests. Set `E2E_BASE_URL=https://ce-<branch>.localhost:<port>`.
-
-### Lint / format
-
-- `cd src/Web/ControlEasyReborn.Web && npm run lint` — ESLint (`@angular-eslint/recommended`).
-- `cd src/Web/ControlEasyReborn.Web && npm run format` — Prettier (single quotes, 120 cols).
-- `cd src/Web/ControlEasyReborn.Web && npm run openapi-check` — verify OpenAPI-generated types are up to date.
-
-### Local development
-
-The canonical dev shell is the **devcontainer** under `.devcontainer/`. The
-host shell (PowerShell 7+ on Windows, `bash`/`zsh` on macOS/Linux) is an
-acceptable fallback for trivial read-only inspection (`git status`, `ls`,
-`cat`) but MUST NOT be used for build / test / lint / restore / install. See
-Constitution Principle V ("Dev shell") for the binding procedure and
-Principle VIII ("Host-OS / Shell-Aware Command Execution") for the
-platform/shell rules that govern every command in this section.
-
-**Canonical bring-up procedure (per worktree, per session):**
-
-1. **Open the worktree in a devcontainer-aware IDE** (VS Code, Cursor,
-   JetBrains, GitHub Codespaces). The IDE MUST attach to the devcontainer
-   defined by `.devcontainer/devcontainer.json`. An
-   `AUTO_START_COMPOSE=true` env var auto-runs the bring-up; otherwise
-   step 2 is manual.
-2. **Bring up the Compose stack** (canonical first boot of a worktree).
-   Inside the devcontainer shell:
-   ```bash
-   docker compose -p ce-<branch-hyphens> \
-     -f docker/docker-compose.yml \
-     -f docker/docker-compose.worktree.<branch-hyphens>.yml \
-     up -d --build
-   ```
-   The `-p` (project) flag scopes container names, networks, and the MySQL
-   volume to this worktree; the worktree override (built from
-   `docker/docker-compose.worktree.template.yml`) pins the unique
-   hostname, host port, and DB volume declared in the "Worktree naming
-   convention" table below.
-3. **Wait for health.** All services MUST reach `health: healthy` before
-   any verification step. `docker compose -p ce-<branch> ps` reports the
-   per-service state; the `api` service's `/health` endpoint is the
-   canonical readiness probe.
-4. **Run the verification gate** (inside the devcontainer):
-   ```bash
-   docker compose -p ce-<branch> exec -T api \
-     dotnet test /workspace/tests/ControlEasyReborn.UnitTests
-   # repeat for IntegrationTests and ArchitectureTests; then
-   docker compose -p ce-<branch> exec -T web \
-     npm test -- --no-watch --browsers=ChromeHeadless
-   ```
-5. **Tear down** (when the worktree is merged or abandoned):
-   `docker compose -p ce-<branch> down -v` removes only that worktree's
-   containers, networks, and volume. Other worktrees are untouched.
-6. **Override paths.** The demo overlay (`docker-compose.demo.yml`)
-   replaces the worktree override in step 2 when demo data is wanted;
-   the `scripts/verify-devcontainer.sh` script replaces steps 2–5 for an
-   unattended end-to-end gate.
-
-**One-shot bring-up commands** (use the devcontainer for any non-trivial
-session; these are the canonical one-liners when the devcontainer is not
-available):
-
-- `docker compose -f docker/docker-compose.yml up -d --build` — full stack
-  (canonical first boot, no worktree scoping).
-- `docker compose -f docker/docker-compose.yml -f docker/docker-compose.demo.yml up -d --build`
-  — demo mode overlay (pre-populated data; never use in production).
-- `cd src/Web/ControlEasyReborn.Web && npm start` — Angular dev server
-  only (API must already be running).
-- `make up` / `make down` / `make test` / `make build` — Makefile
-  convenience targets (wrap the commands above).
-
-Containers: the compose file is `docker/docker-compose.yml`. The
-project-name convention is `ce-<branch-hyphens>` (e.g.,
-`ce-feat-dashboard-live-stats`). Worktree compose overrides use
-`docker/docker-compose.worktree.template.yml`. See `docs/dev-setup.md` for
-the full devcontainer + worktree guide.
+The canonical dev shell is the **devcontainer** under `.devcontainer/`; the host
+shell is a fallback for trivial read-only inspection only (Constitution
+Principles V and VIII). The per-worktree Compose project convention is
+`ce-<branch-hyphens>`; see "Worktree naming convention" below and
+`docs/DEVELOPMENT.md` for the full bring-up procedure.
 
 ---
 
@@ -270,17 +195,19 @@ If a project stops using an overlay, remove its line. Do not leave stale pointer
 
 ## Conventions that differ from defaults
 
+Single source of truth for stack and workflow conventions; the Policy section
+above holds only hard prohibitions not repeated here.
+
 - **Stack:** ASP.NET Core 8 (C# 12, minimal API endpoints) + Angular 18 SPA + MySQL 8 + Docker Compose + JWT bearer.
 - **Data access:** DBTools 1.4.3 (`Linq<TModel>`, `IAsyncSqlClient`). No EF Core (ADR 0002). LINQ-first; raw SQL only for stored procs.
-- **Mapping:** Mapster.
-- **Validation:** FluentValidation.
+- **Mapping:** Mapster. **Validation:** FluentValidation.
 - **Testing:** xUnit + FluentAssertions + NSubstitute + Testcontainers.MySql + Playwright. Karma + Jasmine for Angular unit tests.
 - **Runtime:** Docker Compose services: `api`, `web`, `db`, `reverse-proxy`, `adminer`, `seq`. Multi-stage Dockerfiles. Compose v2.
 - **Error handling:** `ProblemDetails` (RFC 7807); Serilog to Console (JSON) + Seq. Domain exceptions: `NotFoundException`, `ValidationException`, `ConflictException`.
 - **Auto-tool selection:** Agents read the user's intent and automatically invoke the right tool (spec-kit for implementation, BMAD for review/analysis, GSD for phase planning). See `docs/agent-flow-cheatsheet.md` for lifecycle diagrams.
 - **Concurrency budget:** Max 3 sub-agents in flight per level (1 main + 3 subs). Exceeding requires explicit rationale in the wave's `proposal.md`, `design.md`, or `tasks.md`.
-- **Post-task verification (Mandatory Local CI Gate):** After every implementation task or code modification, the agent MUST verify its work. Per-turn stop hooks enforce fast checks (`--fast`: format, build, unit + arch tests in ~3s, zero Docker downloads). CI tasks that download things inside Docker (Testcontainers MySQL and Docker web build) run **only once per task completion, at the end of all tasks completions, not after every turn**. The full suite (`scripts/verify-ci-local.sh` or `make verify-ci`) must pass before committing, pushing, or reporting the final task complete.
-- **Pre-commit adversarial review:** No agent may `git commit` until (1) build + tests are green (including the full local CI gate) and (2) an adversarial review subagent returns zero CRITICAL/HIGH findings. See existing AGENTS.md archive for full gate procedure.
+- **Post-task verification:** see "Mandatory Local CI Verification Gate" in Policy above.
+- **Pre-commit adversarial review:** No agent may `git commit` until (1) build + tests are green (including the full local CI gate) and (2) an adversarial review subagent returns zero CRITICAL/HIGH findings.
 
 ---
 
