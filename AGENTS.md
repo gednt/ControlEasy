@@ -136,28 +136,6 @@ Scripts: `scripts/worktree-up.ps1` / `.sh` (create), `scripts/worktree-down.ps1`
 
 ---
 
-## Workflow blocks
-
-Each block below is owned by one workflow. The block is **inert** when empty — an agent that does not run that workflow ignores it. Workflows may replace the contents of their own block on refresh. Workflows MUST NOT modify another workflow's block.
-
-### BMAD
-
-<!-- owner:bmad -->
-<!-- BMAD's project-context skill writes its durable context here. Delete this block if the project does not use BMAD. -->
-<!-- /owner -->
-
-### GSD-core
-
-<!-- owner:gsd -->
-<!-- GSD's onboarding skill writes its state slice here. Delete this block if the project does not use GSD-core. -->
-<!-- /owner -->
-
-### Other workflows
-
-Add a new `<!-- owner:<workflow> -->` block here when adopting a new workflow. Document the block in `AGENTS-SPEC.md` (see Extension protocol).
-
----
-
 ## Skill overlays
 
 Skill overlays do not own any block in `AGENTS.md`. They are **sibling files** that the agent reads directly when needed.
