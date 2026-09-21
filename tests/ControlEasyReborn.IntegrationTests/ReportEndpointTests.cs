@@ -7,6 +7,7 @@ using ControlEasyReborn.Modules.AccessControl.Infrastructure.Services;
 using ControlEasyReborn.Modules.Administration.Application.Contracts;
 using ControlEasyReborn.Modules.Apartments.Application.Contracts;
 using ControlEasyReborn.Modules.Reports.Application.Contracts;
+using ControlEasyReborn.Modules.Reports.Application.Time;
 using ControlEasyReborn.Modules.Residents.Application.Contracts;
 using ControlEasyReborn.Modules.Visits.Application.Contracts;
 using FluentAssertions;
@@ -452,7 +453,7 @@ public sealed class ReportEndpointTests
         checkedIn!.CheckedInAtUtc.Should().NotBeNull();
 
         // 4. Query history for today's date range
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = GetTenantDate(checkedIn.CheckedInAtUtc!.Value);
         var historyResponse = await client.GetAsync($"/api/v1/reports/history?from={today:yyyy-MM-dd}&to={today:yyyy-MM-dd}");
         historyResponse.EnsureSuccessStatusCode();
 
@@ -467,12 +468,31 @@ public sealed class ReportEndpointTests
         row.OccurredAt.Should().BeCloseTo(checkedIn.CheckedInAtUtc!.Value, TimeSpan.FromSeconds(5));
 
         // 5. Query history for 2 days ago (creation day) — must NOT contain this visit since it checked in today
-        var pastDate = DateOnly.FromDateTime(pastUtc);
+        var pastDate = GetTenantDate(pastUtc);
         var pastHistoryResponse = await client.GetAsync($"/api/v1/reports/history?from={pastDate:yyyy-MM-dd}&to={pastDate:yyyy-MM-dd}");
         pastHistoryResponse.EnsureSuccessStatusCode();
         var pastRows = await pastHistoryResponse.Content.ReadFromJsonAsync<List<HistoryRowResponse>>();
         pastRows.Should().NotBeNull();
         pastRows!.Should().NotContain(r => r.Id == created.Id);
+    }
+
+    private static DateOnly GetTenantDate(DateTime timestampUtc)
+    {
+        var utcTimestamp = timestampUtc.Kind switch
+        {
+            DateTimeKind.Utc => timestampUtc,
+            DateTimeKind.Local => timestampUtc.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(timestampUtc, DateTimeKind.Utc)
+        };
+        var utcDate = DateOnly.FromDateTime(utcTimestamp);
+
+        return Enumerable.Range(-1, 3)
+            .Select(offset => utcDate.AddDays(offset))
+            .Single(date =>
+            {
+                var bounds = TenantDayBoundary.GetDayBoundsUtc(date);
+                return utcTimestamp >= bounds.StartUtc && utcTimestamp < bounds.EndUtc;
+            });
     }
 
     private async Task SeedLegacyConsentRowAsync(Guid tenantId, string subjectName, DateTime recordedAtUtc)

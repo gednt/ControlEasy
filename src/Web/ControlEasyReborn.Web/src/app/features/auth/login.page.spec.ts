@@ -1,3 +1,4 @@
+import { importProvidersFrom } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, throwError } from 'rxjs';
 import { LoginPage } from './login.page';
@@ -5,6 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { DemoInfoService } from '../../core/services/demo-info.service';
 import { BootstrapInfoService } from '../../core/services/bootstrap-info.service';
 import { ThemeService } from '../../design-system';
+import { CE_LUCIDE_ICONS } from '../../design-system/components/icon/icon.registry';
 
 describe('LoginPage', () => {
   let component: LoginPage;
@@ -37,6 +39,7 @@ describe('LoginPage', () => {
     await TestBed.configureTestingModule({
       imports: [LoginPage],
       providers: [
+        importProvidersFrom(CE_LUCIDE_ICONS),
         { provide: AuthService, useValue: authServiceSpy },
         { provide: DemoInfoService, useValue: demoInfoSpy },
         { provide: BootstrapInfoService, useValue: bootstrapInfoSpy },
