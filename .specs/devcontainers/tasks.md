@@ -191,8 +191,8 @@ hold multiple branches in parallel without colliding.*
   (Docker) — host shell" model and the no-CI-acknowledged
   `docker compose` workflow) with the new model:
   - **Workflow tooling section** — GSD owns the roadmap, spec-kit
-    owns per-feature specs, OpenSpec is opt-in per change at the
-    user's discretion (see new "OpenSpec (opt-in)" subsection).
+    owns per-feature specs (as recorded at task time; OpenSpec was
+    later removed at constitution v1.7.0).
   - **Local development section** — Option D (devcontainer) is
     canonical; the historical Options A/B/C are kept as
     "Retired modes" with a one-line "not for new work" note.
@@ -290,13 +290,10 @@ hold multiple branches in parallel without colliding.*
   script in a second job that uses a worktree. This is the
   "works in the dev shell" / "works in the worktree" parity check.
 
-- [ ] **C.13** **OpenSpec promotion trigger (out of scope until
-  user opt-in).** The constitution v1.1.0 records this as
-  `TODO(CONSTITUTION_VI_OPENSPEC_ADOPTION_DATE)`. When the user
-  decides to use OpenSpec on a per-change basis, the
-  corresponding `.specs/<feature>/` folder is *not* deleted;
-  instead, an `openspec/changes/<id>/` folder is created and the
-  per-feature spec is referenced from the `proposal.md` "Why"
-  section. The two systems coexist; the spec-kit folder is the
-  implementation-side source of truth, the OpenSpec folder is the
-  agreement-side source of truth.
+- [X] **C.13** **OpenSpec promotion trigger (out of scope until
+  user opt-in).** RESOLVED 2026-09-21: OpenSpec was removed from
+  the project at constitution v1.7.0 instead of being adopted; the
+  `openspec/` directory was deleted and the `TODO(CONSTITUTION_VI_
+  OPENSPEC_ADOPTION_DATE)` trigger is moot. No migration occurred;
+  the spec-kit `.specs/<feature>/` folders remain the sole
+  per-feature source of truth.

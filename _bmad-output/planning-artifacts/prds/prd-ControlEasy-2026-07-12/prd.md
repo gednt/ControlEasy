@@ -29,7 +29,7 @@ Provide a **canonical local development shell** (devcontainer) and a **per-featu
 
 - Docker Compose remains the runtime target (Constitution v1.3.0, Principle V).
 - The host's Docker engine remains the engine; the devcontainer only provides a uniform shell.
-- OpenSpec adoption, CI implementation, and legacy `docs/` retirement are tracked separately.
+- CI implementation and legacy `docs/` retirement are tracked separately. (OpenSpec adoption was later removed from the project at constitution v1.7.0.)
 
 ## 2. Guiding Principles
 

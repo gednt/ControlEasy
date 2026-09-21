@@ -51,7 +51,7 @@ QR validation and access recording are software workflows only. They never opera
 | III. LINQ-First Data Access | New operational reads/writes use DBTools LINQ through tenant-aware factories. The manual directory composes owner-module read ports instead of raw SQL joins. Database DDL/triggers are limited to schema migrations and explicitly documented. | PASS |
 | IV. Test-First & Verification Discipline | Tasks begin with failing unit/integration/architecture or UI tests as appropriate. Every completed implementation task requires the prescribed Compose rebuild, healthy services, and affected test slices. | PASS |
 | V. Observability, Security, Runtime Container Parity | JWT and explicit Access permissions protect operations; RFC 7807 returns safe errors; Serilog records structured non-sensitive outcomes; Docker Compose is the only validation runtime. | PASS |
-| VI. Workflow Tooling | spec-kit owns this feature's artifacts; the active requirement is listed in `.planning/PROJECT.md` and its decision in `.planning/STATE.md`; no OpenSpec change is created. | PASS |
+| VI. Workflow Tooling | spec-kit owns this feature's artifacts; the active requirement is listed in `.planning/PROJECT.md` and its decision in `.planning/STATE.md`; no separate change-tracking layer is used (OpenSpec removed at v1.7.0). | PASS |
 | VII. Sub-Agent Orchestration & Concurrency Budget | Phase-0 research used two focused sub-agents, within the three-agent budget. No implementation-wave exception is proposed. | PASS |
 
 ### Post-design re-check

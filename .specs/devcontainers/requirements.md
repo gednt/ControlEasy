@@ -195,16 +195,18 @@ new shell.
 
 - Replacing the Docker Compose runtime. (Constitution v1.3.0 Principle V
   forbids it; the devcontainer is a shell, not a runtime.)
-- Adopting OpenSpec change-tracking. (`openspec/` is opt-in per
+- Adopting OpenSpec change-tracking. ~~(`openspec/` is opt-in per
   Constitution v1.3.0 Principle VI; the trigger for adoption is
-  recorded as `TODO(CONSTITUTION_VI_OPENSPEC_ADOPTION_DATE)`.)
+  recorded as `TODO(CONSTITUTION_VI_OPENSPEC_ADOPTION_DATE)`.)~~
+  RESOLVED 2026-09-21: OpenSpec was removed from the project at
+  constitution v1.7.0; no adoption decision is pending.
 - Continuous integration on a hosted runner. (`.planning/PROJECT.md`
   continuous task **CI-01** — GitHub Actions — is still "Active" and
   is out of scope for this spec; the devcontainer is local-only. Task
   9.4.3 adds a `lint.yml` *skeleton* as a seed but does not stand up
   CI.)
-- Replacing `.planning/`, `.specs/`, `.specify/`, or `openspec/` with
-  a single tool. (Constitution v1.3.0 Principle VI fixes the split.)
+- Replacing `.planning/`, `.specs/`, or `.specify/` with
+  a single tool. (Constitution v1.7.0 Principle VI fixes the split.)
 - Retiring the legacy `docs/` generation pipeline. Task 9.8 adds
   one-line redirect notes; full deletion is gated for the next
   `/gsd-complete-milestone` boundary per the Constitution's

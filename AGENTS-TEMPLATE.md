@@ -2,9 +2,9 @@
 
 # AGENTS.md Template (v1)
 
-> A schema-driven template for `AGENTS.md` that works across BMAD, GSD-core, openspec, impeccable, and any future workflow or skill overlay. Replace the example content with your own; keep the section structure, ownership markers, and freshness stamps.
+> A schema-driven template for `AGENTS.md` that works across BMAD, GSD-core, impeccable, and any future workflow or skill overlay. Replace the example content with your own; keep the section structure, ownership markers, and freshness stamps.
 
-The template is **workflow-neutral by default**. Workflow-specific machinery (BMAD's project-context block, GSD's state slice, openspec's change-proposal pointer, etc.) lives in marked, workflow-owned blocks. Skill overlays (impeccable, linters, formatters, design detectors) are listed as pointers to sibling files; they do not own any block.
+The template is **workflow-neutral by default**. Workflow-specific machinery (BMAD's project-context block, GSD's state slice, etc.) lives in marked, workflow-owned blocks. Skill overlays (impeccable, linters, formatters, design detectors) are listed as pointers to sibling files; they do not own any block.
 
 For the authoritative reader contract — how agents interpret this template, the extension protocol, and how freshness stamps behave — see `AGENTS-SPEC.md`.
 
@@ -104,12 +104,6 @@ Each block below is owned by one workflow. The block is **inert** when empty —
 
 <!-- owner:gsd -->
 <!-- GSD's onboarding skill writes its state slice here. Delete this block if the project does not use GSD-core. -->
-<!-- /owner -->
-
-### openspec
-
-<!-- owner:openspec -->
-<!-- openspec's onboarding writes its change-proposal pointer here. Delete this block if the project does not use openspec. -->
 <!-- /owner -->
 
 ### Other workflows

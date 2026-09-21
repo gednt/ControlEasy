@@ -1,16 +1,22 @@
 <!--
-Sync Impact Report (v1.6.0)
+Sync Impact Report (v1.7.0)
 ===========================
-Version change: 1.5.0 → 1.6.0  (MINOR — Hardened local CI verification gate
-  across Principle IV and Section 5 Quality Gates; no task or modification is
-  considered "done" until all local CI jobs pass via scripts/verify-ci-local.sh,
-  enforced by automated agent Stop hooks in .agents/, .agent/, .claude/, .codex/,
-  and .cursor/)
+Version change: 1.6.0 → 1.7.0  (MINOR — OpenSpec removed from the project
+  workflow. Principle VI is restated as a three-tool split (GSD, spec-kit,
+  BMAD); Principle VII no longer lists OpenSpec in sub-agent ownership;
+  Principle IX's composition line no longer names OpenSpec; Development
+  Workflow § 3 (OpenSpec opt-in change-tracking) is removed and § 4 Seams
+  drops the spec-kit ↔ OpenSpec, GSD ↔ OpenSpec, and OpenSpec ↔ BMAD
+  handoffs; the source-of-truth table and cheat-sheet row no longer
+  reference OpenSpec. AGENTS.md runtime guidance, AGENTS-SPEC.md,
+  AGENTS-TEMPLATE.md, agents-init/SKILL.md, and
+  docs/agent-flow-cheatsheet.md were updated in the same change. The
+  openspec/ data directory and all vendor-fanout skill/command copies were
+  deleted (change history preserved in git). No template files other than
+  AGENTS-TEMPLATE.md were affected.
 
 
 Deferred items (stable conditions, not point-in-time snapshots):
-  - OpenSpec adoption: openspec/ is opt-in. No change from prior
-    reports.
   - Legacy docs retirement: unchanged from prior reports.
   - STATE.md drift: unchanged from prior reports.
   - Skill-template cleanup: unchanged from v1.4.0 (bare `bash` snippets
@@ -172,14 +178,14 @@ cheapest way to ensure that. The dev shell is separate from the runtime
 target: we want a uniform, reproducible dev experience (devcontainer) without
 giving up "Compose is the runtime" (the verification gate is unchanged).
 
-### VI. Workflow Tooling (GSD / spec-kit / OpenSpec / BMAD)
+### VI. Workflow Tooling (GSD / spec-kit / BMAD)
 
-The project runs four workflow systems. Three of them — **GSD**, **spec-kit**,
-and **OpenSpec** — own implementation and planning artifacts. The fourth —
+The project runs three workflow systems. Two of them — **GSD** and
+**spec-kit** — own implementation and planning artifacts. The third —
 **BMAD** — is the review/analysis/adversarial-quality layer (see
 Principle IX for its full scope). Each has a single, non-overlapping
-responsibility, and the four compose so that BMAD questions, spec-kit
-implements, GSD plans and gates, and OpenSpec tracks deltas:
+responsibility, and the three compose so that BMAD questions, spec-kit
+implements, and GSD plans and gates:
 
 - **GSD** (`.planning/`) is the **planner and roadmap owner**. `PROJECT.md`
   holds the high-level brief and the validated/active/out-of-scope lists.
@@ -196,18 +202,11 @@ implements, GSD plans and gates, and OpenSpec tracks deltas:
   `.specify/memory/constitution.md` (this file) is the binding governance
   document for spec-kit. The speckit-command skills (`.agents/skills/`)
   are the interface between human intent and spec-kit artifacts.
-- **OpenSpec** (`openspec/`) is a **forward-compatible slot** for the day
-  the team chooses to adopt change-tracking with formal proposal/spec
-  deltas. It is opt-in: an `openspec/changes/<id>/` folder is created
-  only when the user explicitly invokes `/opsx:new` (or equivalent) on
-  a change. Promoting a per-feature spec from `.specs/<feature>/` to
-  `openspec/changes/<id>/` is a one-way migration triggered
-  explicitly; it is NOT automatic.
 - **BMAD** (`_bmad/`, `_bmad-output/`) is the **review, analysis, and
   adversarial-quality layer** — see Principle IX for full scope, agent
   roles, and ownership rules. BMAD does NOT plan, implement, or
   change-track; it questions, audits, and produces evidence. Its
-  findings are consumed by the other three tools but are not
+  findings are consumed by the other two tools but are not
   auto-applied.
 
 The **legacy `docs/` generation pipeline** (the output of
@@ -217,15 +216,18 @@ Systems and Source of Truth" below). The live BMAD configuration and
 the BMAD-bundled WDS agents are unaffected; only the deep doc-gen
 output that drifts from `.planning/codebase/` is deprecated.
 
-**Rationale:** Three overlapping spec systems (GSD + spec-kit + OpenSpec)
-plus an undeclared reviewer (BMAD) is one too many for a small team
-to keep straight. Pinning each to a single responsibility is cheaper
-than consolidating to one tool: GSD's roadmap + codebase maps are
-hard to replicate, spec-kit's per-feature template is hard to
-replicate, OpenSpec's proposal/scenario model is future-looking, and
-BMAD's adversarial-review persona roster is hard to replicate from
-scratch. The four roles compose: BMAD questions, spec-kit implements,
-GSD plans and gates, OpenSpec tracks deltas. The legacy `docs/`
+**Rationale:** Three overlapping spec systems (GSD + spec-kit + a
+separate change-tracking layer) plus an undeclared reviewer (BMAD) is
+one too many for a small team to keep straight. Pinning each remaining
+tool to a single responsibility is cheaper than consolidating to one:
+GSD's roadmap + codebase maps are hard to replicate, spec-kit's
+per-feature template is hard to replicate, and BMAD's
+adversarial-review persona roster is hard to replicate from scratch.
+The three roles compose: BMAD questions, spec-kit implements, GSD
+plans and gates. OpenSpec was adopted as an unused opt-in forward-
+compatible slot and was removed at v1.7.0 (its change history remains
+in git); the change-tracking responsibility it held is folded into
+spec-kit's per-feature `.specs/<feature>/` contract. The legacy `docs/`
 generation pipeline duplicates `.planning/codebase/` and
 `.specs/<feature>/design.md` content and drifts; retirement is
 cheaper than keeping it in sync.
@@ -233,14 +235,14 @@ cheaper than keeping it in sync.
 ### VII. Sub-Agent Orchestration & Concurrency Budget
 
 Any agent — including a main orchestrator and any in-flight sub-agent —
-MAY invoke any of GSD, spec-kit, or OpenSpec skills as a sub-agent when
-the work at hand crosses the seam between the three tools (see §
+MAY invoke any of GSD, spec-kit, or BMAD skills as a sub-agent when
+the work at hand crosses the seam between the tools (see §
 "Development Workflow & Quality Gates" → "Seams"). Sub-agent
 invocation MUST NOT bypass the ownership rules in Principle VI: a
 sub-agent writes only to the directory owned by its own workflow tool
-(GSD → `.planning/`, spec-kit → `.specs/` and `.specify/`, OpenSpec →
-`openspec/`); it reads from the other tools' directories but does not
-rewrite them; the sub-agent's parent is responsible for catching
+(GSD → `.planning/`, spec-kit → `.specs/` and `.specify/`); it reads
+from the other tools' directories but does not rewrite them; the
+sub-agent's parent is responsible for catching
 ownership violations before they land.
 
 **Concurrency budget.** The default concurrency budget is **up to 3
@@ -332,9 +334,9 @@ eliminate.
 ### IX. BMAD Review, Analysis, and Adversarial-Quality Layer
 
 BMAD (the BMAD Method + WDS agents) is the project's **review, analysis,
-and adversarial-quality layer**. It is the **fourth workflow tool**,
-peer to GSD / spec-kit / OpenSpec, with a non-overlapping
-responsibility: **questioning and auditing the other three** rather than
+and adversarial-quality layer**. It is the **third workflow tool**,
+peer to GSD / spec-kit, with a non-overlapping
+responsibility: **questioning and auditing the other two** rather than
 implementing or planning them. Concretely:
 
 - **Owned artifacts.** BMAD owns `_bmad/` (configuration and skill
@@ -344,9 +346,8 @@ implementing or planning them. Concretely:
   `implementation-artifacts/` (per-spec dev artifacts and the
   `deferred-work.md` ledger), `test-artifacts/`,
   `party-mode/memories/`). BMAD does NOT own source code, feature
-  specs under `.specs/`, the constitution under `.specify/`, the
-  roadmap under `.planning/`, or the change-tracking under
-  `openspec/`. Those remain with their respective tools (Principle VI).
+  specs under `.specs/`, the constitution under `.specify/`, or the
+  roadmap under `.planning/`. Those remain with their respective tools (Principle VI).
 - **Roles and agents.** BMAD's named agents have a fixed
   responsibility split, recorded here so any agent (including a
   sub-agent per Principle VII) knows which persona to dispatch for
@@ -394,7 +395,7 @@ implementing or planning them. Concretely:
      analogue of spec-kit's `.specs/<feature>/tasks.md`; the two
      coexist when both workflows are active on the same change, and
      the spec-kit `tasks.md` is the **verification-gate source of
-     truth** (per Principle VI § 4 Seams). BMAD implementation specs
+     truth** (per Principle VI § 3 Seams). BMAD implementation specs
      MUST NOT be the source of truth for the verification gate.
   3. **Review and analysis** (`bmad-review`, `bmad-review-adversarial-
      general`, `bmad-review-edge-case-hunter`, `bmad-code-review`,
@@ -433,9 +434,9 @@ implementing or planning them. Concretely:
   `/gsd-transition` or `/gsd-complete-milestone`.
 - **Ownership across seams.** A BMAD sub-agent writes only to
   `_bmad/` and `_bmad-output/`. It MAY read from `.planning/`,
-  `.specs/`, `.specify/`, `openspec/`, and the source tree, but
+  `.specs/`, `.specify/`, and the source tree, but
   MUST NOT rewrite them. If a BMAD finding implies a change to a
-  spec-kit `tasks.md`, a GSD `STATE.md`, or an OpenSpec delta, the
+  spec-kit `tasks.md` or a GSD `STATE.md`, the
   BMAD agent emits the finding and the owning workflow's agent
   applies the change. This is the same ownership rule as
   Principle VII; stated here so BMAD-specific invocations do not
@@ -453,13 +454,13 @@ implicit: it shows up in `AGENTS.md` as "BMAD for review/analysis"
 and in the cheat sheet as a seam participant, but its ownership
 boundaries, the meaning of its artifact names, and its relationship
 to the verification gate are open to interpretation. Pinning the
-four-tool split (GSD = planner, spec-kit = implementer, OpenSpec =
-change-tracking, BMAD = reviewer/analyst) prevents two failure
+three-tool split (GSD = planner, spec-kit = implementer, BMAD =
+reviewer/analyst) prevents two failure
 modes: (1) BMAD becoming a parallel implementation path that
 bypasses spec-kit's gate, and (2) BMAD reviews being silently
-ignored because no rule says which workflow acts on them. The four
+ignored because no rule says which workflow acts on them. The three
 roles compose: BMAD questions → spec-kit implements → GSD plans and
-gates → OpenSpec tracks deltas.
+gates.
 
 ## Stack & Architecture Constraints
 
@@ -511,12 +512,14 @@ conform.
 
 ## Development Workflow & Quality Gates
 
-The project runs three workflow tools — **GSD**, **spec-kit**, and **OpenSpec** —
+The project runs two implementation workflow tools — **GSD** and
+**spec-kit** — plus **BMAD** as the review layer (Principle IX) —
 each with a single, non-overlapping responsibility (Principle VI), and any agent
-MAY invoke any of them as a sub-agent within the concurrency budget
+MAY invoke either implementation tool (or BMAD review skills) as a sub-agent within the
+concurrency budget
 (Principle VII). This section describes how each tool works day-to-day and,
-critically, the **seams** where they hand off to each other so the three
-compose into one development loop rather than three parallel ones.
+critically, the **seams** where they hand off to each other so the tools
+compose into one development loop rather than parallel ones.
 
 ### 1. GSD — planner and roadmap owner (`.planning/`)
 
@@ -593,64 +596,31 @@ cannot be justified in the plan's Complexity Tracking table blocks
 planning. spec-kit does NOT own the roadmap or the phase state — it owns
 the per-feature contract that GSD phases consume.
 
-### 3. OpenSpec — opt-in change-tracking layer (`openspec/`)
+### 3. Seams — how the tools compose
 
-OpenSpec is **opt-in**, at the discretion of the user, on a per-change
-basis. It is NOT the default workflow. Most changes go through spec-kit
-alone; only some go through OpenSpec as well. The two coexist; nothing in
-spec-kit is replaced by adopting OpenSpec on a change.
-
-When the user opts a change into OpenSpec, the agent creates an
-`openspec/changes/<id>/` folder with a `proposal.md` + delta-specs +
-`design.md` + `tasks.md` lifecycle:
-
-1. `proposal.md` — why, what, scope, success criteria. The "Why" section
-   cross-references the spec-kit `.specs/<feature>/` folder.
-2. **Delta specs** under `openspec/changes/<id>/specs/<domain>/` using
-   `## ADDED Requirements`, `## MODIFIED Requirements`,
-   `## REMOVED Requirements` sections — the diff against the canonical
-   `openspec/specs/<domain>/`, not a rewrite.
-3. `design.md` and `tasks.md` — the lifecycle is
-   `proposal → specs → design → tasks`, progressive, not waterfall.
-4. `/opsx:apply <id>` — implement against the delta specs and the task
-   list; the agent keeps the OpenSpec `tasks.md` and the spec-kit
-   `tasks.md` in sync. **The spec-kit `tasks.md` is the one the
-   verification gate reads** (see Quality Gates below).
-5. `/opsx:archive <id>` — fold the delta specs into the canonical
-   `openspec/specs/<domain>/` and move the change to
-   `openspec/changes/archive/<date>-<id>/`.
-
-`openspec/` is opt-in: no agent creates an `openspec/changes/<id>/`
-folder without explicit user instruction. The canonical
-`openspec/specs/<domain>/` accumulates folded deltas over time; the
-spec-kit `requirements.md` / `design.md` do NOT have to mirror them —
-they are independent, with cross-references added to the spec-kit
-`requirements.md` "OpenSpec" subsection when relevant.
-
-### 4. Seams — how the four tools compose
-
-The four tools (GSD, spec-kit, OpenSpec, BMAD) are designed to hand off
+The tools (GSD, spec-kit, BMAD) are designed to hand off
 to each other at well-defined points. The seams below are
 non-negotiable. Sub-agent invocation across these seams is governed by
 Principle VII; the ownership rules in this section apply equally to
 sub-agents as to main orchestrators. The sub-agent invocation
 protocol and concurrency budget that govern cross-tool fan-out are in
 Principle VII (and reproduced as operator guidance in `AGENTS.md`
-§ 2.4 and § 2.5, and in `docs/agent-flow-cheatsheet.md` § 4 and § 5). The seams
+(Policy: Concurrency budget) and in `docs/agent-flow-cheatsheet.md`
+§ 4 and § 5). The seams
 below assume that protocol and do not repeat it.
 
 **Ownership principle.** GSD owns `.planning/` — it is the single writer
 of the roadmap pointer, the phase state, and the milestone archive, and
-the single reader-of-record for project-level state. The other three
-tools are **writers** to `.planning/` whenever their work changes project
-state, and **readers** of `.planning/` whenever they need project
-context. Concretely: spec-kit, OpenSpec, and BMAD MUST update
+the single reader-of-record for project-level state. The other tool
+(spec-kit) is a **writer** to `.planning/` whenever its work changes
+project state, and a **reader** of `.planning/` whenever it needs
+project context. Concretely: spec-kit and BMAD MUST update
 `.planning/STATE.md` (decisions, blockers, deferred items) and
 `.planning/PROJECT.md` (validated/active/out-of-scope lists) when their
 work changes those facts; they MUST NOT update `ROADMAP.md`, the phase
 pointer, or the milestone archive — those are GSD's job
 (`/gsd-transition`, `/gsd-complete-milestone`). Conversely, GSD consumes
-`.specs/<feature>/`, `openspec/`, and BMAD artifacts but MUST NOT
+`.specs/<feature>/` and BMAD artifacts but MUST NOT
 rewrite them — e.g., GSD editing a `.specs/<feature>/tasks.md` checkbox
 is a constitutional violation (that is spec-kit's job via
 `/speckit-implement`); GSD editing a `_bmad-output/implementation-
@@ -670,25 +640,6 @@ via the relevant `bmad-*` workflow).
   lists) so the next GSD command sees fresh state. spec-kit does NOT
   advance the roadmap pointer or mark phases complete — that is GSD's
   job (`/gsd-transition`, `/gsd-complete-milestone`).
-- **spec-kit ↔ OpenSpec.** When a change is opted into OpenSpec, the
-  spec-kit `.specs/<feature>/` folder is created as usual AND an
-  `openspec/changes/<id>/` folder is created. The agent that runs
-  `/opsx:apply` keeps both `tasks.md` files in sync. The spec-kit
-  `tasks.md` is the verification-gate source of truth; the OpenSpec
-  `tasks.md` is the change-tracking source of truth. On `/opsx:archive`,
-  the delta specs fold into `openspec/specs/<domain>/` and the
-  `openspec/changes/<id>/` folder moves to archive; the spec-kit
-  `.specs/<feature>/` folder stays in place as the implementation
-  record. If an OpenSpec change validates or invalidates a requirement,
-  the executor updates `.planning/STATE.md` and `.planning/PROJECT.md`
-  under the same ownership rule as spec-kit (see above).
-- **GSD ↔ OpenSpec.** GSD does not directly read `openspec/`. The
-  cross-reference flows through spec-kit: the spec-kit
-  `requirements.md` "OpenSpec" subsection links the feature to its
-  OpenSpec change id, and GSD reads that subsection when planning the
-  phase. At milestone boundaries (`/gsd-complete-milestone`), the
-  canonical `openspec/specs/<domain>/` is a candidate for re-validation
-  alongside the legacy-`docs/` retirement schedule.
 - **GSD ↔ BMAD.** GSD does not directly invoke BMAD agents, but
   consumes BMAD's outputs. At phase boundaries, BMAD's review
   artifacts (`_bmad-output/test-artifacts/`,
@@ -709,24 +660,15 @@ via the relevant `bmad-*` workflow).
   Principle IX "Adversarial review gate") and file the findings into
   the spec-kit `review.md`. BMAD MUST NOT rewrite `.specs/<feature>/`
   files; it emits findings and the spec-kit agent applies changes.
-- **OpenSpec ↔ BMAD.** When a change is opted into OpenSpec, BMAD
-  review skills (Winston architect, Murat TEA, Mary analyst) may be
-  invoked as sub-agents on the `openspec/changes/<id>/` proposal.
-  Findings land in `_bmad-output/` and are referenced from the
-  OpenSpec `proposal.md` "Risks" section. OpenSpec MUST NOT cite
-  BMAD findings as blocking approval without a recorded rationale in
-  `proposal.md`; BMAD findings are evidence, not gates.
 - **Constitution.** This file is the shared governance contract for all
-  four. spec-kit reads it at `/speckit-plan` Phase 0; GSD re-validates
+  three. spec-kit reads it at `/speckit-plan` Phase 0; GSD re-validates
   it at every phase transition (`/gsd-transition`) and milestone
-  (`/gsd-complete-milestone`); OpenSpec delta specs MUST NOT contradict
-  it (a delta spec that violates a principle is a blocker, not a
-  proposal); BMAD reviews it at every milestone audit via
+  (`/gsd-complete-milestone`); BMAD reviews it at every milestone audit via
   `bmad-check-implementation-readiness` and reports drift findings
   to GSD for amendment (the amendment itself is GSD's job — BMAD
   does not edit the constitution).
 
-### 5. Quality gates
+### 4. Quality gates
 
 The verification gate is the same in every mode and is owned by the
 runtime target — the Docker Compose stack — not by any of the three
@@ -791,7 +733,7 @@ correct and the older one is stale.
 | Per-feature OpenAPI / contracts | `.specs/<feature>/design.md` (section "Contracts") | spec-kit | Generated artifacts land under `src/Host/.../wwwroot/swagger/`. |
 | Architecture Decision Records (ADRs) | **Two homes, two scopes:** GSD STATE.md holds the *decision and rationale*; spec-kit `review.md` / `analysis.md` files hold the *finding* that prompted the decision. | GSD + spec-kit | The legacy `docs/architecture/decisions/0001-…0004-…` ADRs were deleted in commit `b34b4d2` (2026-07-12) — kept for historical reference only in git history; new ADRs are recorded in GSD STATE.md and cross-referenced from the relevant `.specs/<feature>/` file. |
 | Design system (tokens, components) | `.specs/2 - visual-design-system/` + `mockup/` | spec-kit | Tokens contract enforced by `.planning/REQUIREMENTS.md` trace rows and continuous task C.7. The legacy `docs/design-system/` and `docs/penpot/` assets were deleted in commit `b34b4d2` (2026-07-12); the spec under `.specs/2 - visual-design-system/` and `mockup/` are the canonical homes going forward. |
-| Agent flow cheat sheet (GSD/spec-kit/OpenSpec lifecycle diagrams, command tables, seams, concurrency budget) | `docs/agent-flow-cheatsheet.md` | spec-kit | Quick-reference card; **not** a substitute for this constitution. The constitution wins on any conflict. Added 2026-07-12. |
+| Agent flow cheat sheet (GSD/spec-kit/BMAD lifecycle diagrams, command tables, seams, concurrency budget) | `docs/agent-flow-cheatsheet.md` | spec-kit | Quick-reference card; **not** a substitute for this constitution. The constitution wins on any conflict. Added 2026-07-12; OpenSpec references removed at v1.7.0. |
 | Operator docs (first boot, demo mode) | `AGENTS.md` "Operator reference" + `docs/getting-started.md` + `docs/demo-mode.md` | spec-kit | When the doc describes a one-command procedure, it is in `AGENTS.md`. |
 | Local development (dev shell, devcontainer, worktrees, build/test commands) | `AGENTS.md` "Local development" | spec-kit | This is the home for Option D. The legacy `docs/development-guide.md` is being retired (see Retirement schedule below). |
 | Deployment, hardening, env vars | `AGENTS.md` "Deployment" + `.planning/REQUIREMENTS.md` (NFRs) | spec-kit + GSD | The legacy `docs/deployment-guide.md` is being retired. |
@@ -819,7 +761,7 @@ now-redundant `docs/architecture/decisions/` ADRs):
   `.specs/2 - visual-design-system/`),
   `docs/penpot/` (Penpot design system assets — moved to `mockup/`),
   `docs/migration/legacy-mapping.md` (legacy mapping — superseded by
-  the Strangler Fig notes in `AGENTS.md` § 3.2). This deletion is
+  the Strangler Fig notes in `AGENTS.md`). This deletion is
   reflected in the source-of-truth table above.
 - **Next milestone boundary** (per `/gsd-complete-milestone`): delete
   the remaining legacy `docs/{index,project-overview,development-guide,
@@ -874,4 +816,4 @@ unless an amendment is in flight.
   (via `/gsd-transition`). "What This Is" and "Out of Scope" drift are
   treated as constitutional concerns, not just documentation hygiene.
 
-**Version**: 1.6.0 | **Ratified**: 2026-07-12 | **Last Amended**: 2026-09-17
+**Version**: 1.7.0 | **Ratified**: 2026-07-12 | **Last Amended**: 2026-09-21

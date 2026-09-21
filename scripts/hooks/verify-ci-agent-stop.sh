@@ -81,7 +81,7 @@ is_task_completion_indicated() {
     return 0
   fi
   local task_files
-  task_files="$( { git diff --name-only HEAD 2>/dev/null; git status --porcelain=v1 -uall 2>/dev/null | awk '{print $2}'; } | grep -E '(tasks\.md|\.specs/.*tasks.*\.md|openspec/.*tasks.*\.md)' | sort -u || true )"
+  task_files="$( { git diff --name-only HEAD 2>/dev/null; git status --porcelain=v1 -uall 2>/dev/null | awk '{print $2}'; } | grep -E '(tasks\.md|\.specs/.*tasks.*\.md)' | sort -u || true )"
   [ -z "$task_files" ] && return 1
 
   local found_task=false

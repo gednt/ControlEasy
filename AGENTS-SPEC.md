@@ -32,7 +32,7 @@ This spec governs:
 
 This spec does **not** govern:
 
-- The internal structure of workflow-owned artifacts (`_bmad-output/`, `.planning/`, `openspec/changes/`, `.impeccable/`, etc.). Those are owned by their workflows.
+- The internal structure of workflow-owned artifacts (`_bmad-output/`, `.planning/`, `.impeccable/`, etc.). Those are owned by their workflows.
 - The internal structure of skill-overlay sibling files (`PRODUCT.md`, `DESIGN.md`, etc.). Those are owned by their overlays.
 - The content of `AGENTS.md` sections — only their structure and interpretation.
 
@@ -42,7 +42,7 @@ This spec does **not** govern:
 
 - **Agent** — any AI tool that reads `AGENTS.md` to inform its behavior in a repository (Claude Code, Cursor, Codex, GitHub Copilot, Gemini CLI, Grok Build, OpenCode, Hermes, Pi, Kiro, Mistral Vibe, Rovo Dev, Trae, Veto, Qoder, custom harnesses).
 - **Project** — the repository whose `AGENTS.md` is being read.
-- **Workflow** — a system that produces planning or state artifacts and owns a marked block in `AGENTS.md`. Examples: BMAD, GSD-core, openspec.
+- **Workflow** — a system that produces planning or state artifacts and owns a marked block in `AGENTS.md`. Examples: BMAD, GSD-core.
 - **Skill overlay** — a system that adds capabilities on top of an existing workflow without owning any `AGENTS.md` block. Examples: impeccable (design), formatters, linters, design detectors.
 - **Owner marker** — an HTML comment of the form `<!-- owner:<scope> -->` opening a workflow-owned block, paired with `<!-- /owner -->` closing it.
 - **Freshness stamp** — an HTML comment that records when a workflow block was last verified against a known-good state.
@@ -110,7 +110,7 @@ A workflow block has the structure:
 Rules:
 
 - The block MUST be wrapped in matched `<!-- owner:<workflow-code> -->` and `<!-- /owner -->` comments.
-- The `<workflow-code>` is a short lowercase identifier (`bmad`, `gsd`, `openspec`, ...). The same identifier MUST be used in `AGENTS-SPEC.md`'s [Supported workflows](#extension-protocol) table.
+- The `<workflow-code>` is a short lowercase identifier (`bmad`, `gsd`, ...). The same identifier MUST be used in `AGENTS-SPEC.md`'s [Supported workflows](#extension-protocol) table.
 - Empty blocks (whitespace only, or only containing the explanatory comments in the template) are inert.
 - Workflows MAY add additional HTML comments inside their block to mark sub-regions (e.g., BMAD's `<!-- verified ... -->` line). Sub-region markers MUST NOT escape the outer `<!-- /owner -->` boundary.
 - An agent that runs multiple workflows simultaneously reads all populated blocks. Where two populated blocks conflict on the same topic (e.g., both prescribe a merge ceremony), the agent follows the **more specific** block. Specificity is determined by which workflow the agent treats as authoritative for that topic; this spec does not prescribe a global precedence order.
@@ -121,7 +121,6 @@ Rules:
 | ---------- | --------- | --------------------------------- | -------------------- |
 | `bmad`     | BMAD      | Architecture, planning artifacts  | `verified <sha>`     |
 | `gsd`      | GSD-core  | Phase state, atomic-commit ceremony | `verified <sha>`   |
-| `openspec` | openspec  | Change proposals, approval gate   | `approved <date>`    |
 
 ---
 
@@ -159,7 +158,7 @@ A downstream project that adopts the schema writes a conformant `AGENTS.md` by r
 - The onboarding skill reads `AGENTS-TEMPLATE.md` and replaces its placeholders with project-specific content. It MUST NOT modify the schema header/footer, the `## Reader contract (minimal)` section, or the empty workflow-block markers.
 - The onboarding skill is **non-destructive**: it MUST archive any existing `AGENTS.md` to `AGENTS.md.<suffix>.bak` before overwriting. The suffix is the project slug (preferred) or a date stamp (fallback).
 - The onboarding skill MUST verify conformance against §Conformance before declaring success. If any check fails, the skill aborts and surfaces the failed checks; it does not write a non-conformant file.
-- The onboarding skill does **not** write workflow-owned artifacts (BMAD's `_bmad-output/`, GSD's `.planning/`, openspec's `openspec/changes/`). Those are the workflows' own onboarding skills' jobs, which run *after* the schema-1 onboarding and fill the workflow blocks.
+- The onboarding skill does **not** write workflow-owned artifacts (BMAD's `_bmad-output/`, GSD's `.planning/`). Those are the workflows' own onboarding skills' jobs, which run *after* the schema-1 onboarding and fill the workflow blocks.
 - The onboarding skill is idempotent: re-running it on a project with a conformant `AGENTS.md` is allowed and offers *refresh in place* (default) or *archive and rewrite*.
 
 A project may ship its own onboarding skill under its own overlay. Such a skill MUST honor the same contract. Register the skill in the Supported overlays table by extending the `agents-template` row or adding a new overlay row.
@@ -222,7 +221,7 @@ The installer MUST NOT overwrite an existing wrapper without confirmation. It MU
 A workflow block MAY carry a freshness stamp as the first or last line inside the `<!-- owner -->` region:
 
 - `<!-- verified YYYY-MM-DD against <sha> -->` — the workflow's content was last verified against commit `<sha>` on `<date>`. Used by stateful workflows (BMAD, GSD-core).
-- `<!-- approved YYYY-MM-DD -->` — the workflow's content was last approved on `<date>`. Used by change-driven workflows (openspec).
+- `<!-- approved YYYY-MM-DD -->` — the workflow's content was last approved on `<date>`. Used by change-driven workflows.
 
 Semantics:
 

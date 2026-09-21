@@ -54,7 +54,7 @@ It is important to emphasize: **ControlEasy Reborn was not "vibe coded" — it w
 
 Rather than unconstrained, prompt-and-pray code generation, the modernization from legacy desktop codebases into a modular monolith was executed through disciplined, human-architected software engineering amplified by AI. Every component conforms to strict architectural invariants, verified specifications, and automated quality gates:
 
-- **Specification-First, Not Prompt-Driven:** No feature or refactoring is built without upfront requirements elicitation, design specifications, and dependency-ordered tasks (`.specs/`, `openspec/`).
+- **Specification-First, Not Prompt-Driven:** No feature or refactoring is built without upfront requirements elicitation, design specifications, and dependency-ordered tasks (`.specs/`).
 - **Constitutional Architectural Invariants:** Strict architectural boundaries and Clean Architecture rules are codified in a binding project constitution (`.specify/memory/constitution.md`) and automatically validated on every build via `NetArchTest.Rules`.
 - **Exhaustive Automated Verification:** Every task must pass comprehensive automated test suites (xUnit unit tests, Testcontainers MySQL integration tests, Playwright E2E suites, and Axe Core accessibility checks) before completion.
 - **Adversarial Multi-Agent Review:** Proposed changes are systematically stress-tested by parallel adversarial review personas (Blind Hunter, Edge-Case Hunter, Acceptance Auditor) prior to human review and commit.
@@ -66,7 +66,6 @@ The agent frameworks facilitating this AI-augmented development include:
 
 - **[GSD-core](.planning/) (Get Stuff Done):** Orchestrates the macro-level migration roadmap across 14 systematic development phases, tracking live project state, decision logs, codebase maps, and milestone verifications.
 - **[spec-kit](.specify/) (Specification-Driven Development):** Enforces a specification-first engineering methodology anchored by the project constitution. Every non-trivial feature or refactoring undergoes rigorous requirement clarification, architecture planning (`spec.md`, `plan.md`), and ordered task execution (`tasks.md`).
-- **[OpenSpec](openspec/) (Change & Delta Specifications):** Manages structured change proposals, designs, and delta-specification tracking, allowing targeted feature development and regression prevention.
 - **[BMAD Method](_bmad/) & WDS (Multi-Agent Role Collaboration):** Deploys collaborative agent personas (System Architect Winston, Senior Developer Amelia, Test Architect Murat, Business Analyst Mary, and UX Designers) for adversarial code reviews, edge-case hunting, and automated quality audits.
 - **[agents-template](AGENTS.md) & [Impeccable](.impeccable/):** Defines the binding runtime contract and governance invariants for all AI coding assistants (strict Docker-only development, Git worktree isolation, pre-commit adversarial review gates) alongside design system and frontend excellence standards.
 
@@ -227,5 +226,4 @@ ControlEasy Reborn builds upon and acknowledges the open-source ecosystem, incor
 ### Agentic Engineering & Workflow Tooling
 - **[BMAD Method](https://github.com/bmad-code/bmad)** — Multi-agent persona collaboration, sprint tracking, and adversarial code-review framework (MIT)
 - **[spec-kit](https://github.com/github/spec-kit)** — Specification-driven software development methodology and lifecycle tooling (MIT)
-- **[OpenSpec](https://github.com/openspec/openspec)** — Structured delta-specification, change-proposal, and archive system (MIT)
 - **[agents-template](https://github.com/agents-template/agents-template)** — Standardized runtime contract schema and governance invariants for AI coding agents (MIT)

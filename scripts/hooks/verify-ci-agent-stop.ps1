@@ -77,7 +77,7 @@ function Test-CompletedAllTasks {
     }
     $diffFiles = git diff --name-only HEAD 2>$null
     $statusFiles = git status --porcelain=v1 -uall 2>$null | ForEach-Object { ($_ -split '\s+')[-1] }
-    $allFiles = @($diffFiles) + @($statusFiles) | Where-Object { $_ -match 'tasks\.md|\.specs[\\/].*tasks.*\.md|openspec[\\/].*tasks.*\.md' } | Select-Object -Unique
+    $allFiles = @($diffFiles) + @($statusFiles) | Where-Object { $_ -match 'tasks\.md|\.specs[\\/].*tasks.*\.md' } | Select-Object -Unique
     if (-not $allFiles) { return $false }
 
     $foundTask = $false

@@ -47,7 +47,6 @@ Enumerate the top-level entries (`ls -la` equivalent). For each directory, class
 - **Workflow-owned** — directories that signal an adopted workflow:
   - `_bmad/`, `_bmad-output/` → BMAD
   - `.planning/` → GSD-core
-  - `openspec/`, `openspec/changes/` → openspec
 - **Overlay-owned** — directories that signal an adopted overlay:
   - `.impeccable/`, `PRODUCT.md`, `DESIGN.md` → impeccable
   - `.eslintrc*`, `eslint.config.*`, `.prettierrc*` → linter/formatter overlays
@@ -120,13 +119,12 @@ Hard rules are project-enforced prohibitions (don't commit secrets, don't run `d
 
 ### Workflows
 
-Present the detected workflows (if any) and ask the user to confirm. Then ask if any of BMAD, GSD-core, or openspec should be adopted even if not detected. For each adopted workflow, the skill writes an empty `<!-- owner:<code> --> ... <!-- /owner -->` block and tells the user to run that workflow's own onboarding skill to fill it.
+Present the detected workflows (if any) and ask the user to confirm. Then ask if any of BMAD or GSD-core should be adopted even if not detected. For each adopted workflow, the skill writes an empty `<!-- owner:<code> --> ... <!-- /owner -->` block and tells the user to run that workflow's own onboarding skill to fill it.
 
 If the user is unsure, the skill offers a one-line description of each:
 
 - **BMAD** — plans the project (PRD, architecture, epics, stories) and writes binding artifacts under `_bmad-output/`. Best for projects that need a full planning phase before any code.
 - **GSD-core** — runs an execute-verify loop against a phase plan in `.planning/`. Best for projects that already have requirements and want to ship in vertical slices.
-- **openspec** — gates changes behind proposals in `openspec/changes/`. Best for projects that need explicit approval before each behavioral change.
 
 ### Skill overlays
 
@@ -179,15 +177,14 @@ Take the interview answers + the detected facts and write `AGENTS.md`.
 6. **Tell the user what's next.** For each adopted workflow that has an empty block, name the workflow's onboarding skill and the command to run it:
    - BMAD → "Run `bmad-project-context` to fill the BMAD block."
    - GSD-core → "Run `gsd-onboard` to fill the GSD block."
-   - openspec → "Run `openspec init` to register the first change proposal."
 
    For each adopted overlay, confirm the pointer and tell the user the skill does not manage the overlay's internal files.
 
 ### What the skill does not do
 
-- It does not write BMAD planning artifacts, GSD state files, or openspec change proposals. Those are the workflows' jobs.
+- It does not write BMAD planning artifacts or GSD state files. Those are the workflows' jobs.
 - It does not write `PRODUCT.md`, `DESIGN.md`, or any other overlay sibling file. Pointers only.
-- It does not install BMAD, GSD-core, openspec, impeccable, or any other tool. It writes the file that tells an agent those tools are in use.
+- It does not install BMAD, GSD-core, impeccable, or any other tool. It writes the file that tells an agent those tools are in use.
 - It does not commit. The user reviews and commits.
 - It does not delete archived files. The user is responsible for cleaning up `AGENTS.md.*.bak` after confirming the new `AGENTS.md` is correct.
 

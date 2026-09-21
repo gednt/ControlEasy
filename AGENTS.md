@@ -4,7 +4,7 @@
 
 > **Authoritative project guide.** Binding runtime document for every
 > contributor and every agent. Constitutional authority:
-> `.specify/memory/constitution.md` (v1.6.0, 2026-09-17).
+> `.specify/memory/constitution.md` (v1.7.0, 2026-09-21).
 > Where this file and the constitution disagree, the constitution wins.
 
 ---
@@ -52,7 +52,6 @@ Orientation for the top-level layout so an agent can find things without guesswo
 - `.planning/` — GSD-core workflow directory. Roadmap, state, phases, milestones. Workflow-owned.
 - `.specs/` — spec-kit per-feature specifications (requirements / design / tasks). Workflow-owned (spec-kit).
 - `.specify/` — spec-kit configuration and memory (constitution). Workflow-owned (spec-kit).
-- `openspec/` — OpenSpec change-tracking (opt-in). Workflow-owned.
 - `_bmad/` — BMAD workflow configuration and skills. Workflow-owned.
 - `_bmad-output/` — BMAD planning artifacts. Workflow-owned.
 - `agents-init/` — agents-template onboarding skill (canonical SKILL.md). Overlay-owned.
@@ -183,7 +182,7 @@ Hard rules an agent must not violate, beyond what the workflows enforce.
 - **`ProblemDetails` (RFC 7807)** for all error responses. Domain exceptions: `NotFoundException`, `ValidationException`, `ConflictException`.
 - **Serilog** structured logging to Console (JSON) + Seq.
 - **spec-kit** is the per-feature specification system. Specs live in `.specs/<feature>/`. Configuration and constitutional memory in `.specify/`. spec-kit owns `.specs/` and `.specify/` and updates `STATE.md` + `PROJECT.md` when state changes.
-- **Four workflow systems, non-overlapping responsibility:** GSD owns `.planning/`, spec-kit owns `.specs/` and `.specify/`, OpenSpec is opt-in at user discretion (only the user creates `openspec/changes/<id>/`), and BMAD is the review/analysis/adversarial-quality layer (see Constitution Principle IX; BMAD owns `_bmad/` and `_bmad-output/`).
+- **Three workflow systems, non-overlapping responsibility:** GSD owns `.planning/`, spec-kit owns `.specs/` and `.specify/`, and BMAD is the review/analysis/adversarial-quality layer (see Constitution Principle IX; BMAD owns `_bmad/` and `_bmad-output/`).
 
 ### Git worktree rule (mandatory)
 
@@ -226,12 +225,6 @@ Each block below is owned by one workflow. The block is **inert** when empty —
 
 <!-- owner:gsd -->
 <!-- GSD's onboarding skill writes its state slice here. Delete this block if the project does not use GSD-core. -->
-<!-- /owner -->
-
-### openspec
-
-<!-- owner:openspec -->
-<!-- openspec's onboarding writes its change-proposal pointer here. Delete this block if the project does not use openspec. -->
 <!-- /owner -->
 
 ### Other workflows
@@ -284,7 +277,7 @@ If a project stops using an overlay, remove its line. Do not leave stale pointer
 - **Testing:** xUnit + FluentAssertions + NSubstitute + Testcontainers.MySql + Playwright. Karma + Jasmine for Angular unit tests.
 - **Runtime:** Docker Compose services: `api`, `web`, `db`, `reverse-proxy`, `adminer`, `seq`. Multi-stage Dockerfiles. Compose v2.
 - **Error handling:** `ProblemDetails` (RFC 7807); Serilog to Console (JSON) + Seq. Domain exceptions: `NotFoundException`, `ValidationException`, `ConflictException`.
-- **Auto-tool selection:** Agents read the user's intent and automatically invoke the right tool (spec-kit for implementation, BMAD for review/analysis, GSD for phase planning, OpenSpec for structured delta-specs at user opt-in). See `docs/agent-flow-cheatsheet.md` for lifecycle diagrams.
+- **Auto-tool selection:** Agents read the user's intent and automatically invoke the right tool (spec-kit for implementation, BMAD for review/analysis, GSD for phase planning). See `docs/agent-flow-cheatsheet.md` for lifecycle diagrams.
 - **Concurrency budget:** Max 3 sub-agents in flight per level (1 main + 3 subs). Exceeding requires explicit rationale in the wave's `proposal.md`, `design.md`, or `tasks.md`.
 - **Post-task verification (Mandatory Local CI Gate):** After every implementation task or code modification, the agent MUST verify its work. Per-turn stop hooks enforce fast checks (`--fast`: format, build, unit + arch tests in ~3s, zero Docker downloads). CI tasks that download things inside Docker (Testcontainers MySQL and Docker web build) run **only once per task completion, at the end of all tasks completions, not after every turn**. The full suite (`scripts/verify-ci-local.sh` or `make verify-ci`) must pass before committing, pushing, or reporting the final task complete.
 - **Pre-commit adversarial review:** No agent may `git commit` until (1) build + tests are green (including the full local CI gate) and (2) an adversarial review subagent returns zero CRITICAL/HIGH findings. See existing AGENTS.md archive for full gate procedure.
