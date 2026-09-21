@@ -134,15 +134,6 @@ Hard rules an agent must not violate, beyond what the workflows enforce.
 
 Scripts: `scripts/worktree-up.ps1` / `.sh` (create), `scripts/worktree-down.ps1` / `.sh` (tear down).
 
----
-
-## Skill overlays
-
-Skill overlays do not own any block in `AGENTS.md`. They are **sibling files** that the agent reads directly when needed.
-
-- **agents-template** — `AGENTS-TEMPLATE.md` (canonical template), `AGENTS-SPEC.md` (reader contract spec), `agents-init/SKILL.md` (onboarding skill). Read template + spec before editing this file; run `agents-init` to scaffold or refresh `AGENTS.md`.
-
-If a project stops using an overlay, remove its line. Do not leave stale pointers.
 
 ---
 
