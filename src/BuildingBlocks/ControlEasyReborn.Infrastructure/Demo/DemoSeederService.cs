@@ -51,6 +51,7 @@ public sealed class DemoSeederService : IHostedService
         if (!force && currentVersion >= _options.SeedVersion)
         {
             _logger.LogInformation("Demo seed skipped — version {CurrentVersion} >= {TargetVersion}.", currentVersion, _options.SeedVersion);
+            await BackfillAttendantProfilePermissionsAsync(db, ct);
             return;
         }
 
@@ -250,16 +251,110 @@ public sealed class DemoSeederService : IHostedService
 
     private static async Task SeedAttendantProfilesAsync(IAsyncSqlClient db, DateTime now, CancellationToken ct)
     {
-        const string allPerms = "Visits.CheckIn,Visits.CheckOut,Visits.Read,Apartments.Read,Apartments.Write,Residents.Read,Residents.Write,Vehicles.Read,Vehicles.Write,ServiceProviders.Read,ServiceProviders.Write,Reports.Read,Photos.Read,Photos.Write,Photos.Delete";
-        const string readPerms = "Visits.Read,Apartments.Read,Residents.Read,Vehicles.Read,ServiceProviders.Read,Reports.Read,Photos.Read,Photos.Write";
+        const string accessOperate = "Access.Read,Access.Access.Operate,Access.Control.Issue,Access.Control.Replace,Access.Control.Revoke";
+        const string accessReadOnly = "Access.Read,Access.Access.Operate";
+        const string allPerms = "Visits.CheckIn,Visits.CheckOut,Visits.Read,Apartments.Read,Apartments.Write,Residents.Read,Residents.Write,Vehicles.Read,Vehicles.Write,ServiceProviders.Read,ServiceProviders.Write,Reports.Read,Photos.Read,Photos.Write,Photos.Delete," + accessOperate;
+        const string readPerms = "Visits.Read,Apartments.Read,Residents.Read,Vehicles.Read,ServiceProviders.Read,Reports.Read,Photos.Read,Photos.Write," + accessReadOnly;
+        const string moradorPerms = "Visits.Read,Apartments.Read,Residents.Read,Vehicles.Read,ServiceProviders.Read,Reports.Read,Photos.Read,Photos.Write";
         const string platformPerms = "platform:*";
 
         await InsertProfileAsync(db, DemoIds.PlatformProfileId, DemoIds.PlatformTenantId, DemoIds.PlatformUserId, "Platform Admin", DemoIds.AuroraShiftId, DemoIds.AuroraGatehouseId, platformPerms, now, ct);
         await InsertProfileAsync(db, DemoIds.AdminProfileId, DemoIds.AuroraTenantId, DemoIds.AdminUserId, "Administrador Aurora", DemoIds.AuroraShiftId, DemoIds.AuroraGatehouseId, allPerms, now, ct);
         await InsertProfileAsync(db, DemoIds.PorteiroProfileId, DemoIds.AuroraTenantId, DemoIds.PorteiroUserId, "Porteiro Aurora", DemoIds.AuroraShiftId, DemoIds.AuroraGatehouseId, readPerms, now, ct);
-        await InsertProfileAsync(db, DemoIds.MoradorProfileId, DemoIds.AuroraTenantId, DemoIds.MoradorUserId, "Morador Aurora", null, null, readPerms, now, ct);
+        await InsertProfileAsync(db, DemoIds.MoradorProfileId, DemoIds.AuroraTenantId, DemoIds.MoradorUserId, "Morador Aurora", null, null, moradorPerms, now, ct);
         await InsertProfileAsync(db, DemoIds.MultiAuroraProfileId, DemoIds.AuroraTenantId, DemoIds.MultiUserId, "Multi Aurora", DemoIds.AuroraShiftId, DemoIds.AuroraGatehouseId, allPerms, now, ct);
         await InsertProfileAsync(db, DemoIds.MultiParqueProfileId, DemoIds.ParqueVerdeTenantId, DemoIds.MultiUserId, "Multi Parque", DemoIds.ParqueShiftId, DemoIds.ParqueGatehouseId, allPerms, now, ct);
+    }
+
+    private async Task BackfillAttendantProfilePermissionsAsync(IAsyncSqlClient db, CancellationToken ct)
+    {
+        const string marker = "Access.Access.Operate";
+        const string accessRead = "Access.Read";
+        const string issueMarker = "Access.Control.Issue";
+        var rows = await db.SelectAsync(
+            fields: "Id,Permissions",
+            table: "AttendantProfiles",
+            whereClause: "(Permissions NOT LIKE @param0 OR (Permissions LIKE '%Visits.CheckIn%' AND Permissions NOT LIKE @param2)) AND Permissions <> 'platform:*' AND Id <> @param1",
+            parameters: new object[] { "%" + marker + "%", DemoIds.MoradorProfileId, "%" + issueMarker + "%" },
+            ct: ct);
+
+        if (rows is null || rows.Rows.Count == 0)
+            return;
+
+        var adminCredentialPerms = new[]
+        {
+            "Access.Control.Issue",
+            "Access.Control.Replace",
+            "Access.Control.Revoke"
+        };
+
+        foreach (DataRow row in rows.Rows)
+        {
+            var id = row["Id"].ToString() ?? string.Empty;
+            var current = row["Permissions"]?.ToString() ?? string.Empty;
+            var normalizedTokens = current
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(t => t.Trim())
+                .ToList();
+            var tokenSet = new HashSet<string>(normalizedTokens, StringComparer.OrdinalIgnoreCase);
+
+            var added = new List<string>();
+            if (!tokenSet.Contains(marker))
+            {
+                normalizedTokens.Add(marker);
+                tokenSet.Add(marker);
+                added.Add(marker);
+            }
+            if (!tokenSet.Contains(accessRead))
+            {
+                normalizedTokens.Add(accessRead);
+                tokenSet.Add(accessRead);
+                added.Add(accessRead);
+            }
+
+            var isAdminProfile = tokenSet.Contains("Visits.CheckIn") ||
+                id.Equals(DemoIds.AdminProfileId.ToString(), StringComparison.OrdinalIgnoreCase) ||
+                id.Equals(DemoIds.MultiAuroraProfileId.ToString(), StringComparison.OrdinalIgnoreCase) ||
+                id.Equals(DemoIds.MultiParqueProfileId.ToString(), StringComparison.OrdinalIgnoreCase);
+
+            if (isAdminProfile)
+            {
+                foreach (var perm in adminCredentialPerms)
+                {
+                    if (!tokenSet.Contains(perm))
+                    {
+                        normalizedTokens.Add(perm);
+                        tokenSet.Add(perm);
+                        added.Add(perm);
+                    }
+                }
+            }
+
+            if (added.Count == 0)
+                continue;
+
+            var updated = await db.UpdateAsync(
+                new[] { "Permissions" },
+                "AttendantProfiles",
+                new[] { string.Join(",", normalizedTokens) },
+                "Id = @param0",
+                new object[] { id },
+                ct: ct);
+
+            if (updated)
+            {
+                _logger.LogInformation(
+                    "Backfilled attendant profile {ProfileId} permissions to grant {Grant}.",
+                    id,
+                    string.Join(",", added));
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "Backfill attempted but UpdateAsync reported no row matched for attendant profile {ProfileId}.",
+                    id);
+            }
+        }
     }
 
     private static async Task InsertProfileAsync(

@@ -10,7 +10,7 @@ public sealed class CreateEntryLogRequestValidator : AbstractValidator<CreateEnt
         RuleFor(r => r.EntryState)
             .NotEmpty()
             .Must(s => Domain.Entities.EntryStatesConstants.Contains(s))
-            .WithMessage("EntryState must be one of: entered_with_consent, entered_without_consent, entered_override, gatehouse_only, exited.");
+            .WithMessage("EntryState must be one of: entered_with_consent, entered_without_consent, entered_override, exited. Walk-in registration moved to POST /api/v1/visits (CheckInNow); package drops moved to POST /api/v1/access-events/manual (kind=package-drop).");
 
         RuleFor(r => r.SubjectType)
             .NotEmpty()

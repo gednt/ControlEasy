@@ -18,8 +18,9 @@ public sealed class AccessEventDestinationResolverTests
     private readonly IResidentDirectory _residents = Substitute.For<IResidentDirectory>();
     private readonly IVehicleDirectory _vehicles = Substitute.For<IVehicleDirectory>();
     private readonly IApartmentDirectory _apartments = Substitute.For<IApartmentDirectory>();
+    private readonly ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory _visits = Substitute.For<ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory>();
 
-    private AccessEventDestinationResolver BuildResolver() => new(_residents, _vehicles, _apartments);
+    private AccessEventDestinationResolver BuildResolver() => new(_residents, _vehicles, _apartments, _visits);
 
     [Fact]
     public async Task Resident_with_active_apartment_returns_that_apartment()
@@ -156,5 +157,67 @@ public sealed class AccessEventDestinationResolverTests
 
         resolution.Resolved.Should().BeFalse();
         resolution.FailureCode.Should().Be(RefusalCodes.DestinationInactive);
+    }
+
+    [Fact]
+    public async Task Visitor_with_valid_visit_returns_destination()
+    {
+        var visitId = Guid.NewGuid();
+        var apartmentId = Guid.NewGuid();
+        var visit = new ControlEasyReborn.Modules.Visits.Domain.Entities.Visit(
+            visitId, _tenantId, "Carlos Visitante", "12345678901", null, apartmentId, "Block B", "204", "Party",
+            ControlEasyReborn.Modules.Visits.Domain.Entities.VisitStatus.Pending, null, null, null, null, DateTime.UtcNow, null);
+
+        _visits.FindByIdAsync(_tenantId, visitId, Arg.Any<CancellationToken>())
+            .Returns(visit);
+
+        var resolver = BuildResolver();
+        var resolution = await resolver.ResolveAsync(_tenantId, SubjectType.Visitor, visitId, CancellationToken.None);
+
+        resolution.Resolved.Should().BeTrue();
+        resolution.ApartmentId.Should().Be(apartmentId);
+        resolution.Block.Should().Be("Block B");
+        resolution.Unit.Should().Be("204");
+        resolution.FailureCode.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Resident_standalone_credential_without_resident_entity_resolves_fallback_apartment()
+    {
+        var randomResidentId = Guid.NewGuid();
+        var fallbackAptId = Guid.NewGuid();
+        _residents.FindByIdAsync(_tenantId, randomResidentId, Arg.Any<CancellationToken>())
+            .Returns((Resident?)null);
+        _apartments.FindFirstActiveAsync(_tenantId, Arg.Any<CancellationToken>())
+            .Returns(new Apartment(fallbackAptId, _tenantId, "1", "51", active: true, DateTime.UtcNow, null));
+
+        var resolver = BuildResolver();
+        var resolution = await resolver.ResolveAsync(_tenantId, SubjectType.Resident, randomResidentId, CancellationToken.None);
+
+        resolution.Resolved.Should().BeTrue();
+        resolution.ApartmentId.Should().Be(fallbackAptId);
+        resolution.Block.Should().Be("1");
+        resolution.Unit.Should().Be("51");
+        resolution.FailureCode.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Visitor_standalone_credential_without_visit_entity_resolves_fallback_apartment()
+    {
+        var randomVisitId = Guid.NewGuid();
+        var fallbackAptId = Guid.NewGuid();
+        _visits.FindByIdAsync(_tenantId, randomVisitId, Arg.Any<CancellationToken>())
+            .Returns((ControlEasyReborn.Modules.Visits.Domain.Entities.Visit?)null);
+        _apartments.FindFirstActiveAsync(_tenantId, Arg.Any<CancellationToken>())
+            .Returns(new Apartment(fallbackAptId, _tenantId, "1", "51", active: true, DateTime.UtcNow, null));
+
+        var resolver = BuildResolver();
+        var resolution = await resolver.ResolveAsync(_tenantId, SubjectType.Visitor, randomVisitId, CancellationToken.None);
+
+        resolution.Resolved.Should().BeTrue();
+        resolution.ApartmentId.Should().Be(fallbackAptId);
+        resolution.Block.Should().Be("1");
+        resolution.Unit.Should().Be("51");
+        resolution.FailureCode.Should().BeNull();
     }
 }

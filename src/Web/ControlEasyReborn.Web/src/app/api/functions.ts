@@ -83,6 +83,8 @@ export type { ApiV1PhotosIdDelete$Params as ApiV1PhotosIdDelete$Params } from '.
 export { apiV1PhotosIdDelete as apiV1PhotosIdDelete } from './fn/photos/api-v-1-photos-id-delete';
 export type { ApiV1ReportsVisitCountsByDayGet$Params as ApiV1ReportsVisitCountsByDayGet$Params } from './fn/reports/api-v-1-reports-visit-counts-by-day-get';
 export { apiV1ReportsVisitCountsByDayGet as apiV1ReportsVisitCountsByDayGet } from './fn/reports/api-v-1-reports-visit-counts-by-day-get';
+export type { ApiV1ReportsHistoryGet$Params as ApiV1ReportsHistoryGet$Params } from './fn/reports/api-v-1-reports-history-get';
+export { apiV1ReportsHistoryGet as apiV1ReportsHistoryGet } from './fn/reports/api-v-1-reports-history-get';
 export type { ApiV1ReportsResidentsPerApartmentGet$Params as ApiV1ReportsResidentsPerApartmentGet$Params } from './fn/reports/api-v-1-reports-residents-per-apartment-get';
 export { apiV1ReportsResidentsPerApartmentGet as apiV1ReportsResidentsPerApartmentGet } from './fn/reports/api-v-1-reports-residents-per-apartment-get';
 export type { ApiV1ResidentsGet$Params as ApiV1ResidentsGet$Params } from './fn/residents/api-v-1-residents-get';
@@ -97,6 +99,8 @@ export type { ApiV1SecurityBootstrapGet$Params as ApiV1SecurityBootstrapGet$Para
 export { apiV1SecurityBootstrapGet as apiV1SecurityBootstrapGet } from './fn/security/api-v-1-security-bootstrap-get';
 export type { ApiV1SecurityAuthLoginPost$Params as ApiV1SecurityAuthLoginPost$Params } from './fn/security/api-v-1-security-auth-login-post';
 export { apiV1SecurityAuthLoginPost as apiV1SecurityAuthLoginPost } from './fn/security/api-v-1-security-auth-login-post';
+export type { ApiV1SecurityAuthForgotPasswordPost$Params as ApiV1SecurityAuthForgotPasswordPost$Params } from './fn/security/api-v-1-security-auth-forgot-password-post';
+export { apiV1SecurityAuthForgotPasswordPost as apiV1SecurityAuthForgotPasswordPost } from './fn/security/api-v-1-security-auth-forgot-password-post';
 export type { ApiV1SecurityAuthRefreshPost$Params as ApiV1SecurityAuthRefreshPost$Params } from './fn/security/api-v-1-security-auth-refresh-post';
 export { apiV1SecurityAuthRefreshPost as apiV1SecurityAuthRefreshPost } from './fn/security/api-v-1-security-auth-refresh-post';
 export type { ApiV1SecurityAuthChangePasswordPost$Params as ApiV1SecurityAuthChangePasswordPost$Params } from './fn/security/api-v-1-security-auth-change-password-post';
@@ -105,6 +109,8 @@ export type { ApiV1SecurityTenantsGet$Params as ApiV1SecurityTenantsGet$Params }
 export { apiV1SecurityTenantsGet as apiV1SecurityTenantsGet } from './fn/security/api-v-1-security-tenants-get';
 export type { ApiV1SecurityUsersPost$Params as ApiV1SecurityUsersPost$Params } from './fn/security/api-v-1-security-users-post';
 export { apiV1SecurityUsersPost as apiV1SecurityUsersPost } from './fn/security/api-v-1-security-users-post';
+export type { ApiV1SecurityUsersUserIdResetPasswordPost$Params as ApiV1SecurityUsersUserIdResetPasswordPost$Params } from './fn/security/api-v-1-security-users-user-id-reset-password-post';
+export { apiV1SecurityUsersUserIdResetPasswordPost as apiV1SecurityUsersUserIdResetPasswordPost } from './fn/security/api-v-1-security-users-user-id-reset-password-post';
 export type { ApiV1SecurityTenantSwitchPost$Params as ApiV1SecurityTenantSwitchPost$Params } from './fn/security/api-v-1-security-tenant-switch-post';
 export { apiV1SecurityTenantSwitchPost as apiV1SecurityTenantSwitchPost } from './fn/security/api-v-1-security-tenant-switch-post';
 export type { ApiV1SecuritySessionGet$Params as ApiV1SecuritySessionGet$Params } from './fn/security/api-v-1-security-session-get';
@@ -137,6 +143,8 @@ export type { ApiV1ServiceProvidersIdGet$Params as ApiV1ServiceProvidersIdGet$Pa
 export { apiV1ServiceProvidersIdGet as apiV1ServiceProvidersIdGet } from './fn/service-providers/api-v-1-service-providers-id-get';
 export type { ApiV1ServiceProvidersIdPut$Params as ApiV1ServiceProvidersIdPut$Params } from './fn/service-providers/api-v-1-service-providers-id-put';
 export { apiV1ServiceProvidersIdPut as apiV1ServiceProvidersIdPut } from './fn/service-providers/api-v-1-service-providers-id-put';
+export type { ApiV1ServiceProvidersIdDeactivatePost$Params as ApiV1ServiceProvidersIdDeactivatePost$Params } from './fn/service-providers/api-v-1-service-providers-id-deactivate-post';
+export { apiV1ServiceProvidersIdDeactivatePost as apiV1ServiceProvidersIdDeactivatePost } from './fn/service-providers/api-v-1-service-providers-id-deactivate-post';
 export type { ApiV1TenantsGet$Params as ApiV1TenantsGet$Params } from './fn/tenants/api-v-1-tenants-get';
 export { apiV1TenantsGet as apiV1TenantsGet } from './fn/tenants/api-v-1-tenants-get';
 export type { ApiV1TenantsPost$Params as ApiV1TenantsPost$Params } from './fn/tenants/api-v-1-tenants-post';

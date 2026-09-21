@@ -31,12 +31,12 @@ import { VisitCreateModalComponent } from '../visits/visit-create-modal.componen
           <ce-icon name="refresh" [size]="15" /> Refresh record
         </button>
         @if (canUseGatehouse()) {
-          <button type="button" class="refresh-record" (click)="visitCreateOpen.set(true)">
+          <a routerLink="/gatehouse" [queryParams]="{ tab: 'walkin' }" class="refresh-record" data-testid="dashboard-add-visit-btn">
             <ce-icon name="plus" [size]="15" /> Add visit
-          </button>
-          <button type="button" class="entry-stamp" (click)="entryWorkflowOpen.set(true)">
+          </a>
+          <a routerLink="/gatehouse" [queryParams]="{ tab: 'qr' }" class="entry-stamp" data-testid="dashboard-record-access-btn">
             <ce-icon name="plus" [size]="18" /> Record access
-          </button>
+          </a>
         }
       </div>
     </header>
@@ -246,6 +246,8 @@ import { VisitCreateModalComponent } from '../visits/visit-create-modal.componen
         display: inline-flex;
         align-items: center;
         gap: var(--space-2);
+        text-decoration: none;
+        box-sizing: border-box;
       }
       .entry-stamp {
         border: 2px solid var(--color-primary);

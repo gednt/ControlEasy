@@ -72,7 +72,7 @@ public sealed class MySqlContainerFixture : IAsyncLifetime
         // the MySQL container is a sibling on the same bridge network: reach
         // it directly via its container IP and internal port. Otherwise use
         // the host-mapped port via the container hostname (localhost).
-        if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true")
+        if (Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER") == "true" && _container.Hostname != "host.docker.internal")
         {
             var ip = _container.Hostname;
             _connectionString = $"Server={ip};Port=3306;Database=controleasydb;Uid=root;Pwd=testpw;AllowUserVariables=True;";

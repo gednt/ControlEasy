@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import type { VehicleType } from '../../api/models/vehicle-type';
 
 export interface VehicleResponse {
   id: string;
@@ -10,8 +11,9 @@ export interface VehicleResponse {
   model: string | null;
   color: string | null;
   apartmentId: string | null;
+  ownerResidentId?: string | null;
   ownerName: string | null;
-  vehicleType: string;
+  vehicleType: VehicleType;
   active: boolean;
   createdAtUtc: string;
 }
@@ -22,8 +24,9 @@ export interface CreateVehicleRequest {
   model?: string | null;
   color?: string | null;
   apartmentId?: string | null;
+  ownerResidentId?: string | null;
   ownerName?: string | null;
-  vehicleType?: string | null;
+  vehicleType?: VehicleType | null;
 }
 
 export interface UpdateVehicleRequest {
@@ -32,8 +35,9 @@ export interface UpdateVehicleRequest {
   model?: string | null;
   color?: string | null;
   apartmentId?: string | null;
+  ownerResidentId?: string | null;
   ownerName?: string | null;
-  vehicleType?: string | null;
+  vehicleType?: VehicleType | null;
 }
 
 @Injectable({ providedIn: 'root' })

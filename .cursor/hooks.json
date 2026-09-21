@@ -9,7 +9,7 @@
     ],
     "stop": [
       {
-        "command": "./scripts/hooks/verify-ci-agent-stop.sh",
+        "command": "node ./scripts/hooks/verify-ci-agent-stop.cjs",
         "timeout": 300
       }
     ]

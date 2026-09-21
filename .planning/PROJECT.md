@@ -10,44 +10,43 @@ Gatehouse staff can reliably register and control access for residents, visitors
 
 ## Current State
 
-**v1.0 Reborn MVP shipped 2026-07-13.** The active milestone delivered 32/32 requirements across 11 phases. The standard Docker Compose runtime is healthy and demo mode remains isolated to its opt-in overlay.
+**v2.1 Integrated Visits & Account Operations shipped 2026-09-20.** 3 phases (16–18), 9 plans, 19/19 requirements checked off (2 partial: INFRA-02 day-bucketing, PASS-03 TenantAdmin reset UI). All phase verifications passed with the full local CI gate green. Milestone audit: `tech_debt` — no blockers (`.planning/milestones/v2.1-MILESTONE-AUDIT.md`).
 
-**Post-v1.0 work shipped 2026-09-12:**
-- v1.1 Phase 10 (dashboard + vehicle edit) shipped without GSD artifacts
-- v1.1 Phase 9 (residents page rebuild) partially shipped without GSD artifacts
-- v2.0 Phase 11 (Photos & Consent Schema) shipped — full Photos module, storage abstraction, consent audit log, append-only triggers, 118 unit + 73 integration tests
-- v2.0 Phase 13 backend (consent policy + entry log + CSV export) shipped in same commit
-- Unplanned: tenant staff lifecycle management, bootstrap race fix, Traefik TLS, worktree script fixes
+**v1.0 Reborn MVP shipped 2026-07-13.** The founding milestone delivered 32/32 requirements across 11 phases. The standard Docker Compose runtime is healthy and demo mode remains isolated to its opt-in overlay.
 
-**Gatehouse Access & Visit Destinations (qr-entrance-exit-access) shipped 2026-09-16 on `feat/qr-entrance-exit-access`:**
-- New AccessControl module (Domain / Application / Infrastructure / Api) under `src/Modules/AccessControl/`
-- Resident + vehicle QR scans, manual lookup by CPF / document / name / apartment / block, credential issue / replace / revoke, access event & refused-scan audit, immutable destination snapshot
-- Visit destination required at create/update; auto-resolved for residents and associated vehicles; legacy destination-pending rows treated as historical
-- Biometric path reserved (`CredentialMethod.FacialBiometricReserved = 99`) but never produced, persisted, or transmitted; arch tests fail the build on any biometric keyword
-- Architecture-wide AccessControl constitution compliance test (18/18 arch tests pass)
-- Serilog structured logging for AccessControl flows (`TenantId`, `ProfileId`, `ScanAttemptId`, `Decision`, `DurationMs`) with a redaction arch test
-- Angular entry-workflow a11y + i18n audit (live region, roving-tab radiogroup, keyboard navigation, category translation table)
+**v1.1 (2026-09-12) and v2.0 (2026-09-13) shipped earlier:**
+- v1.1 Phase 10 (dashboard + vehicle edit) shipped without GSD artifacts; Phase 9 (residents page) partial
+- v2.0 Phases 11–13 (Photos & Consent: schema, browser capture, policy + entry workflow backend) shipped — 118 unit + 73 integration tests at Phase 11, 247 Angular unit + 17 E2E tests at Phases 12–13
+- Gatehouse Access & Visit Destinations (`qr-entrance-exit-access`) shipped 2026-09-16 on `feat/qr-entrance-exit-access`
+
+**v2.1 shipped (Phases 16–18, commit range `eeebe37..2134fcc`, +11,143/−1,018 lines):**
+- Visitor write-path fold: single `VisitorArrivalHandler` for QR/manual/walk-in; `CheckInNow: true` walk-ins land directly `CheckedIn`; durable AccessEvent→VisitId links (migrations 14, 0011, 0012)
+- Unified honest ledger: `GET /api/v1/reports/history` single UNION with native state stamps, `kind` discriminator, per-branch tenant predication, X-Total-Count pagination; entry-log re-scoped to privacy-consent role; package drops as AccessEvents with description + carrier codes
+- Gatehouse operator panel: consolidated `/gatehouse` tabs (QR, manual lookup, walk-in, open visits) with deep-link parity; `/visits` demoted to admin register; QR camera facingMode per-device persistence
+- Reports page: `/reports` (Today/7d/30d/custom, visit counts by day, residents per apartment, server-side filtering, millisecond-precision CSV export) — dead dashboard link fixed
+- Password management: enumeration-safe forgot-password (decoy verify + partitioned rate limiter), platform/tenant admin resets with token revocation, BCrypt cost ≥ 11 pinned, MailKit SMTP + Mailpit dev catch-all, redaction arch tests
 
 ## Current Milestone
 
-**v1.1 UI & Dashboard** (started 2026-08-23) — partially shipped (Phase 10 done, Phase 9 partial)
+**None — v2.1 shipped 2026-09-20. Next milestone not yet defined.**
 
-**v2.0 Gatehouse Photo & Consent Ledger** (defined 2026-08-23) — in progress (Phase 11 done, Phase 13 backend done, Phase 12 not started)
+Run `/gsd-new-milestone` to start the next milestone (questioning → research → requirements → roadmap).
 
-**v2.1 Door Integration** (defined 2026-08-23) — gated on real condominium hardware
+**v2.2 Door Integration** (defined 2026-08-23, renumbered from v2.1 on 2026-09-19) — gated on real condominium hardware; Phases 14–15 reserved.
 
-Goal: Complete the remaining UI parity work (v1.1 Phase 9 — other feature pages), then ship browser-based photo capture UI (v2.0 Phase 12) and consent gatehouse workflow UI (v2.0 Phase 13), then optional door/card-reader integration for condominiums that opt in (v2.1).
+## Next Milestone Goals
 
-Target features:
-- UI Parity & Functional Fixes (Phase 9 — `UI-03`, `UI-04`): mockup visual parity + interaction fixes — **residents page done, other pages pending**
-- Dashboard Live Stats & Vehicle Edit (Phase 10 — `DASH-01`, `DASH-02`, `DASH-04`): live tenant-scoped dashboard statistics; vehicle editing workflow — **shipped**
-- Photo Capture & Storage (Phase 11–12 — `PHOTO-01`, `PHOTO-02`): browser camera + upload, client-side compression, S3/MinIO storage, photos on resident/visitor/vehicle/service-provider records — **Phase 11 shipped, Phase 12 pending**
-- Consent Policy & Gatehouse Workflow (Phase 13 — `CONSENT-01`, `CONSENT-02`, `CONSENT-03`): per-tenant per-category consent policy, four entry states, 3-second gatehouse workflow, append-only audit log, CSV export for CCTV cross-reference — **backend shipped, UI pending**
-- Door Relay & Unlock Commands (Phase 14 — `DOOR-01`): optional, gated on real hardware, HMAC-signed unlock, hardware fallback
-- Reader Events & Device Health (Phase 15 — `DOOR-02`, `DOOR-03`): card reader event ingestion, enforced ledger, device health monitoring
-- **QR Access & Visit Destinations (qr-entrance-exit-access — `ACCESS-01..06`): resident + vehicle QR scans, manual lookup fallback, credential lifecycle, access event + refused-scan audit, required destination for every event, biometric reservation — **shipped 2026-09-16 on `feat/qr-entrance-exit-access`**
+**v2.2 Door Integration** (defined 2026-08-23, renumbered from v2.1 on 2026-09-19; Phases 14–15 reserved) — gated on real condominium hardware:
+- Door Relay & Unlock Commands (Phase 14 — `DOOR-01`): `IDoorController`, HMAC-signed unlock, rate-limited, audit-logged, hardware fallback, threat model
+- Reader Events & Device Health (Phase 15 — `DOOR-02`, `DOOR-03`): `IDeviceHandler` (from 2 real integrations), `DeviceEvent` normalization, enforced ledger, device health monitoring
 
-Phase numbering continues from v1.1 (Phase 10). Old v1.0 placeholder phases (12, 14) are superseded by v2.0/v2.1 design. Multi-arch Docker/CI is a fast-cycle task, not a milestone.
+Fast-cycle (no milestone): multi-arch Docker/CI (`ARCH-01`, `ARCH-02`).
+
+**Carried-forward gaps from v2.1 (candidates for next milestone scope):**
+- INFRA-02 day-bucketing on `GetVisitCountsByDayAsync` (summary vs ledger mismatch near São Paulo boundary)
+- TenantAdmin reset UI surface (PASS-03 backend complete, no UI caller)
+- Ledger filter/search scope fixes (inert status options, search placeholder vs backend `q`)
+- Stale E2E suite for removed dashboard buttons/tiles
 
 ## Requirements
 
@@ -77,14 +76,22 @@ Phase numbering continues from v1.1 (Phase 10). Old v1.0 placeholder phases (12,
 - ✓ Gatehouse entry workflow backend (CONSENT-02) — Phase 13 backend, commit `d895c01`
 - ✓ Tenant staff lifecycle management (unplanned) — commit `55377a0`
 - ✓ Gatehouse Access & Visit Destinations (qr-entrance-exit-access — `ACCESS-01..06`) — resident + vehicle QR scans, manual lookup, credential lifecycle, audit, visit destination enforcement, biometric reservation — `.specs/qr-entrance-exit-access/`, shipped 2026-09-16 on `feat/qr-entrance-exit-access`
+- ✓ Visits unification: visitor QR/manual/walk-in → Visit rows; write-path fold + read model in same phase (VISIT-01..05) — Phase 16, v2.1 shipped 2026-09-20
+- ✓ Unified ledger & package drops: `GET /api/v1/reports/history` UNION stream, package description + carrier codes (VISIT-04..07) — Phase 16, v2.1 shipped 2026-09-20
+- ✓ Gatehouse operator panel & reports page (PANEL-01..05) — Phase 17, v2.1 shipped 2026-09-20
+- ✓ Password management: forgot-password self-service, admin resets, delivery-state machinery (PASS-01..05, INFRA-01) — Phase 18, v2.1 shipped 2026-09-20
 
 ### Active
 
 - [~] Mockup visual parity (v1.1, Phase 9) — `UI-03` — residents page done; other pages pending — `.specs/mockup-visual-parity/`
 - [~] Mockup functional fixes (v1.1, Phase 9) — `UI-04` — residents page interactions done; login form, toasts, other pages pending — `.specs/2-mockup-functional-fixes/`
+- [~] Service provider management — edit, search/filter, and soft-disable flow — `.specs/service-provider-management/`
 - [ ] Photo browser capture & display (v2.0, Phase 12) — `PHOTO-02` — `.specs/photo-capture/`
 - [~] Consent gatehouse workflow UI (v2.0, Phase 13) — `CONSENT-03` — backend done; audit review UI pending — `.specs/consent-gatehouse/`
-- [ ] Door integration (v2.1, gated on hardware) — `.specs/door-integration/`
+- [~] Service provider management — edit, search/filter, and soft-disable flow (in progress on this worktree)
+- [~] TenantAdmin password reset UI (v2.1 PASS-03 partial) — backend done; UI surface pending
+- [ ] Ledger polish (v2.1 carryover) — day-bucketing INFRA-02, inert status filter options, search scope, stale E2E specs
+- [ ] Door integration (v2.2, gated on hardware; renumbered from v2.1 on 2026-09-19) — `.specs/door-integration/`
 - [ ] Multi-arch Docker/CI (fast-cycle) — `.specs/1 - modernization-roadmap-arm64/`
 
 ### Out of Scope
@@ -95,6 +102,9 @@ Phase numbering continues from v1.1 (Phase 10). Old v1.0 placeholder phases (12,
 - Legacy data migration from `controlEasyDB.db` — separate data-migration spec
 - Mobile-native apps — responsive web / PWA sufficient for v1
 - Billing / subscription management — external system
+- Resident/vehicle QR scans folded into the Visits table — they remain AccessEvents facts shown as ledger context rows (settled v2.1)
+- Reset-token email links — temp-password machinery covers it; avoids a second credential subsystem (settled v2.1)
+- Native WhatsApp Business API integration — Meta approval + per-tenant numbers; webhook/WhatsApp temp-password delivery deferred
 
 ## Context
 
@@ -102,7 +112,9 @@ Brownfield modernization project. The repository contains ControlEasy Reborn onl
 
 Planning is derived from `.specs/` (20+ spec folders). Codebase intelligence lives in `.planning/codebase/`.
 
-Known concerns from codebase map: dual tenant column patterns, JWT/localStorage defaults, generated OpenAPI client not consumed by handwritten Angular services (tech debt from v1.0), test coverage gaps.
+Current codebase: ~51,000 LOC (C#/TS/HTML/SCSS) across 11 feature modules (9 original + Photos + AccessControl).
+
+Known concerns from codebase map: dual tenant column patterns, JWT/localStorage defaults, generated OpenAPI client not consumed by handwritten Angular services (tech debt from v1.0 — Phase 17 consumed generated clients for new endpoints), test coverage gaps. v2.1 audit flagged: summary endpoint day-bucketing, TenantAdmin reset UI absent, inert ledger filter options, stale E2E specs.
 
 ## Constraints
 
@@ -124,13 +136,21 @@ Known concerns from codebase map: dual tenant column patterns, JWT/localStorage 
 | Spec-driven development via `.specs/` | AGENTS.md mandates spec-first workflow | ✓ Good — source of truth for roadmap |
 | v2.0 photo capture: browser-only, client-side compression | No hardware framework; cameras belong to condominium | ✓ Good — party-mode design session 2026-08-23 |
 | v2.0 consent: per-tenant per-category policy, no rules engine | ControlEasy enables, doesn't enforce; CCTV is backstop | ✓ Good — party-mode design session 2026-08-23 |
-| v2.1 door: participant, not gatekeeper | Door opens independently; API observes + triggers, doesn't block | ✓ Good — hardware fallback required |
+| v2.2 door: participant, not gatekeeper | Door opens independently; API observes + triggers, doesn't block | ✓ Good — hardware fallback required |
 | `IDeviceHandler` emerges from 2nd integration, not speculative | Avoid premature abstraction | ✓ Good — party-mode design session 2026-08-23 |
 | Phase 11 + Phase 13 backend shipped together | Implementation collapsed the 11/13 boundary; schema + consent backend are co-dependent | ✓ Good — commit `d895c01` |
 | S3 storage: dual provider (MinIO-compatible + Amazon S3) | Support both self-hosted MinIO and native AWS S3 | ✓ Good — `S3StorageProvider` + `AmazonS3StorageProvider` |
 | Tenant staff lifecycle shipped as unplanned work | Admin/porteiro CRUD was needed for real-world condominium management | ✓ Good — commit `55377a0` |
 | QR-first credential method, facial biometric explicitly reserved | QR is the operational path; biometric enrollment/storage/matching requires a separate approved specification covering privacy, storage, enrollment, matching, and liveness | ✓ Good — `.specs/qr-entrance-exit-access/`, `CredentialMethod.FacialBiometricReserved = 99`, arch tests fail the build on any biometric keyword |
 | Always identify a visit destination | Resident/vehicle-bound scans auto-resolve the destination apartment; manual lookup requires an explicit selection; legacy `destination_pending` rows are historical only | ✓ Good — `AccessEventDestinationResolver` + `VisitValidator` enforce the rule |
+| v2.1 visits: one data model, visitor-only QR→Visit | Visits is the single operational record; AccessEvents stays a security audit trail; ConsentAuditLog reverts to privacy-consent role | ✓ Good — settled in gsd-explore 2026-09-19, implemented Phase 16 |
+| v2.1 write-path fold + read model land in the same phase | A double-counting window between phases is the trap (dashboard already double-adds ConsentAuditLog rows) | ✓ Good — both landed in Phase 16 |
+| Unified ledger: single SQL UNION with explicit `tenant_id = @p0` per branch | Never let `TenantFilterInterceptor` splice into a UNION; two-query C# merge only for small bounded sets | ✓ Good — Phase 16 `ReportReadRepository` |
+| Entry-log re-scoped, not deleted | No dual-write, no backfill mutation (append-only triggers); ledger cutoff constant for legacy read-only segment | ✓ Good — Phase 16 |
+| Package drops as AccessEvents, never Visit rows | Packages have no subject/destination Visit semantics; condominium-level drops keep `DestinationApartmentId NOT NULL` | ✓ Good — Phase 16 D-04, `SubjectType=Visitor SubjectId=Guid.Empty` documented |
+| v2.1 password reset: SMTP self-service for admins only | Gatekeeper self-reset deferred; temp passwords one-time + `MustChangePassword` re-armed + refresh-token revoke-all | ✓ Good — Phase 18; gatekeeper self-reset deferred (PASS-03 UI partial) |
+| Enumeration-safe forgot password: uniform response + constant-cost decoy verify | Prevent user enumeration via timing/response diffing | ✓ Good — Phase 18 `ForgotPasswordHandler` |
+| Durable `PasswordResetRequest` table doubles as rate-limit counter | Consolidated single-table design; per-process IMemoryCache idempotent resend is a documented single-instance tradeoff | ⚠️ Revisit — multi-replica deployments lose resend idempotency |
 
 ## Evolution
 
@@ -150,4 +170,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-16 — QR Access & Visit Destinations feature marked validated on `feat/qr-entrance-exit-access`; spec-kit `.specs/qr-entrance-exit-access/` is the source of truth for the feature (per Constitution Principle VI / spec-kit ownership rule)*
+*Last updated: 2026-09-20 after v2.1 milestone (Integrated Visits & Account Operations)*

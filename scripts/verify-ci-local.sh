@@ -224,6 +224,12 @@ else
     TC_ENV=(-e TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal)
     _warn "Non-Linux host: --network host not used; setting TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal for Docker Desktop."
   fi
+  # Honor an already-running MySQL via CE_ITEST_MYSQL so the fixture's
+  # Testcontainers-spawn path can be bypassed (parity with verify-ci-local.ps1).
+  CE_ITEST_ENV=()
+  if [ -n "${CE_ITEST_MYSQL:-}" ]; then
+    CE_ITEST_ENV=(-e "CE_ITEST_MYSQL=${CE_ITEST_MYSQL}")
+  fi
   docker run --rm \
     "${NETWORK_FLAGS[@]+"${NETWORK_FLAGS[@]}"}" \
     -v "${REPO_ROOT}:/workspace" \
@@ -231,6 +237,7 @@ else
     -v "${DOCKER_SOCK}:${DOCKER_SOCK}" \
     -e DOCKER_HOST="unix://${DOCKER_SOCK}" \
     "${TC_ENV[@]+"${TC_ENV[@]}"}" \
+    "${CE_ITEST_ENV[@]+"${CE_ITEST_ENV[@]}"}" \
     -e FAST_ONLY="${FAST_ONLY}" \
     -e INCLUDE_INTEGRATION=true \
     -w /workspace \
@@ -323,6 +330,8 @@ else
     -e Db__Database=controleasydb \
     -e Db__Username=dummy \
     -e Db__Password=dummy \
+    -e Storage__Provider=Local \
+    -e Storage__Local__Path=/tmp/photos \
     -e "Jwt__SigningKey=CI-DUMMY-KEY-FOR-SWAGGER-GEN-ONLY-32-CHARS!!" \
     -e Jwt__Issuer=ControlEasyReborn \
     -e Jwt__Audience=ControlEasyReborn \

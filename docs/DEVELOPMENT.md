@@ -28,6 +28,115 @@ ControlEasy Reborn enforces a **Docker-first development policy**. All compilati
 
 ---
 
+## Per-Worktree Stack Bring-Up
+
+Each active feature branch has its own isolated Compose stack with dedicated ports and a MySQL volume.
+The worktree override file (`docker/docker-compose.worktree.<slug>.yml`) and matching env file
+(`docker/.env.worktree.<slug>`) are generated automatically by `scripts/worktree-up.ps1 / .sh`.
+
+### Bring up the stack (Windows PowerShell — host shell)
+
+Run from the worktree root (`.worktrees/<slug>`). Replace `<slug>` with your branch slug
+(e.g. `feat-my-feature`) and `<http-port>` / `<https-port>` with the ports assigned to your
+worktree (see the port allocation table below):
+
+```powershell
+docker compose `
+  -p ce-<slug> `
+  -f docker/docker-compose.yml `
+  -f docker/docker-compose.worktree.<slug>.yml `
+  --env-file docker/.env.worktree.<slug> `
+  up -d --build
+```
+
+> **Important:** always pass `--env-file docker/.env.worktree.<slug>`. The env file lives inside
+> `docker/`, not at the repo root, so Docker Compose will not discover it automatically.
+> Omitting it causes the JWT signing key and port variables to fall back to defaults, which can
+> break cross-worktree isolation.
+
+### Bring up the stack (devcontainer / bash)
+
+```bash
+docker compose \
+  -p ce-<slug> \
+  -f docker/docker-compose.yml \
+  -f docker/docker-compose.worktree.<slug>.yml \
+  --env-file docker/.env.worktree.<slug> \
+  up -d --build
+```
+
+### Check health
+
+```powershell
+docker compose `
+  -p ce-<slug> `
+  -f docker/docker-compose.yml `
+  -f docker/docker-compose.worktree.<slug>.yml `
+  ps
+```
+
+All services must reach `STATUS = Up` (db additionally shows `(healthy)`) before the app is usable.
+
+### Service URLs
+
+Replace `<https-port>` and `<http-port>` with your worktree's allocated ports:
+
+| URL | Service |
+|---|---|
+| `https://localhost:<https-port>/` | Angular SPA (main entry) |
+| `http://localhost:<http-port>/` | HTTP → redirects to HTTPS |
+| `https://localhost:<https-port>/api/v1/health` | API health probe (returns `Healthy`) |
+| `https://localhost:<https-port>/api/v1/security/bootstrap` | Bootstrap credentials (first run only) |
+| `https://localhost:<https-port>/db` | Adminer — database GUI |
+| `http://localhost:8025` | Mailpit — outbound email inspector |
+
+> The TLS certificate is self-signed. Accept the browser security warning
+> (**Advanced → Proceed**) on first visit.
+
+### Port allocation table
+
+| Worktree index | HTTP port | HTTPS port |
+|---|---|---|
+| 0 | 18080 | 18081 |
+| 1 | 18090 | 18091 |
+| 2 | 18100 | 18101 |
+| 3 | 18110 | 18111 |
+| 4 | 18120 | 18121 |
+
+The assigned ports for your worktree are recorded in `docker/.env.worktree.<slug>`
+(`TRAEFIK_PORT` and `TRAEFIK_HTTPS_PORT`).
+
+### First-run login
+
+On a fresh database the platform-admin account is seeded automatically.
+Retrieve the temporary credentials from the bootstrap endpoint:
+
+```powershell
+Invoke-RestMethod -Uri "https://localhost:<https-port>/api/v1/security/bootstrap" -SkipCertificateCheck
+```
+
+Default values (change immediately after first login):
+
+| Field | Default |
+|---|---|
+| Email | `platform-admin@controleasy.local` |
+| Password | `Bootstrap-ChangeMe1!` |
+
+### Tear down
+
+```powershell
+docker compose `
+  -p ce-<slug> `
+  -f docker/docker-compose.yml `
+  -f docker/docker-compose.worktree.<slug>.yml `
+  down -v
+```
+
+The `-v` flag removes the worktree's MySQL volume (`ce-<slug>-mysql-data`).
+Omit it to keep data between restarts.
+
+---
+
 ## Build & Development Commands
 
 ### Backend (.NET 8)

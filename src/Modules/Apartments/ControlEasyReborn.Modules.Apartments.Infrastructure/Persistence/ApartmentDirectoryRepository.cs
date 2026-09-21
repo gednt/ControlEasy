@@ -45,6 +45,18 @@ public sealed class ApartmentDirectoryRepository : IApartmentDirectory
         return MapList(rows).Skip(skip).Take(take).ToList();
     }
 
+    public async Task<Apartment?> FindFirstActiveAsync(Guid tenantId, CancellationToken ct)
+    {
+        var db = _factory.Create(_ctx);
+        var rows = await db.SelectAsync(
+            fields: Fields,
+            table: TableName,
+            whereClause: "Active = 1",
+            parameters: Array.Empty<object>(),
+            ct: ct);
+        return MapFirstOrDefault(rows);
+    }
+
     private static Apartment? MapFirstOrDefault(DataTable rows)
     {
         if (rows is null || rows.Rows.Count == 0) return null;

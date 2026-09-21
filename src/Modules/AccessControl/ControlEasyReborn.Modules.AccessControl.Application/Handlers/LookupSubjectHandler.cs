@@ -40,6 +40,7 @@ public sealed class LookupSubjectHandler
     private readonly IResidentDirectory _residents;
     private readonly IVehicleDirectory _vehicles;
     private readonly IApartmentDirectory _apartments;
+    private readonly ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory _visits;
     private readonly ILogger<LookupSubjectHandler> _logger;
 
     public LookupSubjectHandler(
@@ -48,6 +49,7 @@ public sealed class LookupSubjectHandler
         IResidentDirectory residents,
         IVehicleDirectory vehicles,
         IApartmentDirectory apartments,
+        ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory visits,
         ILogger<LookupSubjectHandler>? logger = null)
     {
         _audits = audits;
@@ -55,6 +57,7 @@ public sealed class LookupSubjectHandler
         _residents = residents;
         _vehicles = vehicles;
         _apartments = apartments;
+        _visits = visits;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<LookupSubjectHandler>.Instance;
     }
 
@@ -121,25 +124,34 @@ public sealed class LookupSubjectHandler
 
     private async Task<IReadOnlyList<LookupSubjectResultItem>> LookupByCpfAsync(Guid tenantId, string value, CancellationToken ct)
     {
+        var list = new List<LookupSubjectResultItem>();
         var resident = await _residents.FindActiveByCpfAsync(tenantId, value, ct);
-        if (resident is null)
+        if (resident is not null)
         {
-            return Array.Empty<LookupSubjectResultItem>();
+            list.Add(await MapResidentAsync(tenantId, resident, ct));
         }
-        return new[] { await MapResidentAsync(tenantId, resident, ct) };
+
+        var visits = await _visits.SearchPendingByDocumentAsync(tenantId, value, ct);
+        foreach (var v in visits)
+        {
+            list.Add(MapVisit(v));
+        }
+
+        return list;
     }
 
     private async Task<IReadOnlyList<LookupSubjectResultItem>> LookupByDocumentAsync(Guid tenantId, string value, CancellationToken ct)
     {
         var residents = await _residents.SearchByDocumentAsync(tenantId, "national_id", value, ct);
-        if (residents.Count == 0)
-        {
-            return Array.Empty<LookupSubjectResultItem>();
-        }
-        var list = new List<LookupSubjectResultItem>(residents.Count);
+        var visits = await _visits.SearchPendingByDocumentAsync(tenantId, value, ct);
+        var list = new List<LookupSubjectResultItem>(residents.Count + visits.Count);
         foreach (var r in residents)
         {
             list.Add(await MapResidentAsync(tenantId, r, ct));
+        }
+        foreach (var v in visits)
+        {
+            list.Add(MapVisit(v));
         }
         return list;
     }
@@ -154,12 +166,30 @@ public sealed class LookupSubjectHandler
             });
         }
         var residents = await _residents.SearchByNameAsync(tenantId, value, 0, DefaultResultCap, ct);
-        var list = new List<LookupSubjectResultItem>(residents.Count);
+        var visits = await _visits.SearchPendingByNameAsync(tenantId, value, 0, DefaultResultCap, ct);
+        var list = new List<LookupSubjectResultItem>(residents.Count + visits.Count);
         foreach (var r in residents)
         {
             list.Add(await MapResidentAsync(tenantId, r, ct));
         }
+        foreach (var v in visits)
+        {
+            list.Add(MapVisit(v));
+        }
         return list;
+    }
+
+    private static LookupSubjectResultItem MapVisit(ControlEasyReborn.Modules.Visits.Domain.Entities.Visit visit)
+    {
+        return new LookupSubjectResultItem(
+            SubjectType: "visitor",
+            SubjectId: visit.Id,
+            ApartmentId: visit.ApartmentId,
+            ApartmentBlock: visit.DestinationBlock,
+            ApartmentUnit: visit.DestinationUnit,
+            DisplayName: visit.VisitorName,
+            DocumentMasked: MaskCpf(visit.VisitorDocument),
+            Plate: null);
     }
 
     private async Task<IReadOnlyList<LookupSubjectResultItem>> LookupByApartmentAsync(Guid tenantId, string value, string? unit, CancellationToken ct)

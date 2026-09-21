@@ -17,6 +17,7 @@ import {
   type SubjectCategory,
 } from './consent-policy.service';
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
+import { formatRuntimeDate } from '../../core/config/runtime-config';
 
 interface CategoryRow {
   value: SubjectCategory;
@@ -212,7 +213,7 @@ export class ConsentPolicyEditorPage implements OnInit {
       return t > max ? t : max;
     }, 0);
     if (!latest) return 'Never updated';
-    return `Last updated ${new Date(latest).toLocaleString()}`;
+    return `Last updated ${formatRuntimeDate(latest)}`;
   });
 
   ngOnInit(): void {

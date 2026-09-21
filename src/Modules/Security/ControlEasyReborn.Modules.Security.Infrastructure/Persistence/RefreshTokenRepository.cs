@@ -44,9 +44,9 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
         await _db.UpdateAsync(
             new[] { "RevokedAtUtc" },
             TableName,
-            new[] { entry.RevokedAtUtc.Value.ToString("o") },
-            "Id = @param0",
-            new object[] { entry.Id },
+            new[] { entry.RevokedAtUtc.Value.ToString("yyyy-MM-dd HH:mm:ss.ffffff") },
+            $"Id = '{entry.Id}'",
+            Array.Empty<object>(),
             ct: ct);
     }
 
@@ -55,9 +55,9 @@ public sealed class RefreshTokenRepository : IRefreshTokenRepository
         await _db.UpdateAsync(
             new[] { "RevokedAtUtc" },
             TableName,
-            new[] { DateTime.UtcNow.ToString("o") },
-            "UserId = @param0 AND RevokedAtUtc IS NULL",
-            new object[] { userId },
+            new[] { DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.ffffff") },
+            $"UserId = '{userId}' AND RevokedAtUtc IS NULL",
+            Array.Empty<object>(),
             ct: ct);
     }
 

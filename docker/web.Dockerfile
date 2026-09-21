@@ -13,5 +13,7 @@ RUN npm run ng -- build --configuration production
 FROM nginx:alpine AS runtime
 COPY --from=build /app/dist/controleasy-reborn-web/browser /usr/share/nginx/html
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+COPY docker/40-runtime-config.sh /docker-entrypoint.d/40-runtime-config.sh
+RUN chmod +x /docker-entrypoint.d/40-runtime-config.sh
 EXPOSE 8080
 CMD ["nginx", "-g", "daemon off;"]

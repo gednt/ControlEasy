@@ -102,11 +102,16 @@ const DEMO_ACCOUNTS = [
               </button>
             </ce-input>
 
-            <ce-checkbox
-              label="Remember my email"
-              [checked]="loginForm.get('remember')?.value ?? false"
-              (checkedChange)="loginForm.patchValue({ remember: $event })"
-            />
+            <div class="login-options-row">
+              <ce-checkbox
+                label="Remember my email"
+                [checked]="loginForm.get('remember')?.value ?? false"
+                (checkedChange)="loginForm.patchValue({ remember: $event })"
+              />
+              <button type="button" class="forgot-password-link" (click)="openForgotPassword()">
+                Forgot password?
+              </button>
+            </div>
 
             <ce-button variant="primary" size="lg" type="submit"
                     [disabled]="loginForm.invalid || submitting()"
@@ -151,6 +156,66 @@ const DEMO_ACCOUNTS = [
           }
         }
       </div>
+
+      @if (forgotPasswordOpen()) {
+        <div class="forgot-modal-backdrop" (click)="closeForgotPassword()">
+          <div class="forgot-modal-card" role="dialog" aria-modal="true" aria-labelledby="forgot-password-title" (click)="$event.stopPropagation()">
+            <div class="forgot-modal-header">
+              <h2 id="forgot-password-title" class="forgot-modal-title">Reset password</h2>
+              <button type="button" class="forgot-modal-close" (click)="closeForgotPassword()" aria-label="Close modal">
+                <ce-icon name="x" [size]="18" />
+              </button>
+            </div>
+
+            @if (forgotPasswordMessage()) {
+              <div class="forgot-success-banner" role="status">
+                <ce-icon name="check-circle" [size]="18" />
+                <span>{{ forgotPasswordMessage() }}</span>
+              </div>
+              <p class="forgot-modal-hint text-secondary text-xs" style="margin-top: var(--space-3); line-height: 1.5;">
+                If your account exists and is an administrator, an email with temporary credentials has been sent.
+              </p>
+              <ce-button variant="primary" size="md" type="button" (click)="closeForgotPassword()" style="margin-top: var(--space-4); width: 100%;">
+                Back to sign in
+              </ce-button>
+            } @else {
+              <p class="forgot-modal-subtitle">
+                Enter your registered administrator email to receive a temporary recovery password.
+              </p>
+
+              @if (forgotPasswordError()) {
+                <div class="login-error" role="alert" style="margin-bottom: var(--space-3);">
+                  <ce-icon name="alert-circle" [size]="18" />
+                  <span>{{ forgotPasswordError() }}</span>
+                </div>
+              }
+
+              <form [formGroup]="forgotPasswordForm" (ngSubmit)="onForgotPasswordSubmit()" class="login-form">
+                <ce-input
+                  label="Email address"
+                  inputId="forgot-email"
+                  type="email"
+                  autocomplete="email"
+                  placeholder="admin@controleasy.app"
+                  formControlName="email"
+                  [error]="forgotEmailError()"
+                >
+                  <span input-prefix><ce-icon name="user" [size]="16" /></span>
+                </ce-input>
+
+                <div class="forgot-modal-actions" style="margin-top: var(--space-4); display: flex; gap: var(--space-3); justify-content: flex-end;">
+                  <ce-button variant="ghost" size="md" type="button" (click)="closeForgotPassword()" [disabled]="forgotPasswordSubmitting()">
+                    Cancel
+                  </ce-button>
+                  <ce-button variant="primary" size="md" type="submit" [loading]="forgotPasswordSubmitting()" [disabled]="forgotPasswordForm.invalid || forgotPasswordSubmitting()">
+                    Send instructions
+                  </ce-button>
+                </div>
+              </form>
+            }
+          </div>
+        </div>
+      }
     </main>
   `,
   styles: [`
@@ -220,6 +285,92 @@ const DEMO_ACCOUNTS = [
       display: flex;
       flex-direction: column;
       gap: var(--space-4);
+    }
+
+    .login-options-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-2);
+    }
+    .forgot-password-link {
+      background: none;
+      border: 0;
+      padding: 0;
+      color: var(--color-primary);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      text-decoration: underline;
+      font-family: inherit;
+    }
+    .forgot-password-link:hover {
+      opacity: 0.85;
+    }
+
+    .forgot-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgb(0 0 0 / 0.5);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: var(--space-4);
+    }
+    .forgot-modal-card {
+      width: 100%;
+      max-width: 26rem;
+      background: var(--color-surface-elevated);
+      border-radius: var(--radius-xl);
+      padding: var(--space-6);
+      box-shadow: var(--shadow-xl);
+      border: 1px solid var(--color-border);
+      position: relative;
+    }
+    .forgot-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: var(--space-3);
+    }
+    .forgot-modal-title {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-semibold);
+      color: var(--color-text-primary);
+      margin: 0;
+    }
+    .forgot-modal-close {
+      background: transparent;
+      border: 0;
+      cursor: pointer;
+      color: var(--color-text-secondary);
+      padding: var(--space-1);
+      display: inline-flex;
+      border-radius: var(--radius-sm);
+    }
+    .forgot-modal-close:hover {
+      background: var(--color-neutral-light);
+    }
+    .forgot-modal-subtitle {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-4);
+      line-height: 1.4;
+    }
+    .forgot-success-banner {
+      padding: var(--space-3) var(--space-4);
+      background: var(--color-success-light, #ecfdf5);
+      border: 1px solid color-mix(in oklch, var(--color-success, #10b981) 30%, transparent);
+      border-radius: var(--radius-md);
+      color: var(--color-success, #065f46);
+      font-size: var(--font-size-sm);
+      display: flex;
+      align-items: flex-start;
+      gap: var(--space-2);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.4;
     }
 
     .login-theme-toggle {
@@ -383,6 +534,15 @@ export class LoginPage implements OnDestroy {
   tenantPickerVisible = signal(false);
   tenantHint = signal<string | null>(null);
 
+  forgotPasswordOpen = signal(false);
+  forgotPasswordSubmitting = signal(false);
+  forgotPasswordMessage = signal<string | null>(null);
+  forgotPasswordError = signal<string | null>(null);
+
+  forgotPasswordForm: FormGroup = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
+  });
+
   constructor() {
     const remembered = this.authService.getRememberedEmail();
     if (remembered) {
@@ -438,6 +598,51 @@ export class LoginPage implements OnDestroy {
       return 'Password is required.';
     }
     return null;
+  }
+
+  forgotEmailError(): string | null {
+    const control = this.forgotPasswordForm.get('email');
+    if (control?.invalid && control.touched) {
+      return 'Please enter a valid email address.';
+    }
+    return null;
+  }
+
+  openForgotPassword(): void {
+    const currentEmail = this.loginForm.get('email')?.value;
+    if (currentEmail && this.isValidEmail(currentEmail)) {
+      this.forgotPasswordForm.patchValue({ email: currentEmail });
+    } else {
+      this.forgotPasswordForm.reset();
+    }
+    this.forgotPasswordError.set(null);
+    this.forgotPasswordMessage.set(null);
+    this.forgotPasswordOpen.set(true);
+  }
+
+  closeForgotPassword(): void {
+    this.forgotPasswordOpen.set(false);
+    this.forgotPasswordError.set(null);
+    this.forgotPasswordMessage.set(null);
+    this.forgotPasswordSubmitting.set(false);
+  }
+
+  onForgotPasswordSubmit(): void {
+    if (this.forgotPasswordForm.invalid) return;
+    this.forgotPasswordError.set(null);
+    this.forgotPasswordSubmitting.set(true);
+
+    const email = this.forgotPasswordForm.get('email')?.value;
+    this.authService.forgotPassword(email).subscribe({
+      next: (res) => {
+        this.forgotPasswordSubmitting.set(false);
+        this.forgotPasswordMessage.set(res.message);
+      },
+      error: (err) => {
+        this.forgotPasswordSubmitting.set(false);
+        this.forgotPasswordError.set(this.extractErrorMessage(err));
+      },
+    });
   }
 
   ngOnDestroy(): void {

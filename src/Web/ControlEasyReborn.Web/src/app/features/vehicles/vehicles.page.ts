@@ -10,12 +10,13 @@ import {
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
 import { AuthService } from '../../core/services/auth.service';
 import { CeButtonComponent, CeModalComponent, CePhotoPanelComponent } from '../../design-system';
+import type { VehicleType } from '../../api/models/vehicle-type';
 
 const VEHICLE_TYPES = [
-  { value: '0', label: 'Car' },
-  { value: '1', label: 'Motorcycle' },
-  { value: '2', label: 'Truck' },
-  { value: '3', label: 'Other' },
+  { value: 0, label: 'Car' },
+  { value: 1, label: 'Motorcycle' },
+  { value: 2, label: 'Truck' },
+  { value: 3, label: 'Other' },
 ] as const;
 
 @Component({
@@ -615,9 +616,9 @@ export class VehiclesPage {
     return this.apartmentLabels()[apartmentId] ?? apartmentId.slice(0, 8);
   }
 
-  getVehicleTypeLabel(vehicleType: string): string {
-    const found = VEHICLE_TYPES.find(vt => vt.value === String(vehicleType));
-    return found ? found.label : vehicleType;
+  getVehicleTypeLabel(vehicleType: VehicleType): string {
+    const found = VEHICLE_TYPES.find(vt => vt.value === vehicleType);
+    return found ? found.label : String(vehicleType);
   }
 
   load(): void {
@@ -690,7 +691,7 @@ export class VehiclesPage {
       brand: vehicle.brand,
       model: vehicle.model,
       color: vehicle.color,
-      vehicleType: String(vehicle.vehicleType),
+      vehicleType: vehicle.vehicleType,
     });
     this.editError.set(null);
     this.editModalStep.set('form');

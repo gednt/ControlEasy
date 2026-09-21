@@ -6,7 +6,6 @@ public static class EntryStates
     public const string EnteredWithConsent = "entered_with_consent";
     public const string EnteredWithoutConsent = "entered_without_consent";
     public const string EnteredOverride = "entered_override";
-    public const string GatehouseOnly = "gatehouse_only";
     public const string Exited = "exited";
 }
 
@@ -33,7 +32,6 @@ public static class EntryStatesConstants
         EntryStates.EnteredWithConsent,
         EntryStates.EnteredWithoutConsent,
         EntryStates.EnteredOverride,
-        EntryStates.GatehouseOnly,
         EntryStates.Exited
     ];
 

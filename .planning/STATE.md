@@ -1,96 +1,104 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: Gatehouse Photo & Consent Ledger
-status: completed
-last_updated: "2026-09-16T12:00:00.000Z"
-last_activity: 2026-09-16
+milestone: v2.1
+milestone_name: Integrated Visits & Account Operations (started 2026-09-19)
+status: Awaiting next milestone
+stopped_at: Milestone v2.1 complete — Phase 18 verified with full local CI gate passing.
+last_updated: "2026-09-21T02:22:17.886Z"
+last_activity: 2026-09-20
+last_activity_desc: Milestone v2.1 completed and archived
+state_head: 2134fcc2c3a0d839548b17b57337a2e4cd5fe242
 progress:
   total_phases: 3
   completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
-  percent: 100
+  total_plans: 9
+  completed_plans: 9
+current_phase: 18
+current_phase_name: Password Management
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-13)
+See: .planning/PROJECT.md (updated 2026-09-20)
 
 **Core value:** Gatehouse staff can reliably register and control access through a fast, tenant-isolated web UI.
-**Current focus:** v2.0 milestone COMPLETE (2026-09-13). All 3 phases (11, 12, 13) shipped. No active milestone.
+**Current focus:** Planning next milestone — run `/gsd-new-milestone`
 
 ## Current Position
 
-Phase: All v2.0 phases complete
+Phase: Milestone v2.1 complete
 Plan: —
-Status: Milestone archived
-Last activity: 2026-09-17 — Phases 8–9 of the Gatehouse Access & Visit Destinations feature shipped on `feat/qr-entrance-exit-access`. T065 (biometric reservation docs + quickstart + spec/plan cross-link), T066 (Serilog enrichers + 8 handler log calls + arch redaction test), T067 (worktree compose override), T068 (Stopwatch/Serilog duration on every handler boundary), T069 (entry-workflow a11y: live region, roving-tab radiogroup, keyboard navigation, category translation table; 14/14 Angular tests pass), T070 (Playwright API-level lifecycle E2E), T071 (architecture-wide constitution-compliance test, 18/18 arch tests pass), T072 (PROJECT.md + STATE.md sync per spec-kit ownership rule), T073 (stack smoke via docker build + /api/v1/health green), T074 (post-implementation docs + release notes). API rebuilds and starts cleanly. No biometric regressions.
+Status: Awaiting next milestone
+Last activity: 2026-09-20 — Milestone v2.1 completed and archived
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed (cumulative): 14 (11 v1.0 + 1 v1.1 + 1 v2.0 Phase 11 + 1 v2.0 Phase 12 + 1 v2.0 Phase 13)
-- v2.0 milestone: 3 plans, 3 summaries, 3 verifications, 1 audit, 26 atomic commits
-- Average duration per plan: ~5 min (autonomous execution)
+- Total plans completed (cumulative): 17 (11 v1.0 + 1 v1.1 + 3 v2.0 + 9 v2.1)
+- v2.1 milestone: 9 plans, 9 summaries, 3 verifications, full local CI verification passing
+- Average duration per plan: ~5-15 min (autonomous execution)
+
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 16 P01 | 35 min | 3 tasks | 16 files |
+| Phase 16 P02 | 25 min | 2 tasks | 8 files |
+| Phase 16 P03 | 30 min | 2 tasks | 26+ files |
+| Phase 17 P01 | 20 min | 3 tasks | 7 files |
+| Phase 17 P02 | 15 min | 2 tasks | 3 files |
+| Phase 17 P03 | 25 min | 4 tasks | 7 files |
+| Phase 18 P01 | 25 min | 4 tasks | 16 files |
+| Phase 18 P02 | 25 min | 5 tasks | 12 files |
+| Phase 18 P03 | 30 min | 5 tasks | 22 files |
 
 ## Accumulated Context
 
 ### Decisions
 
+- Service providers are soft-disabled through a tenant-scoped, idempotent action; the `/service-providers` screen now supports full detail editing, search/filtering, and confirmed disable without erasing the record (2026-09-20, `.specs/service-provider-management/`)
+- v2.1 visits unification: one data model (Visits), visitor-only QR→Visit, walk-ins land directly `CheckedIn`; AccessEvents stays security audit trail; ConsentAuditLog reverts to privacy-consent role (settled in gsd-explore 2026-09-19, `.planning/notes/integrated-visits-flow.md`)
+- v2.1 write-path fold + read-model rewrite MUST land in the same phase (Phase 16) — a double-counting window between phases is the trap (dashboard already double-adds ConsentAuditLog rows today)
+- Unified ledger read model: single SQL UNION in `ReportReadRepository` with explicit `tenant_id = @p0` per branch (never let `TenantFilterInterceptor` splice into a UNION); two-query C# merge only for small bounded sets
+- Entry-log re-scoped, not deleted — no dual-write, no backfill mutation (append-only triggers); ledger cutoff constant for the legacy read-only segment
+- v2.1 password reset: SMTP self-service for admins only (gatekeeper self-reset deferred); temp passwords one-time + `MustChangePassword` re-armed + refresh-token revoke-all; enumeration-safe uniform response + decoy verify; durable `PasswordResetRequest` table doubles as rate-limit counter (consolidated single-table design to settle in Phase 18 planning)
 - v2.0 photo capture: browser-only, client-side compression (0.8→0.6→0.3 ladder), EXIF strip via canvas redraw, 3× retry with 1s/2s/4s backoff
-- v2.0 consent model: per-tenant per-category policy, five entry states (entered_with_consent / entered_override / gatehouse_only / denied / entered_without_consent), append-only audit log, hardcoded override reason codes
-- v2.0 design principle: 3-second gatehouse workflow as honesty enforcement; CCTV is external backstop
-- Phase 12/13 used forward-compatible shims for backend endpoints not yet shipped:
-  - Photos entity binding via localStorage cache
-  - Thumbnails via CSS object-fit cover (no /thumbnail route)
-  - Consent policy list via 4× parallel category calls (no list endpoint)
-  - Pagination total via entries.length (no X-Total-Count header)
-- v1.1 Phase 9 (UI parity) explicitly deferred to a future milestone (out of v2.0 scope)
-- v2.1 Door Integration (Phases 14-15) gated on real condominium hardware
-- Gatehouse access is a software-only validation and audit workflow: QR is the initial credential method, with a protected manual lookup fallback by document, name, apartment, or block. Every visit now requires an apartment/block destination, automatically recovered for residents and associated vehicles; facial biometrics requires a separate future privacy, security, and enrollment specification.
-- QR feature implementation pragmatic deviation (2026-09-14): spec-kit generated 74 atomic tasks across 9 phases (Setup, Foundational, US1–US6, Polish). Constitution IV requires per-task Docker rebuild + tests. To stay within realistic session scope, the workflow groups Docker rebuilds at phase boundaries while still producing one atomic commit per task. This deviation was approved explicitly by the operator and is recorded here per Constitution VII (concurrency-budget deviation rationale lives next to the work it justifies). Reviewer actions: per-task rebuild pass can be re-run during `/gsd-verify-work`.
-- Phase 9 observability (T066): AccessControl logs structured fields only — `TenantId`, `ProfileId`, `ProfileId`, `ProfileId`, `ScanAttemptId`, `LookupAuditId`, `Decision`, `CredentialMethod`, `SubjectType`, `DurationMs` — and an architecture test asserts no AccessControl `LogX` call passes raw QR / document / CPF / full name values.
-- Phase 9 a11y (T069): entry-workflow exposes an `aria-live=polite` status region, uses `role=radiogroup` + roving `tabindex` for the category selector, supports Arrow / Home / End navigation, and routes labels through a translation table; 14/14 Angular unit tests pass.
-- Phase 9 constitution compliance (T071): `AccessControlConstitutionComplianceTests` enforces all seven constitution principles plus the stack constraints as a single failing-build gate for AccessControl; 18/18 architecture tests pass.
+- v2.0 consent model: per-tenant per-category policy, five entry states, append-only audit log, hardcoded override reason codes
+- v2.2 Door Integration (Phases 14–15, renumbered from v2.1 on 2026-09-19) gated on real condominium hardware
+- Gatehouse access is software-only validation/audit: QR initial credential + manual lookup fallback; every visit requires a destination; biometrics require separate approved spec
 - Multi-arch Docker/CI is fast-cycle (no milestone)
 
 ### Blockers/Concerns
 
-- No blocking concerns. v2.0 milestone is complete.
-- v1.1 Phase 9 partial work (residents page only) deferred to future milestone.
-- v2.1 (Phases 14-15) gated on hardware.
-- OpenAPI client not yet consumed by handwritten Angular services (carried over from v1.0 tech debt).
-- Photo entity binding is now persisted by the Photos API; existing MySQL databases need the versioned migration once.
+- OpenAPI client not yet consumed by handwritten Angular services (carried over from v1.0 tech debt) — Phase 17 consumes generated clients for the new endpoints
+- Photo entity binding: existing MySQL databases need the versioned migration once
+- Research-flagged decisions to resolve during phase discussion: visitor identity for unmatched QR scans (Phase 16), ledger cutoff build-constant vs config (Phase 16), tenant-local day-boundary timezone setting (Phase 17), single consolidated `PasswordResetRequest` table design (Phase 18), tenant-admin permission string for reset endpoint (Phase 18)
+- No `UseForwardedHeaders()` in codebase — behind Traefik, IP-partitioned rate limits collapse to one bucket; partition on normalized email (Phase 18)
 
 ## Deferred Items
 
-| Category | Item | Status | Deferred At |
-|----------|------|--------|-------------|
-| v1.1 | UI Parity & Functional Fixes (Phase 9 partial) | Residents page only; login/dashboard/showcase/visits/vehicles/etc. pending | 2026-09-13 |
-| v2.0 (tech debt) | Backend /api/v1/photos/{id}/thumbnail route | Forward-compatible shim in place (CSS object-fit cover) | 2026-09-13 |
-| v2.0 (tech debt) | Backend /api/v1/consent-policy list endpoint | Forward-compatible shim (4× parallel calls) | 2026-09-13 |
-| v2.0 (tech debt) | Backend X-Total-Count header on /api/v1/entry-log | Forward-compatible shim (entries.length approximation) | 2026-09-13 |
-| v2.1 | Door relay & unlock commands (DOOR-01) | Phase 14, gated on hardware | 2026-08-23 |
-| v2.1 | Reader events & device health (DOOR-02, DOOR-03) | Phase 15, gated on Phase 14 | 2026-08-23 |
-| Future access method | Facial biometrics | Explicitly deferred; requires separate approved specification before biometric enrollment, matching, or storage | 2026-09-13 |
-| Fast-cycle | Multi-arch Docker/CI (ARCH-01, ARCH-02) | No milestone, ~1 week | 2026-06-24 |
-| v1.0 | OpenAPI client integration with handwritten services | Carried over | 2026-09-12 |
+| Category | Item | Status | Deferred At | Milestone |
+|----------|------|--------|-------------|-----------|
+| v1.1 | UI Parity & Functional Fixes (Phase 9 partial) | Residents page only; login/dashboard/showcase/visits/vehicles/etc. pending | 2026-09-13 | v1.1 |
+| v2.0 (tech debt) | Backend /api/v1/photos/{id}/thumbnail route | Forward-compatible shim (CSS object-fit cover) | 2026-09-13 | v2.0 |
+| v2.0 (tech debt) | Backend /api/v1/consent-policy list endpoint | Forward-compatible shim (4× parallel calls) | 2026-09-13 | v2.0 |
+| v2.0 (tech debt) | Backend X-Total-Count header on /api/v1/entry-log | Forward-compatible shim (entries.length approximation) | 2026-09-13 | v2.0 |
+| v2.1 | Webhook/WhatsApp temp-password delivery, photo on packages, CPF pre-reg matching, purpose codes, resident visit history, visitor self-check-in, badge printing | Deferred requirements (REQUIREMENTS.md) | 2026-09-19 | v2.1+ |
+| v2.2 | Door relay & unlock commands (DOOR-01) | Phase 14, gated on hardware | 2026-08-23 | v2.2 |
+| v2.2 | Reader events & device health (DOOR-02, DOOR-03) | Phase 15, gated on Phase 14 | 2026-08-23 | v2.2 |
+| Future access method | Facial biometrics | Requires separate approved specification | 2026-09-13 | future |
+| Fast-cycle | Multi-arch Docker/CI (ARCH-01, ARCH-02) | No milestone, ~1 week | 2026-06-24 | none |
+| todos | integrated-visits-flow.md | (presence-only) | 2026-09-20 | v2.1 |
 
 ## Session Continuity
 
-Last session: 2026-09-17
-Stopped at: Spec-kit /speckit-implement Phase 8 (US6 docs) and Phase 9 (Polish) complete on `feat/qr-entrance-exit-access`. T065–T074 implemented: biometric reservation docs + cross-links + quickstart exclusion scan; Serilog structured logging + redaction arch test; worktree compose override; Stopwatch/Serilog timing on every handler boundary; entry-workflow a11y (live region, roving-tab radiogroup, keyboard navigation, category translation table); Playwright API-level access-control lifecycle E2E spec; AccessControl constitution-compliance test; PROJECT.md + STATE.md sync per spec-kit ownership rule; stack smoke via docker build + /api/v1/health green. All 74 atomic tasks complete; solution rebuilds cleanly.
+Last session: 2026-09-20
+Stopped at: Milestone v2.1 archived — roadmap/requirements/audit moved to `.planning/milestones/`, PROJECT.md evolved, git tagged v2.1. Next: `/gsd-new-milestone`.
 Resume file: None
 
 ## Operator Next Steps
 
-- QR access feature ready for human review on `feat/qr-entrance-exit-access` (74 atomic commits across 9 phases; clean working tree)
-- Run `/gsd-new-milestone` to define next milestone (likely v1.1 Phase 9 completion OR v2.1 Door Integration prep OR fast-cycle multi-arch)
-- v2.0 ship commit ready for human review on `feat/planning-reconcile-v2` (26 atomic commits, clean working tree)
-- Forward-compatible shims can be removed by future backend work (4 backend endpoints/migrations)
-- v2.1 roadmap at `.planning/milestones/v2.0-ROADMAP.md` (Phases 14-15, gated on hardware)
-- Multi-arch Docker/CI: fast-cycle, ~1 week, `.specs/1 - modernization-roadmap-arm64/`
+- Start the next milestone with /gsd-new-milestone

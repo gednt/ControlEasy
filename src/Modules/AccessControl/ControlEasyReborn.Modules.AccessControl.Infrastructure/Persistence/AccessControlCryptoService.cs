@@ -22,6 +22,22 @@ public sealed class AccessControlCryptoService : IAccessControlCryptoService
         if (string.IsNullOrWhiteSpace(qrPayload)) return null;
 
         var candidates = await _credentials.ListAllAsync(tenantId, ct);
+
+        // 1. Direct UUID resolution (by Credential ID or Subject ID)
+        if (Guid.TryParse(qrPayload.Trim(), out var uuid))
+        {
+            var match = candidates
+                .Where(c => c.Status == Domain.ValueObjects.CredentialStatus.Active && (c.Id == uuid || c.SubjectId == uuid))
+                .FirstOrDefault()
+                ?? candidates.FirstOrDefault(c => c.Id == uuid || c.SubjectId == uuid);
+
+            if (match is not null)
+            {
+                return match;
+            }
+        }
+
+        // 2. Cryptographic token HMAC verification
         foreach (var candidate in candidates)
         {
             if (_issuer.Verify(qrPayload, candidate.SecretVerifier, candidate.KeyVersion, _hmacKey))

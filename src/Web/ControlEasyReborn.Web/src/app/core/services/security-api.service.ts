@@ -66,6 +66,20 @@ export interface SessionResponse {
   switchableTenants: SessionTenantResponse[];
 }
 
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+}
+
+export interface ResetUserPasswordResponse {
+  userId: string;
+  tempPassword: string;
+  mustChangePassword: boolean;
+}
+
 @Injectable({ providedIn: 'root' })
 export class SecurityApiService {
   private readonly http = inject(HttpClient);
@@ -73,6 +87,14 @@ export class SecurityApiService {
 
   login(request: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.baseUrl}/auth/login`, request);
+  }
+
+  forgotPassword(email: string): Observable<ForgotPasswordResponse> {
+    return this.http.post<ForgotPasswordResponse>(`${this.baseUrl}/auth/forgot-password`, { email });
+  }
+
+  resetUserPassword(userId: string): Observable<ResetUserPasswordResponse> {
+    return this.http.post<ResetUserPasswordResponse>(`${this.baseUrl}/users/${userId}/reset-password`, {});
   }
 
   refresh(refreshToken: string): Observable<RefreshResponse> {

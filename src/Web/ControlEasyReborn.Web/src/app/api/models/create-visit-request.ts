@@ -3,6 +3,7 @@
 
 export interface CreateVisitRequest {
   apartmentId?: string | null;
+  checkInNow?: boolean;
   purpose?: string | null;
   visitorDocument?: string | null;
   visitorName?: string | null;

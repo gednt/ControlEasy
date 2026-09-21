@@ -7,6 +7,7 @@ using ControlEasyReborn.Modules.Apartments.Application.Abstractions;
 using ControlEasyReborn.Modules.Photos.Application.Abstractions;
 using ControlEasyReborn.Modules.Residents.Application.Abstractions;
 using ControlEasyReborn.Modules.Vehicles.Application.Abstractions;
+using ControlEasyReborn.SharedKernel.Auditing;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
@@ -39,6 +40,8 @@ public sealed class RecordAccessScanHandler
     private readonly IAccessControlCryptoService _crypto;
     private readonly IAccessControlClock _clock;
     private readonly AccessEventDestinationResolver _resolver;
+    private readonly ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory? _visits;
+    private readonly IAuditLogWriter? _auditWriter;
     private readonly ILogger<RecordAccessScanHandler> _logger;
 
     public RecordAccessScanHandler(
@@ -52,6 +55,8 @@ public sealed class RecordAccessScanHandler
         IAccessControlCryptoService crypto,
         IAccessControlClock clock,
         AccessEventDestinationResolver? resolver = null,
+        ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory? visits = null,
+        IAuditLogWriter? auditWriter = null,
         ILogger<RecordAccessScanHandler>? logger = null)
     {
         _credentials = credentials;
@@ -63,7 +68,9 @@ public sealed class RecordAccessScanHandler
         _policy = policy;
         _crypto = crypto;
         _clock = clock;
-        _resolver = resolver ?? new AccessEventDestinationResolver(residents, vehicles, apartments);
+        _visits = visits;
+        _resolver = resolver ?? new AccessEventDestinationResolver(residents, vehicles, apartments, visits!);
+        _auditWriter = auditWriter;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<RecordAccessScanHandler>.Instance;
     }
 
@@ -168,6 +175,36 @@ public sealed class RecordAccessScanHandler
             return refusal;
         }
 
+        Guid? visitId = null;
+        if (credential.SubjectType == SubjectType.Visitor && command.Direction == CycleDirection.Entrance && _visits is not null)
+        {
+            // The durable VisitId link is the ledger's double-count guard. Create
+            // or advance the single operational Visit before persisting its audit
+            // AccessEvent, so concurrent same-timestamp arrivals cannot hide one
+            // another through a timestamp-only heuristic.
+            //
+            // A visitor credential issued from the administrative Visits screen
+            // has SubjectId == Visit.Id. The scanner sends only the opaque token,
+            // so request-supplied profile fields are absent in that normal flow.
+            // Resolve the visit profile first; otherwise an empty document makes
+            // VisitorArrivalHandler create an unrelated walk-in Visit.
+            var visitorProfile = await _resolver.ResolveVisitorProfileAsync(command.TenantId, credential.SubjectId, ct);
+            var arrival = new ControlEasyReborn.Modules.Visits.Application.Handlers.VisitorArrivalCommand(
+                TenantId: command.TenantId,
+                VisitorName: visitorProfile?.Name ?? command.VisitorName ?? "Visitor",
+                VisitorDocument: visitorProfile?.Document ?? command.VisitorDocument ?? string.Empty,
+                VisitorPhone: visitorProfile?.Phone,
+                DestinationApartmentId: destination.ApartmentId!.Value,
+                DestinationBlock: destination.Block,
+                DestinationUnit: destination.Unit,
+                Purpose: visitorProfile?.Purpose,
+                AttendantProfileId: command.PerformedByProfileId,
+                GatehouseId: command.GatehouseId,
+                OccurredAtUtc: nowUtc);
+            var arrivalResult = await _visits.RegisterArrivalAsync(arrival, ct);
+            visitId = arrivalResult.VisitMutated ? arrivalResult.Visit.Id : null;
+        }
+
         var accessEvent = AccessEvent.Record(
             tenantId: command.TenantId,
             subjectType: credential.SubjectType,
@@ -186,9 +223,11 @@ public sealed class RecordAccessScanHandler
             policyOutcome: policyFinal,
             destinationApartmentId: destination.ApartmentId!.Value,
             destinationBlock: destination.Block,
-            destinationUnit: destination.Unit);
+            destinationUnit: destination.Unit,
+            visitId: visitId);
 
         await _events.AddAsync(accessEvent, ct);
+        await WriteAccessAuditAsync(accessEvent, ct);
 
         var accepted = new ScanDecisionResult(
             Decision: ScanDecisionKind.Recorded,
@@ -261,6 +300,23 @@ public sealed class RecordAccessScanHandler
             relatedSubjectId: relatedSubjectId);
 
         await _refusals.AddAsync(attempt, ct);
+        if (_auditWriter is not null)
+        {
+            await _auditWriter.WriteAsync(
+                tenantId: command.TenantId,
+                category: AuditCategory.Security,
+                action: "QrAccessRefused",
+                entityType: "RefusedScanAttempt",
+                entityId: attempt.Id,
+                severity: AuditSeverity.Warning,
+                details: $"QR access refused: {failureCode}.",
+                metadata: new
+                {
+                    direction = CycleDirectionCodes.ToWire(command.Direction),
+                    failureCode
+                },
+                ct: ct);
+        }
 
         return new ScanDecisionResult(
             Decision: decisionKind,
@@ -276,5 +332,28 @@ public sealed class RecordAccessScanHandler
             DestinationBlock: string.Empty,
             DestinationUnit: string.Empty,
             FailureCode: failureCode);
+    }
+
+    private Task WriteAccessAuditAsync(AccessEvent accessEvent, CancellationToken ct)
+    {
+        if (_auditWriter is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        return _auditWriter.WriteAsync(
+            tenantId: accessEvent.TenantId,
+            category: AuditCategory.Security,
+            action: "QrAccessGranted",
+            entityType: "AccessEvent",
+            entityId: accessEvent.Id,
+            severity: AuditSeverity.Info,
+            details: $"QR {CycleDirectionCodes.ToWire(accessEvent.Direction)} access recorded for {accessEvent.DestinationBlock}/{accessEvent.DestinationUnit}.",
+            metadata: new
+            {
+                direction = CycleDirectionCodes.ToWire(accessEvent.Direction),
+                method = AccessMethodCodes.ToWire(accessEvent.AccessMethod)
+            },
+            ct: ct);
     }
 }

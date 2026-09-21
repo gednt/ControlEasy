@@ -134,13 +134,6 @@ public sealed class CreateEntryLogHandler
             {
                 ["SubjectType"] = new[] { "exited is only allowed for dwellers or vehicles." }
             });
-
-        if (request.EntryState == EntryStates.GatehouseOnly
-            && request.SubjectType != SubjectCategories.ServiceProvider)
-            throw new Errors.ValidationException(new Dictionary<string, string[]>
-            {
-                ["SubjectType"] = new[] { "gatehouse_only is only allowed for service providers." }
-            });
     }
 
     internal static EntryLogResponse ToResponse(ConsentAuditLogEntry e) =>

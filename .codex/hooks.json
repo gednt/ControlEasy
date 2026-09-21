@@ -6,8 +6,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ ! -f \".agents/skills/impeccable/scripts/impeccable\" ] || \".agents/skills/impeccable/scripts/impeccable\" hook",
-            "commandWindows": "if exist \".agents/skills/impeccable/scripts/impeccable.cmd\" (\".agents/skills/impeccable/scripts/impeccable.cmd\" hook & exit /b)",
+            "command": "node ./scripts/hooks/impeccable-agent-hook.cjs",
+            "commandWindows": "node scripts/hooks/impeccable-agent-hook.cjs",
             "timeout": 5,
             "statusMessage": "Checking UI changes"
           }
@@ -19,15 +19,15 @@
         "hooks": [
           {
             "type": "command",
-            "command": "[ ! -f \".agents/skills/impeccable/scripts/impeccable\" ] || \".agents/skills/impeccable/scripts/impeccable\" hook",
-            "commandWindows": "if exist \".agents/skills/impeccable/scripts/impeccable.cmd\" (\".agents/skills/impeccable/scripts/impeccable.cmd\" hook & exit /b)",
+            "command": "node ./scripts/hooks/impeccable-agent-hook.cjs",
+            "commandWindows": "node scripts/hooks/impeccable-agent-hook.cjs",
             "timeout": 30,
             "statusMessage": "Design deep pass"
           },
           {
             "type": "command",
-            "command": "./scripts/hooks/verify-ci-agent-stop.sh",
-            "commandWindows": "pwsh -NoProfile -File scripts/hooks/verify-ci-agent-stop.ps1",
+            "command": "node ./scripts/hooks/verify-ci-agent-stop.cjs",
+            "commandWindows": "node scripts/hooks/verify-ci-agent-stop.cjs",
             "timeout": 300,
             "statusMessage": "Verifying local CI checks"
           }

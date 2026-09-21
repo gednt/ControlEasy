@@ -13,4 +13,8 @@ public interface IReportReadRepository
         CancellationToken ct);
 
     Task<DashboardStatsResponse> GetDashboardStatsAsync(CancellationToken ct);
+
+    Task<(IReadOnlyList<HistoryRowResponse> Rows, int TotalCount)> GetHistoryAsync(
+        HistoryQuery query,
+        CancellationToken ct);
 }

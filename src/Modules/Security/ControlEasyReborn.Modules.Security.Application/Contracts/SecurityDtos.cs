@@ -51,3 +51,9 @@ public sealed record SessionResponse(
     string Roles,
     bool IsDemoPersona,
     IReadOnlyList<SessionTenantResponse> SwitchableTenants);
+
+public sealed record ResetUserPasswordResponse(Guid UserId, string TempPassword, bool MustChangePassword);
+
+public sealed record ForgotPasswordRequest(string Email);
+
+public sealed record ForgotPasswordResponse(string Message);

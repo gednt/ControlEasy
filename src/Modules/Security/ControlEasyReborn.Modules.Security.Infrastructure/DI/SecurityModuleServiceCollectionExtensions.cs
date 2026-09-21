@@ -25,9 +25,14 @@ public static class SecurityModuleServiceCollectionExtensions
         services.AddScoped<IGatehouseRepository, GatehouseRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
+        services.AddScoped<ITempPasswordGenerator, TempPasswordGenerator>();
         services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.AddScoped<IPasswordResetRequestRepository, PasswordResetRequestRepository>();
 
+        services.AddMemoryCache();
         services.AddScoped<LoginHandler>();
+        services.AddScoped<ResetUserPasswordHandler>();
+        services.AddScoped<ForgotPasswordHandler>();
         services.AddScoped<RefreshHandler>();
         services.AddScoped<ChangePasswordHandler>();
         services.AddScoped<CreateUserHandler>();
@@ -47,6 +52,7 @@ public static class SecurityModuleServiceCollectionExtensions
 
         services.AddScoped<IValidator<CreateUserRequest>, CreateUserRequestValidator>();
         services.AddScoped<IValidator<LoginRequest>, LoginRequestValidator>();
+        services.AddScoped<IValidator<ForgotPasswordRequest>, ForgotPasswordRequestValidator>();
         services.AddScoped<IValidator<ChangePasswordRequest>, ChangePasswordRequestValidator>();
         services.AddScoped<IValidator<CreateAttendantProfileRequest>, CreateAttendantProfileRequestValidator>();
         services.AddScoped<IValidator<UpdateAttendantProfileRequest>, UpdateAttendantProfileRequestValidator>();

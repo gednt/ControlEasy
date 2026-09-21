@@ -10,6 +10,7 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Options" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <PackageReference Include="MailKit" />
     <ProjectReference Include="..\ControlEasyReborn.SharedKernel\ControlEasyReborn.SharedKernel.csproj" />
     <ProjectReference Include="..\..\Modules\Security\ControlEasyReborn.Modules.Security.Application\ControlEasyReborn.Modules.Security.Application.csproj" />
   </ItemGroup>

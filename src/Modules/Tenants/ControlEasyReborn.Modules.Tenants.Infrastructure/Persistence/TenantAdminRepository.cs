@@ -356,22 +356,52 @@ public sealed class TenantAdminRepository : ITenantAdminRepository
             return;
         }
 
+        var isPlatformAdmin = roles.Contains("PlatformAdmin", StringComparison.Ordinal);
+        var permissions = isPlatformAdmin
+            ? "platform:*"
+            : TenantAdminDefaults.Permissions;
+        var profileTenantId = isPlatformAdmin
+            ? PlatformTenant.Id
+            : tenantId;
+
         var existing = await _db.SelectAsync(
-            fields: "Id",
+            fields: "Id, Permissions",
             table: "AttendantProfiles",
             whereClause: "UserId = @param0 AND TenantId = @param1 AND Active = 1",
-            parameters: new object[] { userId, tenantId },
+            parameters: new object[] { userId, profileTenantId },
             ct: ct);
 
         if (existing is not null && existing.Rows.Count > 0)
-            return;
+        {
+            if (!isPlatformAdmin)
+            {
+                var profileId = existing.Rows[0]["Id"].ToString() ?? string.Empty;
+                var currentPermissions = existing.Rows[0]["Permissions"]?.ToString() ?? string.Empty;
+                var currentTokens = currentPermissions
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .ToList();
+                var currentSet = new HashSet<string>(currentTokens, StringComparer.OrdinalIgnoreCase);
 
-        var permissions = roles.Contains("PlatformAdmin", StringComparison.Ordinal)
-            ? "platform:*"
-            : TenantAdminDefaults.Permissions;
-        var profileTenantId = roles.Contains("PlatformAdmin", StringComparison.Ordinal)
-            ? PlatformTenant.Id
-            : tenantId;
+                var defaultTokens = TenantAdminDefaults.Permissions
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                var missing = defaultTokens.Where(p => !currentSet.Contains(p)).ToList();
+
+                if (missing.Count > 0)
+                {
+                    currentTokens.AddRange(missing);
+                    var newPermissions = string.Join(",", currentTokens);
+                    const int fieldCount = 2;
+                    await _db.UpdateAsync(
+                        new[] { "Permissions", "UpdatedAtUtc" },
+                        "AttendantProfiles",
+                        new[] { newPermissions, DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") },
+                        $"Id = @param{fieldCount}",
+                        new object[] { profileId },
+                        ct: ct);
+                }
+            }
+            return;
+        }
 
         await _db.InsertAsync(
             new[] { "Id", "TenantId", "UserId", "DisplayName", "ShiftId", "GatehouseId", "Permissions", "Active", "CreatedAtUtc", "tenant_id" },

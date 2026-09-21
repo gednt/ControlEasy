@@ -25,9 +25,3 @@ export class ApiConfiguration {
   rootUrl: string = '';
 }
 
-/**
- * Parameters for `@angular/common/http.forRoot()`
- */
-export interface ApiConfigurationParams {
-  rootUrl?: string;
-}

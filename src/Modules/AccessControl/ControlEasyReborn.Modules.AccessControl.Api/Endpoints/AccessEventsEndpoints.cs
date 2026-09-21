@@ -38,7 +38,9 @@ public static class AccessEventsEndpoints
                 ScanAttemptId: request.ScanAttemptId,
                 PerformedByProfileId: profileId,
                 GatehouseId: request.GatehouseId,
-                ConfirmDuplicate: request.ConfirmDuplicate), ct);
+                ConfirmDuplicate: request.ConfirmDuplicate,
+                VisitorName: request.VisitorName,
+                VisitorDocument: request.VisitorDocument), ct);
 
             if (!validation.IsValid)
             {
@@ -54,7 +56,9 @@ public static class AccessEventsEndpoints
                 ScanAttemptId: request.ScanAttemptId,
                 PerformedByProfileId: profileId,
                 GatehouseId: request.GatehouseId,
-                ConfirmDuplicate: request.ConfirmDuplicate);
+                ConfirmDuplicate: request.ConfirmDuplicate,
+                VisitorName: request.VisitorName,
+                VisitorDocument: request.VisitorDocument);
 
             var result = await handler.HandleAsync(cmd, ct);
 
@@ -256,6 +260,15 @@ public static class AccessEventsEndpoints
                 });
             }
 
+            AccessEventKind kind = AccessEventKind.Access;
+            if (!string.IsNullOrWhiteSpace(request.Kind) && !AccessEventKindCodes.TryParse(request.Kind, out kind))
+            {
+                throw new Application.Errors.ValidationException(new Dictionary<string, string[]>
+                {
+                    ["Kind"] = new[] { "Unknown access event kind." }
+                });
+            }
+
             var cmd = new RecordManualAccessCommand(
                 TenantId: tenantId,
                 LookupAuditId: request.LookupAuditId,
@@ -263,7 +276,10 @@ public static class AccessEventsEndpoints
                 SubjectId: request.SubjectId,
                 Direction: ParseDirection(request.Direction),
                 PerformedByProfileId: profileId,
-                GatehouseId: request.GatehouseId);
+                GatehouseId: request.GatehouseId,
+                Kind: kind,
+                PackageDescription: request.PackageDescription,
+                PackageCarrierCode: request.PackageCarrierCode);
 
             var validation = await validator.ValidateAsync(cmd, ct);
             if (!validation.IsValid)
@@ -284,7 +300,10 @@ public static class AccessEventsEndpoints
                 PolicyOutcome: PolicyOutcomeCodes.ToWire(result.PolicyOutcome),
                 DestinationApartmentId: result.DestinationApartmentId,
                 DestinationBlock: result.DestinationBlock,
-                DestinationUnit: result.DestinationUnit));
+                DestinationUnit: result.DestinationUnit,
+                Kind: AccessEventKindCodes.ToWire(cmd.Kind),
+                PackageDescription: cmd.PackageDescription,
+                PackageCarrierCode: cmd.PackageCarrierCode));
         })
         .RequireAuthorization("Permission_Access.Access.Operate");
 

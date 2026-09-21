@@ -20,6 +20,8 @@ public static class VisitsModuleServiceCollectionExtensions
         services.AddSingleton<ITenantAwareLinqFactory>(sp => sp.GetRequiredService<TenantAwareLinqFactory>());
 
         services.AddScoped<IVisitRepository, VisitRepository>();
+        services.AddScoped<IVisitDirectory, VisitDirectoryRepository>();
+        services.AddScoped<VisitorArrivalHandler>();
         services.AddScoped<CreateVisitHandler>();
         services.AddScoped<GetVisitHandler>();
         services.AddScoped<ListVisitsHandler>();

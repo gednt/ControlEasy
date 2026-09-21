@@ -9,7 +9,9 @@ public sealed record RecordAccessScanCommand(
     Guid ScanAttemptId,
     Guid PerformedByProfileId,
     Guid? GatehouseId,
-    bool ConfirmDuplicate);
+    bool ConfirmDuplicate,
+    string? VisitorName = null,
+    string? VisitorDocument = null);
 
 public sealed record LookupSubjectCommand(
     Guid TenantId,
@@ -24,7 +26,10 @@ public sealed record RecordManualAccessCommand(
     Guid SubjectId,
     CycleDirection Direction,
     Guid PerformedByProfileId,
-    Guid? GatehouseId);
+    Guid? GatehouseId,
+    AccessEventKind Kind = AccessEventKind.Access,
+    string? PackageDescription = null,
+    string? PackageCarrierCode = null);
 
 public sealed record IssueCredentialCommand(
     Guid TenantId,

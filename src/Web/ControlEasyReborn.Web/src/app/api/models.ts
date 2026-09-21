@@ -17,6 +17,8 @@ export type { CreateTenantRequest } from './models/create-tenant-request';
 export type { CreateUserRequest } from './models/create-user-request';
 export type { CreateVehicleRequest } from './models/create-vehicle-request';
 export type { CreateVisitRequest } from './models/create-visit-request';
+export type { ForgotPasswordRequest } from './models/forgot-password-request';
+export type { HistoryRowResponse } from './models/history-row-response';
 export type { IssueCredentialRequest } from './models/issue-credential-request';
 export type { LoginRequest } from './models/login-request';
 export type { LookupSubjectRequest } from './models/lookup-subject-request';
@@ -24,6 +26,7 @@ export type { RecordAccessScanRequest } from './models/record-access-scan-reques
 export type { RecordManualAccessRequest } from './models/record-manual-access-request';
 export type { RefreshRequest } from './models/refresh-request';
 export type { ReplaceCredentialRequest } from './models/replace-credential-request';
+export type { ResidentsPerApartmentResponse } from './models/residents-per-apartment-response';
 export type { ResumeTenantRequest } from './models/resume-tenant-request';
 export type { RevokeCredentialRequest } from './models/revoke-credential-request';
 export type { SuspendTenantRequest } from './models/suspend-tenant-request';
@@ -39,3 +42,4 @@ export type { UpdateServiceProviderRequest } from './models/update-service-provi
 export type { UpdateTenantAdminRequest } from './models/update-tenant-admin-request';
 export type { UpdateVehicleRequest } from './models/update-vehicle-request';
 export type { VehicleType } from './models/vehicle-type';
+export type { VisitCountByDayResponse } from './models/visit-count-by-day-response';
