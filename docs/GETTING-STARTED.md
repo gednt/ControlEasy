@@ -12,15 +12,16 @@ Before starting, ensure your system has the following installed:
 | **Docker Engine** | 24.0+ | Container runtime |
 | **Docker Compose** | v2.20+ | Multi-container orchestration (`docker compose`) |
 | **Git** | 2.30+ | Version control |
-| **Free Ports** | — | Ports `8080` (HTTP), `8443` (HTTPS), `8082` (Traefik dashboard) |
+| **Free Ports** | — | `8080` (HTTP), `8443` (HTTPS), `8081` (API direct), `8082` (Traefik dashboard), `1025` + `8025` (Mailpit SMTP + web UI) |
 
 ## Quick Installation & First Boot
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/reisfelipe18/ControlEasy.git
+git clone http://192.168.15.5:3030/reisfelipe18/ControlEasy.git
 cd ControlEasy
 ```
+<!-- VERIFY: clone URL is the current Git origin — a LAN-hosted Git server (http://192.168.15.5:3030/reisfelipe18/ControlEasy, per `git remote -v`); not reachable outside this network. Update if a public remote is published. -->
 
 ### 2. Configure Environment (Optional)
 By default, the stack uses development defaults. You can copy the example environment file:
@@ -39,13 +40,15 @@ Or use the Makefile shortcut:
 make up
 ```
 
-Docker Compose spins up six containers:
-- `reverse-proxy`: Traefik v3.1 gateway (port 8080)
-- `api`: ASP.NET Core 8 Web API
+Docker Compose spins up eight services (seven long-running plus one one-shot job):
+- `reverse-proxy`: Traefik v3.1 gateway (HTTP `8080`, HTTPS `8443`)
+- `api`: ASP.NET Core 8 Web API (directly exposed on port `8081`)
 - `web`: Angular 18 SPA served via Nginx
 - `db`: MySQL 8.0 database
-- `adminer`: Lightweight database web interface (path `/db`)
-- `seq`: Centralized structured logging instance
+- `db-migrate`: one-shot container that applies SQL migrations after `db` is healthy
+- `adminer`: lightweight database web interface (path `/db`)
+- `mailpit`: SMTP catch-all for outbound email in development (SMTP `1025`, web UI `8025`)
+- `seq`: centralized structured logging instance
 
 ---
 
@@ -54,21 +57,28 @@ Docker Compose spins up six containers:
 When starting with an empty database volume (`mysql-data`):
 
 1. **MySQL Database Initialization:**
-   The `db` container runs scripts from `docker/mysql/init/` in lexical order:
+   The `db` container runs scripts from `docker/mysql/init/` in lexical order. The numbered scripts build the schema in stages:
    - `00-schema.sql`: Core users and accounts
-   - `02-tenants-seed.sql`: Default tenant creation (`Condominio Padrao`)
-   - `02a-residents-schema.sql`: Residents and units tables
-   - `03-tenant-backfill.sql`: Multi-tenant key constraints
+   - `02-tenants-seed.sql`: Tenants table + default tenant (`Condominio Padrao`)
+   - `02a-residents-schema.sql` / `02b-apartments-schema.sql`: Residents and apartments/units
+   - `03-tenant-backfill.sql`: Backfills multi-tenant key constraints
    - `04-tenant-views.sql`: Tenant-scoped views
    - `05-security-schema.sql`: Gatehouses, shifts, attendant profiles
    - `06-visits-schema.sql`: Visits and visitor records
    - `07-vehicles-schema.sql`: Vehicles and license plates
    - `08-service-providers-schema.sql`: Service providers and contractors
    - `09-administration-schema.sql`: System administration configuration
-   - `12-photos-schema.sql`: Photos and consent policy ledger
+   - `09a-photos-schema.sql` / `09b-consent-schema.sql`: Photos and the consent policy audit ledger
+   - `10-demo-metadata.sql` / `11-demo-seed.sql`: Demo seed idempotency table and a minimal static seed for CI
+   - `12-access-control-schema.sql`: AccessControl module tables (credentials, events)
+   - `13-backfill-tenant-admin-permissions.sql` / `14-visits-unification.sql` / `15-access-events-visit-link.sql`: Permission backfills and the unified visits/access ledger
+   - `16-password-reset-requests.sql`: Durable password reset requests
 
-2. **PlatformAdmin Bootstrap:**
-   Once MySQL reports healthy, the `api` container executes `PlatformAdminBootstrapService`. If no platform administrator exists, it generates temporary credentials and outputs them to the container log:
+2. **Schema Migrations:**
+   Once `db` is healthy, the one-shot `db-migrate` container applies the SQL files in `docker/mysql/migrations/` (access control, tenant-admin permission backfill, visits unification, access-event/visit link, password reset requests, photo entity bindings, system audit backfill). The `api` container starts only after `db-migrate` completes successfully.
+
+3. **PlatformAdmin Bootstrap:**
+   Once migrations finish, the `api` container executes `PlatformAdminBootstrapService` (skipped when demo mode is enabled). If no platform administrator exists, it generates random credentials and logs them at warning level:
 
    ```bash
    docker compose -f docker/docker-compose.yml logs api | grep "CHANGE IMMEDIATELY"
@@ -76,21 +86,26 @@ When starting with an empty database volume (`mysql-data`):
 
    **Example output:**
    ```text
-   [WRN] CHANGE IMMEDIATELY — PlatformAdmin seeded. Email: platform-admin@controleasy.local, Password: ...
+   [WRN] // CHANGE IMMEDIATELY — PlatformAdmin seeded. Email: platform-admin-a1b2c3d4@controleasy.local, Password: ...
    ```
+
+   Tip: in Development mode you can also retrieve pending bootstrap credentials anonymously via `GET /api/v1/security/bootstrap` on the API.
 
 ---
 
 ## Access URLs
 
-All web traffic is routed through the Traefik reverse proxy on port **8080**:
+HTTP on port **8080** redirects to HTTPS on **8443** (self-signed local certificate); all routed traffic goes through the Traefik reverse proxy:
 
 | Service | Access URL | Credentials / Purpose |
 |---|---|---|
-| **Web Application** | [http://localhost:8080](http://localhost:8080) | Main Angular portal |
-| **REST API / Swagger** | [http://localhost:8080/api](http://localhost:8080/api) | Interactive OpenAPI documentation (dev mode) |
+| **Web Application** | [http://localhost:8080](http://localhost:8080) | Main Angular portal (redirects to HTTPS) |
+| **REST API / Swagger UI** | [http://localhost:8081/swagger](http://localhost:8081/swagger) | Interactive OpenAPI documentation (dev mode only, direct API port) |
 | **Adminer (MySQL UI)** | [http://localhost:8080/db](http://localhost:8080/db) | Server: `db`, User: `controleasy`, Pass: `controleasy_dev`, DB: `controleasydb` |
+| **Mailpit (email inbox)** | [http://localhost:8025](http://localhost:8025) | Outbound email sent by the API is captured here (dev mode) |
 | **Traefik Dashboard** | [http://localhost:8082](http://localhost:8082) | Reverse proxy status and routing rules |
+
+> The `/swagger` path is served by the API directly on port `8081` — through Traefik (8080/8443), only `/api/*` reaches the API; every other path is served by the Angular SPA.
 
 ---
 
@@ -102,20 +117,33 @@ All web traffic is routed through the Traefik reverse proxy on port **8080**:
 4. Enter the temporary password as your current password, choose a secure new password (min 8 characters), and confirm.
 5. Upon saving, you are redirected to the platform dashboard.
 
+> In demo mode the bootstrap step is skipped — sign in directly with one of the fixed personas below.
+
 ---
 
 ## Evaluating with Demo Mode
 
-If you prefer exploring the system with rich sample data (two themed condominiums, residents, vehicles, visits, and fixed passwords) without manual entry:
+If you prefer exploring the system with rich sample data — two themed condominiums (`[Demo] Residencial Aurora` and `[Demo] Condomínio Parque Verde`) pre-populated with residents, visitors, vehicles, visits, and attendant profiles — run the stack with the demo overlay:
 
 ```bash
 docker compose -f docker/docker-compose.yml -f docker/docker-compose.demo.yml up -d --build
 ```
 
-**Fixed Demo Credentials:**
-- **Gatehouse Attendant:** `porteiro@controleasy.app` / `demo123`
-- **Condominium Admin:** `admin@aurora.controleasy.app` / `demo123`
-- **Platform Operator:** `platform@controleasy.app` / `demo123`
+**Fixed Demo Credentials** (password `demo123` for all):
+
+| Persona | Email | Notes |
+|---|---|---|
+| **Portaria / Attendant** | `porteiro@controleasy.app` | Gatehouse attendant at Aurora |
+| **Tenant Administrator** | `admin@controleasy.app` | Condominium admin at Aurora |
+| **Resident (Morador)** | `morador@controleasy.app` | Resident at Aurora |
+| **Dual-role user** | `multi@controleasy.app` | TenantAdmin + Attendant across Aurora and Parque Verde → tenant picker |
+| **Platform Administrator** | `platform@controleasy.app` | Manages all condominiums (Platform → Condominiums) |
+
+Notes:
+- PlatformAdmin bootstrap is skipped in demo mode.
+- Outbound email is disabled (`Demo__DisableOutboundEmail=true`).
+- A full reset re-seeds from scratch: `down -v` followed by `up -d --build` with both compose files.
+- `POST /api/v1/demo/reset` (PlatformAdmin auth) forces a re-seed without a rebuild.
 
 For full demo walkthroughs and sample personas, see [Demo Mode](demo-mode.md).
 
@@ -123,10 +151,10 @@ For full demo walkthroughs and sample personas, see [Demo Mode](demo-mode.md).
 
 ## Troubleshooting & Common Setup Issues
 
-### 1. Port Conflict on 8080 or 8082
-If port 8080 or 8082 is already bound by another service on your machine:
+### 1. Port Conflict on Bound Host Ports
+The stack binds `8080`, `8443`, `8081` (API), `8082` (Traefik dashboard), `1025` and `8025` (Mailpit). If any of these are already taken on your machine:
 - Open `docker/.env` (or create one from `docker/.env.example`).
-- Adjust `REVERSE_PROXY_PORT=8090` and restart the stack:
+- Adjust the relevant variable (e.g. `REVERSE_PROXY_PORT=8090`, `API_PORT=8085`) and restart the stack:
   ```bash
   docker compose -f docker/docker-compose.yml up -d
   ```

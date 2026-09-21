@@ -5,7 +5,7 @@ This guide outlines local development workflows, build tools, code style standar
 
 ## Local Setup
 
-ControlEasy Reborn enforces a **Docker-first development policy**. All compilation, container execution, and integration testing happen within Docker containers or Devcontainers to guarantee environment parity.
+ControlEasy Reborn enforces a **Docker-first development policy**. All compilation, container execution, and integration testing happen within Docker containers or Devcontainers to guarantee environment parity. The canonical development shell is the devcontainer defined under `.devcontainer/`.
 
 ### Prerequisites
 - **Docker Engine 24+** & **Docker Compose v2**
@@ -14,9 +14,10 @@ ControlEasy Reborn enforces a **Docker-first development policy**. All compilati
 ### Setting Up Your Environment
 1. Clone the repository:
    ```bash
-   git clone https://github.com/reisfelipe18/ControlEasy.git
+   git clone http://192.168.15.5:3030/reisfelipe18/ControlEasy.git
    cd ControlEasy
    ```
+   <!-- VERIFY: clone URL is the current Git origin (LAN-hosted Git server at http://192.168.15.5:3030/reisfelipe18/ControlEasy, per `git remote -v`); not reachable outside this network. Update if a public remote is published. -->
 2. Initialize local configuration:
    ```bash
    cp docker/.env.example docker/.env
@@ -32,7 +33,8 @@ ControlEasy Reborn enforces a **Docker-first development policy**. All compilati
 
 Each active feature branch has its own isolated Compose stack with dedicated ports and a MySQL volume.
 The worktree override file (`docker/docker-compose.worktree.<slug>.yml`) and matching env file
-(`docker/.env.worktree.<slug>`) are generated automatically by `scripts/worktree-up.ps1 / .sh`.
+(`docker/.env.worktree.<slug>`) are generated automatically by `scripts/worktree-up.ps1 / .sh`
+(which also registers the `ce-<slug>.localhost` hostname via `scripts/lib/resolver.sh`).
 
 ### Bring up the stack (Windows PowerShell — host shell)
 
@@ -53,6 +55,15 @@ docker compose `
 > `docker/`, not at the repo root, so Docker Compose will not discover it automatically.
 > Omitting it causes the JWT signing key and port variables to fall back to defaults, which can
 > break cross-worktree isolation.
+
+Or simply run the helper script from inside the worktree:
+
+```bash
+scripts/worktree-up.sh            # bash (devcontainer / macOS / Git Bash)
+./scripts/worktree-up.ps1         # Windows PowerShell
+```
+
+The script is idempotent — re-running on an already-up worktree prints "already up" and exits 0.
 
 ### Bring up the stack (devcontainer / bash)
 
@@ -79,29 +90,39 @@ All services must reach `STATUS = Up` (db additionally shows `(healthy)`) before
 
 ### Service URLs
 
-Replace `<https-port>` and `<http-port>` with your worktree's allocated ports:
+Worktree stacks are routed by Traefik under the branch hostname `ce-<slug>.localhost`
+(registered to `127.0.0.1` by the bring-up script). Replace `<slug>`, `<https-port>`, and
+`<http-port>` with your worktree's values:
 
 | URL | Service |
 |---|---|
-| `https://localhost:<https-port>/` | Angular SPA (main entry) |
-| `http://localhost:<http-port>/` | HTTP → redirects to HTTPS |
-| `https://localhost:<https-port>/api/v1/health` | API health probe (returns `Healthy`) |
-| `https://localhost:<https-port>/api/v1/security/bootstrap` | Bootstrap credentials (first run only) |
-| `https://localhost:<https-port>/db` | Adminer — database GUI |
+| `https://ce-<slug>.localhost:<https-port>/` | Angular SPA (main entry) |
+| `http://ce-<slug>.localhost:<http-port>/` | HTTP → redirects to HTTPS |
+| `https://ce-<slug>.localhost:<https-port>/api/v1/health` | API health probe (returns `Healthy`) |
+| `https://ce-<slug>.localhost:<https-port>/api/v1/security/bootstrap` | Bootstrap credentials (first run only) |
+| `http://localhost:8081/swagger` | Swagger UI / OpenAPI spec — direct API port on the main stack only (not routed via Traefik; worktree overrides publish no API port, so Swagger is unreachable from worktree stacks) |
+| `https://ce-<slug>.localhost:<https-port>/db` | Adminer — database GUI |
 | `http://localhost:8025` | Mailpit — outbound email inspector |
+
+> The Traefik file-provider routing also accepts `Host(localhost)` and `*.<hostname-pattern>.localhost`,
+> so `https://localhost:<https-port>/` works as an alternative to the branch hostname.
 
 > The TLS certificate is self-signed. Accept the browser security warning
 > (**Advanced → Proceed**) on first visit.
 
 ### Port allocation table
 
-| Worktree index | HTTP port | HTTPS port |
+Ports are allocated as `18080 + (worktree-index × 10)`, where the worktree index is the worktree's
+1-based position in `git worktree list` (the main checkout is index 0 and uses the standard
+`8080`/`8443` ports). HTTPS always uses the HTTP port + 1:
+
+| Worktree (creation order) | HTTP port | HTTPS port |
 |---|---|---|
-| 0 | 18080 | 18081 |
-| 1 | 18090 | 18091 |
-| 2 | 18100 | 18101 |
-| 3 | 18110 | 18111 |
-| 4 | 18120 | 18121 |
+| 1st | 18090 | 18091 |
+| 2nd | 18100 | 18101 |
+| 3rd | 18110 | 18111 |
+| 4th | 18120 | 18121 |
+| 5th | 18130 | 18131 |
 
 The assigned ports for your worktree are recorded in `docker/.env.worktree.<slug>`
 (`TRAEFIK_PORT` and `TRAEFIK_HTTPS_PORT`).
@@ -112,7 +133,7 @@ On a fresh database the platform-admin account is seeded automatically.
 Retrieve the temporary credentials from the bootstrap endpoint:
 
 ```powershell
-Invoke-RestMethod -Uri "https://localhost:<https-port>/api/v1/security/bootstrap" -SkipCertificateCheck
+Invoke-RestMethod -Uri "https://ce-<slug>.localhost:<https-port>/api/v1/security/bootstrap" -SkipCertificateCheck
 ```
 
 Default values (change immediately after first login):
@@ -123,6 +144,17 @@ Default values (change immediately after first login):
 | Password | `Bootstrap-ChangeMe1!` |
 
 ### Tear down
+
+The canonical teardown is the helper script (it also removes the `ce-<slug>.localhost` hostname
+registration and, by default, the worktree directory):
+
+```bash
+scripts/worktree-down.sh --branch <branch>
+./scripts/worktree-down.ps1 --branch <branch>    # Windows PowerShell
+```
+
+To only tear down the containers/volumes (keeping the worktree), pass `--keep-worktree`, or run
+Compose manually:
 
 ```powershell
 docker compose `
@@ -145,6 +177,7 @@ Commands should be executed within container environments (or with .NET 8 SDK in
 | Command | Description |
 |---|---|
 | `dotnet build src/ControlEasyReborn.sln` | Builds the entire .NET solution (API, BuildingBlocks, Modules) |
+| `dotnet format src/ControlEasyReborn.sln --verify-no-changes` | Verifies C# formatting without modifying files (CI gate) |
 | `dotnet clean src/ControlEasyReborn.sln` | Cleans build artifacts and bin/obj folders |
 | `dotnet test tests/ControlEasyReborn.UnitTests` | Runs unit tests across all feature modules |
 | `dotnet test tests/ControlEasyReborn.IntegrationTests` | Runs integration tests with Testcontainers.MySql |
@@ -156,23 +189,53 @@ Executed from directory `src/Web/ControlEasyReborn.Web`:
 | Command | Description |
 |---|---|
 | `npm start` | Starts the Angular development server (`ng serve`) |
-| `npm run build` | Compiles the production Angular application bundle (runs `openapi-gen` first) |
-| `npm run watch` | Builds and watches for frontend changes |
+| `npm run build` | Compiles the production Angular application bundle (`prebuild` hook runs `openapi-gen` first) |
+| `npm run watch` | Builds and watches for frontend changes (development configuration) |
 | `npm run openapi-gen` | Generates TypeScript API client models and services from backend OpenAPI spec |
-| `npm run openapi-check` | Verifies generated API clients are completely up to date with Git status |
-| `npm test` | Runs Angular Karma unit tests with Jasmine in ChromeHeadless |
+| `npm run openapi-check` | Regenerates API clients, then fails if `src/app/api` has uncommitted diffs (`git diff --exit-code`) |
+| `npm test` | Runs Angular Karma unit tests with Jasmine (CI uses `-- --no-watch --browsers=ChromeHeadlessNoSandbox`) |
 | `npm run e2e` | Runs Playwright end-to-end tests |
-| `npm run lint` | Runs ESLint analysis across all TypeScript and HTML template files |
-| `npm run format` | Formats code with Prettier (single quotes, 120 columns) |
+| `npm run e2e:install` | Installs the Playwright Chromium browser (one-time setup before `e2e`) |
+| `npm run lint` | Runs ESLint across TypeScript sources (`src/**/*.ts`) |
+| `npm run format` | Formats code with Prettier (single quotes, 120 columns; ts/html/css/json) |
 
 ### Docker & Convenience Targets (Makefile)
 
 | Command | Description |
 |---|---|
-| `make up` | Starts full Docker Compose stack with build (`docker compose up -d --build`) |
+| `make up` | Starts the full Docker Compose stack in detached mode (`docker compose -f docker/docker-compose.yml up -d`) |
 | `make down` | Shuts down containers and tears down volumes (`docker compose down -v`) |
-| `make test` | Executes all test projects in sequence |
-| `make build` | Rebuilds all container images |
+| `make logs` | Follows aggregated Compose logs (`docker compose logs -f`) |
+| `make test` | Runs unit tests, then integration tests with Testcontainers.MySql |
+| `make build` | Builds the .NET solution (`dotnet build src/ControlEasyReborn.sln`) — not Docker images |
+| `make restore` | Restores NuGet packages for the solution |
+| `make migrate` | Prints a note — schema migrations run automatically via `docker/mysql/init/` scripts on first boot |
+| `make clean` | Cleans .NET build artifacts and removes bin/obj folders |
+| `make verify-ci` | Runs the full local CI verification gate (`scripts/verify-ci-local.sh`) |
+
+---
+
+## Local CI Verification Gate
+
+The repository mandates running the CI pipeline locally before any work is considered complete.
+The gate scripts (`scripts/verify-ci-local.sh` and `scripts/verify-ci-local.ps1`) execute **all
+dotnet/npx commands inside Docker containers** (`mcr.microsoft.com/dotnet/sdk:8.0`,
+`mcr.microsoft.com/dotnet/aspnet:8.0`, `node:20-slim`) — the only host-side requirements are the
+`docker` CLI, `git`, `curl`, `id`, and `uname`.
+
+- **Full gate** (task completion): `./scripts/verify-ci-local.sh` (or `make verify-ci`) runs all six stages:
+  1. Format check (`dotnet format --verify-no-changes`)
+  2. Release build
+  3. Fast tests (UnitTests + ArchitectureTests)
+  4. Integration tests (Testcontainers MySQL)
+  5. Angular Docker production build
+  6. OpenAPI client drift check (swagger generation + `ng-openapi-gen`)
+- **Fast gate** (per-turn): `./scripts/verify-ci-local.sh --fast` — format check, Release build, and
+  unit/architecture tests with zero Docker downloads and zero containers.
+- Partial skips are available via `--skip-integration`, `--skip-docker`, and `--skip-openapi`.
+
+A passing full gate stamps `ci-local-passed.stamp` in the Git directory so already-verified states
+do not re-run the slow Docker stages unnecessarily.
 
 ---
 
@@ -192,7 +255,7 @@ Executed from directory `src/Web/ControlEasyReborn.Web`:
 - **Change Detection:** `ChangeDetectionStrategy.OnPush` on all components.
 - **Reactive State:** Angular Signals API (`signal`, `computed`, `effect`).
 - **Selectors:** Prefixed with `ce-` using kebab-case (e.g., `ce-resident-list`).
-- **Formatting:** Prettier enforced with single quotes and 120-column print width.
+- **Formatting:** Prettier enforced with single quotes and 120-column print width (`.prettierrc`).
 - **Types:** All API models generated via `ng-openapi-gen`; no manually maintained domain DTOs duplicated on the frontend.
 
 ---
@@ -202,19 +265,21 @@ Executed from directory `src/Web/ControlEasyReborn.Web`:
 The repository enforces strict separation between development work and the default `main` branch:
 
 1. **Main Branch is Pristine:**
-   The main checkout is strictly read-only for active feature development. No files are edited and no commits are made directly on `main`.
+   The main checkout is strictly read-only for active feature development. No files are edited and no commits are made directly on `main`; changes reach `main` only through a reviewed and approved pull request (merged by a human).
 2. **All Work Occurs in a Worktree:**
-   Before creating or modifying code, create a dedicated Git worktree under `.worktrees/`:
+   Before creating or modifying code, create a dedicated Git worktree under `.worktrees/`. The canonical command is:
    ```bash
-   git worktree add ".worktrees/feat-<slug>" -b "feat/<slug>"
+   git worktree add ".worktrees/$(echo "$BRANCH" | tr / -)" -b "$BRANCH"
    ```
+   Example: branch `feat/dashboard-live-stats` → worktree path `.worktrees/feat-dashboard-live-stats`.
 3. **Naming Convention:**
-   - Branches: `feat/<slug>` or `fix/<slug>` (lowercase, hyphen-separated).
-   - Worktree path: `.worktrees/<branch-hyphens>` (e.g., `.worktrees/feat-tenant-admin-ui`).
+   - Branches: `feat/<slug>` or `fix/<slug>`, optionally prefixed with a spec id (e.g. `feat/<spec-id>-<slug>`); lowercase, hyphen-separated.
+   - Worktree path: `.worktrees/<branch-with-slashes-as-hyphens>` (e.g., branch `feat/tenant-admin-ui` → `.worktrees/feat-tenant-admin-ui`).
+   - Compose project: `ce-<branch-with-slashes-as-hyphens>`; Traefik host: `ce-<branch-with-slashes-as-hyphens>.localhost`; MySQL volume: `ce-<...>-mysql-data`.
 4. **Cleanup After Merge:**
-   Once a feature branch is merged into `main`, remove the worktree:
+   Once a feature branch is merged into `main`, remove only the worktree you created:
    ```bash
-   git worktree remove .worktrees/feat-<slug>
+   git worktree remove .worktrees/feat-dashboard-live-stats
    ```
 
 ---
@@ -222,12 +287,17 @@ The repository enforces strict separation between development work and the defau
 ## Pull Request Guidelines
 
 Before opening a pull request:
-1. Ensure all .NET tests pass (`make test` or individual `dotnet test` suites).
-2. Ensure Angular linter and OpenAPI checks pass:
+1. Run the full local CI verification gate and ensure it passes:
+   ```bash
+   make verify-ci
+   # or: ./scripts/verify-ci-local.sh
+   ```
+2. Ensure all .NET tests pass (`make test` or individual `dotnet test` suites).
+3. Ensure Angular linter and OpenAPI checks pass:
    ```bash
    npm run lint
    npm run openapi-check
    ```
-3. Verify that new code strictly adheres to Clean Architecture module boundaries (enforced by `ControlEasyReborn.ArchitectureTests`).
-4. Commit messages must follow Conventional Commits (e.g., `feat(visits): add visitor fast check-in endpoint`).
-5. Open PRs against the `main` branch with a clear description of the business value and verification steps.
+4. Verify that new code strictly adheres to Clean Architecture module boundaries (enforced by `ControlEasyReborn.ArchitectureTests`).
+5. Commit messages must follow Conventional Commits (e.g., `feat(visits): add visitor fast check-in endpoint`).
+6. Open PRs against the `main` branch with a clear description of the business value and verification steps.

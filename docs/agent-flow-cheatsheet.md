@@ -53,11 +53,11 @@ overlap.
 | Owns | Does NOT own |
 |---|---|
 | `.planning/PROJECT.md` (validated / active / out-of-scope) | `.specs/<feature>/` artifacts (read-only consumer) |
-| `.planning/REQUIREMENTS.md` | `.specify/memory/constitution.md` (constitution is spec-kit's) |
+| `.planning/milestones/v*.*-REQUIREMENTS.md` (archived per milestone) | `.specify/memory/constitution.md` (constitution is spec-kit's) |
 | `.planning/ROADMAP.md` (14 phases) | The spec-kit `tasks.md` checkbox (spec-kit's job) |
 | `.planning/STATE.md` (live state, decisions, blockers) | Per-PR review (that's a code review concern) |
 | `.planning/codebase/*.md` (7 maps: STACK, STRUCTURE, ARCHITECTURE, CONVENTIONS, CONCERNS, INTEGRATIONS, TESTING) | — |
-| `.planning/phases/<NN>-<slug>/` (CONTEXT, RESEARCH, NN-PLAN, NN-SUMMARY, NN-VERIFICATION, VALIDATION, NN-UAT) | — |
+| `.planning/milestones/v<ver>-phases/<NN>-<slug>/` (CONTEXT, RESEARCH, NN-PLAN, NN-SUMMARY, NN-VERIFICATION, VALIDATION, NN-UAT) | — |
 
 ### 1.2 The phase lifecycle
 
@@ -407,7 +407,7 @@ sees it without a separate scan.
              ┌────────────────────▼────────────────────────┐
              │                GSD (always on)              │
              │  .planning/ — PROJECT, REQUIREMENTS,        │
-             │  ROADMAP, STATE, codebase/, phases/         │
+             │  ROADMAP, STATE, codebase/, milestones/     │
              └────────────────────┬────────────────────────┘
                                   │ reads & plans against
                                   ▼
@@ -504,10 +504,10 @@ the work.
 |---|---|---|---|
 | Project brief, validated/active/out-of-scope lists | `.planning/PROJECT.md` | GSD | Re-validated at every `/gsd-transition` |
 | Roadmap (14 phases) | `.planning/ROADMAP.md` | GSD | `/gsd-transition`, `/gsd-complete-milestone` |
-| Requirements (v1/v2, traceability) | `.planning/REQUIREMENTS.md` | GSD | `/gsd-transition` |
+| Requirements (v1/v2, traceability) | `.planning/milestones/v*.*-REQUIREMENTS.md` | GSD | `/gsd-transition` |
 | Live state (decisions, blockers, deferred) | `.planning/STATE.md` | GSD **writer-of-record**; spec-kit & BMAD **writers** | Update whenever the fact changes |
 | 7 codebase maps (STACK, STRUCTURE, ARCHITECTURE, CONVENTIONS, CONCERNS, INTEGRATIONS, TESTING) | `.planning/codebase/*.md` | GSD | `/gsd-map-codebase` |
-| Per-phase folder (CONTEXT, RESEARCH, NN-PLAN, NN-SUMMARY, NN-VERIFICATION, VALIDATION, NN-UAT) | `.planning/phases/<NN>-<slug>/` | GSD | The phase-lifecycle commands |
+| Per-phase folder (CONTEXT, RESEARCH, NN-PLAN, NN-SUMMARY, NN-VERIFICATION, VALIDATION, NN-UAT) | `.planning/milestones/v<ver>-phases/<NN>-<slug>/` | GSD | The phase-lifecycle commands |
 | Per-feature spec (spec, plan, tasks, design, bugfix, review, analysis) | `.specs/<feature>/` | spec-kit | `/speckit-*` |
 | Constitution (binding governance) | `.specify/memory/constitution.md` | spec-kit | `/speckit-constitution` |
 | BMAD reviews, audits, deferred-work ledger | `_bmad-output/` | BMAD | `bmad-*` review skills; findings consumed, not auto-applied |

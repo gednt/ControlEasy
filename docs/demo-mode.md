@@ -55,10 +55,10 @@ From this screen you can:
 
 - View all condominiums on the platform (including the two demo tenants and the default tenant)
 - Register a new condominium (slug + display name)
-- Optionally create the first tenant administrator during registration
+- Create the first tenant administrator during registration (email, display name, and password are required)
 - Suspend or resume a condominium
 
-For the normal (non-demo) stack, the same screen is available after PlatformAdmin first-boot login. See [Getting Started — Register a condominium](getting-started.md#register-a-condominium-web-ui).
+For the normal (non-demo) stack, the same screen is available after PlatformAdmin first-boot login. See [Getting Started](GETTING-STARTED.md).
 
 ## Reset procedures
 

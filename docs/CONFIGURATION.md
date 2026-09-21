@@ -12,39 +12,55 @@ The application can be configured via environment variables supplied in Docker C
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `MYSQL_ROOT_PASSWORD` | **Required** | `controleasy_root_dev` | Root password for MySQL container |
-| `MYSQL_DATABASE` | Optional | `controleasydb` | Name of the application database |
+| `MYSQL_DATABASE` | Optional | `controleasydb` | Name of the application database (hardcoded in Compose for `db` and `db-migrate`) |
 | `MYSQL_USER` | **Required** | `controleasy` | MySQL application database username |
 | `MYSQL_PASSWORD` | **Required** | `controleasy_dev` | MySQL application database password |
-| `Db__Provider` | Optional | `MySQL` | Database provider (`MySQL`, `PostgreSQL`, `SQLite`, `SqlServer`) |
-| `Db__Host` | Optional | `db` | Database host name or IP address |
+| `Db__Provider` | Optional | `MySQL` | Database provider (`MySQL`, `SqlServer`/`MSSQL`, `PostgreSQL`/`Postgres`, `SQLite`) — validated at startup |
+| `Db__Host` | Optional* | `db` | Database host name or IP address |
 | `Db__Port` | Optional | `3306` | Database listening port |
-| `Db__Database` | Optional | `controleasydb` | Database schema name |
-| `Db__Username` | Optional | `controleasy` | Database user name passed to connection string |
-| `Db__Password` | Optional | `controleasy_dev` | Database password passed to connection string |
+| `Db__Database` | Optional* | `controleasydb` | Database schema name |
+| `Db__Username` | Optional* | `controleasy` | Database user name passed to connection string |
+| `Db__Password` | Optional* | `controleasy_dev` | Database password passed to connection string |
 | `Storage__Provider` | Optional | `Local` | Photo storage backend (`Local` or `S3`) |
-| `Storage__Local__Path` | Optional | `/storage/photos` | Path on disk for local photo storage |
-| `Storage__S3__Endpoint` | Optional | `http://minio:9000` | S3 API endpoint URL (when `Storage__Provider=S3`) |
-| `Storage__S3__Bucket` | Optional | `controleasy-photos` | Target S3 bucket name |
-| `Storage__S3__AccessKey` | Optional | `change-me` | S3 Access Key <!-- VERIFY: production AWS/MinIO access key configuration --> |
-| `Storage__S3__SecretKey` | Optional | `change-me` | S3 Secret Key <!-- VERIFY: production AWS/MinIO secret key configuration --> |
+| `Storage__Local__Path` | Optional* | `/storage/photos` | Path on disk for local photo storage — **required (validated at startup) when `Storage__Provider=Local`** |
+| `Storage__S3__Endpoint` | Optional* | *(empty)* | S3 API endpoint URL — **required (validated at startup) when `Storage__Provider=S3`** (e.g. `http://minio:9000`) |
+| `Storage__S3__Bucket` | Optional* | *(empty)* | Target S3 bucket name — **required when `Storage__Provider=S3`** (e.g. `controleasy-photos`) |
+| `Storage__S3__AccessKey` | Optional* | *(empty)* | S3 Access Key — **required when `Storage__Provider=S3`** <!-- VERIFY: production AWS/MinIO access key configuration --> |
+| `Storage__S3__SecretKey` | Optional* | *(empty)* | S3 Secret Key — **required when `Storage__Provider=S3`** <!-- VERIFY: production AWS/MinIO secret key configuration --> |
+
+\* `Db__Host`, `Db__Database`, `Db__Username`, and `Db__Password` throw `InvalidOperationException` at startup when absent (e.g. `Db:Password is not configured.`), but `appsettings.json` ships with base values (`root` / empty password) and Docker Compose maps them from `MYSQL_USER` / `MYSQL_PASSWORD`, so they rarely need to be set directly.
 
 ### Authentication & Security Configuration
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `JWT_SIGNING_KEY` / `Jwt__SigningKey` | **Required** | `CHANGE-ME-IN-PRODUCTION-AT-LEAST-32-CHARS!` | Symmetric HMAC-SHA256 key (minimum 32 characters) |
+| `JWT_SIGNING_KEY` / `Jwt__SigningKey` | **Required** | `CHANGE-ME-IN-PRODUCTION-AT-LEAST-32-CHARS!` | Symmetric HMAC-SHA256 signing key. Missing key throws `InvalidOperationException("Jwt:SigningKey is not configured.")` when tokens are issued or validated. Example values are 32+ characters by convention; no explicit length validation exists in code (HMAC-SHA256 rejects keys shorter than 128 bits / 16 bytes at token signing/validation time) |
 | `Jwt__Issuer` | Optional | `ControlEasyReborn` | JWT issuer claim (`iss`) |
 | `Jwt__Audience` | Optional | `ControlEasyReborn` | JWT audience claim (`aud`) |
-| `Jwt__AccessTokenTtlMinutes` | Optional | `15` | Access token time-to-live in minutes |
-| `Jwt__RefreshTokenTtlDays` | Optional | `7` | Refresh token lifetime in days |
-| `Bootstrap__PlatformAdminEmail` | Optional | `platform-admin@controleasy.local` | Default fallback email for bootstrap service |
-| `Bootstrap__PlatformAdminPassword` | Optional | `Bootstrap-ChangeMe1!` | Default fallback password for bootstrap service |
+| `Jwt__AccessTokenTtlMinutes` | Optional | `15` | Access token time-to-live in minutes (code fallback: `15`) |
+| `Jwt__RefreshTokenTtlDays` | Optional | `7` | Refresh token lifetime in days (code fallback: `7`) |
+| `Bootstrap__PlatformAdminEmail` | Optional | `platform-admin@controleasy.local` | Bootstrap PlatformAdmin email; if blank, a random address (`platform-admin-{random}@controleasy.local`) is generated |
+| `Bootstrap__PlatformAdminPassword` | Optional | `Bootstrap-ChangeMe1!` | Bootstrap PlatformAdmin password; if blank, a random 16-character password is generated |
+
+### SMTP & Email Configuration
+
+Bound to `SmtpOptions` (`src/BuildingBlocks/ControlEasyReborn.SharedKernel/Email/SmtpOptions.cs`). Docker Compose points the API at the Mailpit dev mail server (UI on host port `8025`).
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `Smtp__Host` | Optional | `127.0.0.1` | SMTP server host (Compose sets `mailpit`) |
+| `Smtp__Port` | Optional | `1025` | SMTP server port |
+| `Smtp__SenderEmail` | Optional | `noreply@controleasy.com` | From address for outbound email |
+| `Smtp__SenderName` | Optional | `ControlEasy` | From display name for outbound email |
+| `Smtp__Username` | Optional | *(empty)* | SMTP authentication username |
+| `Smtp__Password` | Optional | *(empty)* | SMTP authentication password |
+| `Smtp__EnableSsl` | Optional | `false` | Use TLS for the SMTP connection |
 
 ### Reverse Proxy & Networking Configuration
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `REVERSE_PROXY_PORT` | Optional | `8080` | Host port for HTTP gateway (Traefik) |
+| `REVERSE_PROXY_PORT` | Optional | `8080` | Host port for HTTP gateway (Traefik; bound to `127.0.0.1` and redirects to HTTPS) |
 | `REVERSE_PROXY_HTTPS_PORT` | Optional | `8443` | Host port for HTTPS gateway (Traefik) <!-- VERIFY: production TLS termination configuration --> |
 | `REVERSE_PROXY_API_PORT` | Optional | `8082` | Traefik dashboard & internal API port |
 | `API_PORT` | Optional | `8081` | Direct API container port (bypassing Traefik if needed) |
@@ -53,21 +69,21 @@ The application can be configured via environment variables supplied in Docker C
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `ASPNETCORE_ENVIRONMENT` | Optional | `Development` | ASP.NET Core environment mode (`Development`, `Staging`, `Production`) |
+| `ASPNETCORE_ENVIRONMENT` | Optional | `Development` | ASP.NET Core environment mode (`Development`, `Staging`, `Production`); hardcoded to `Development` in Compose |
 | `Serilog__WriteTo__1__Args__serverUrl` | Optional | `http://seq:5341` | Endpoint URL for Seq structured log aggregator |
 
 ### Timezone
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `TIME_ZONE` | Optional | `America/Sao_Paulo` | IANA timezone used by the web date formatting and mapped to the API's `TimeZone__Id` setting for tenant-local report date boundaries. For example: `TIME_ZONE=America/Fortaleza`. |
+| `TIME_ZONE` | Optional | `America/Sao_Paulo` | IANA timezone used by the web date formatting and mapped by Compose to the API's `TimeZone__Id` (tenant-local report date boundaries, see `TenantDayBoundary`) and the container `TZ`. For example: `TIME_ZONE=America/Fortaleza`. |
 
 ### Feature Management & Demo Mode
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `Demo__Enabled` | Optional | `false` | Enables demo endpoints and pre-seeded accounts |
-| `Demo__SeedVersion` | Optional | `2` | Demo schema seed version |
+| `Demo__SeedVersion` | Optional | `2` (set in `appsettings.json`) | Demo schema seed version; the code fallback in `DemoOptions` is `1` if unset |
 | `Demo__DisableOutboundEmail` | Optional | `false` | Suppresses external email dispatches in demo mode |
 | `FeatureManagement__Residents__UseWeb` | Optional | `false` | Enable web workflow for Residents |
 | `FeatureManagement__Visits__UseWeb` | Optional | `false` | Enable web workflow for Visits |
@@ -86,17 +102,23 @@ For local containerized execution, copy `docker/.env.example` to `docker/.env`:
 cp docker/.env.example docker/.env
 ```
 
-Example file content:
+Example file content (matches `docker/.env.example`):
 ```env
 # Docker Compose environment variables
+# Copy to .env and update for your environment
+
 MYSQL_ROOT_PASSWORD=controleasy_root_dev
 MYSQL_USER=controleasy
 MYSQL_PASSWORD=controleasy_dev
-JWT_SIGNING_KEY=a-very-long-and-secure-secret-key-at-least-32-chars-long!
+JWT_SIGNING_KEY=CHANGE-ME-IN-PRODUCTION-AT-LEAST-32-CHARS!
 
-# Photo storage
+# Photo storage (Local filesystem by default; set to S3 + MinIO vars for S3-compatible storage)
 STORAGE__PROVIDER=Local
 STORAGE__LOCAL__PATH=/storage/photos
+# STORAGE__S3__ENDPOINT=http://minio:9000
+# STORAGE__S3__BUCKET=controleasy-photos
+# STORAGE__S3__ACCESSKEY=change-me
+# STORAGE__S3__SECRETKEY=change-me
 ```
 
 ### 2. `src/Host/ControlEasyReborn.Api/appsettings.json`
@@ -133,6 +155,22 @@ Located at `src/Host/ControlEasyReborn.Api/appsettings.json`. Used for base conf
       { "Name": "Console" },
       { "Name": "Seq", "Args": { "serverUrl": "http://localhost:5341" } }
     ]
+  },
+  "FeatureManagement": {
+    "Residents.UseWeb": false,
+    "Visits.UseWeb": false,
+    "Vehicles.UseWeb": false,
+    "ServiceProviders.UseWeb": false,
+    "Administration.UseWeb": false
+  },
+  "Demo": {
+    "Enabled": false,
+    "SeedVersion": 2,
+    "DisableOutboundEmail": false
+  },
+  "Bootstrap": {
+    "PlatformAdminEmail": "platform-admin@controleasy.local",
+    "PlatformAdminPassword": "Bootstrap-ChangeMe1!"
   }
 }
 ```
@@ -142,8 +180,9 @@ Located at `src/Host/ControlEasyReborn.Api/appsettings.json`. Used for base conf
 ## Required vs Optional Settings
 
 - **Critical Required Settings:**
-  - `JWT_SIGNING_KEY`: The API will validate that this key is at least 32 characters long. Failing to provide a valid key will cause startup termination.
-  - `MYSQL_PASSWORD` / `Db__Password`: Required for the API to establish database connectivity.
+  - `JWT_SIGNING_KEY` / `Jwt__SigningKey`: If absent, the API throws `InvalidOperationException("Jwt:SigningKey is not configured.")` when access tokens are issued (JWT bearer validation) or generated (`JwtTokenService`). There is no explicit 32-character validation in code — the 32+ character values in examples and the CI dummy key are a convention; HMAC-SHA256 requires keys of at least 128 bits (16 bytes) per `Microsoft.IdentityModel.Tokens`, and shorter keys fail when tokens are signed or validated.
+  - `MYSQL_PASSWORD` / `Db__Password`: Required for the API to establish database connectivity. Along with `Db__Host`, `Db__Database`, and `Db__Username`, a missing value throws `InvalidOperationException` at startup (e.g. `Db:Password is not configured.`).
+  - `Storage__Local__Path` when `Storage__Provider=Local`, or `Storage__S3__Endpoint`, `Storage__S3__Bucket`, `Storage__S3__AccessKey`, `Storage__S3__SecretKey` when `Storage__Provider=S3`: validated at startup and throw `InvalidOperationException` if not configured (e.g. `Storage:Local:Path is not configured.`).
 - **Optional Settings with Defaults:**
   - Port configurations (`REVERSE_PROXY_PORT=8080`, `API_PORT=8081`) have pre-configured fallbacks suitable for local development.
   - Storage provider defaults to `Local` with `/storage/photos` inside the container mounted to the `photos-data` Docker volume.
@@ -153,9 +192,9 @@ Located at `src/Host/ControlEasyReborn.Api/appsettings.json`. Used for base conf
 ## Environment Overrides
 
 ### Development Mode
-- Swagger UI enabled at `/swagger` and `/api/swagger`.
+- Swagger UI enabled at `/swagger` (OpenAPI JSON at `/swagger/v1/swagger.json`); Swagger middleware is only registered when `ASPNETCORE_ENVIRONMENT=Development`.
 - Verbose logging to console and Seq.
-- Automatic seeding of bootstrap PlatformAdmin with credentials logged at warning level.
+- Automatic seeding of bootstrap PlatformAdmin with credentials logged at warning level (`// CHANGE IMMEDIATELY — PlatformAdmin seeded`). Skipped when `Demo__Enabled=true`.
 
 ### Demo Mode Overlay
 Run with the demo compose overlay:
@@ -164,8 +203,12 @@ docker compose -f docker/docker-compose.yml -f docker/docker-compose.demo.yml up
 ```
 This automatically sets:
 - `Demo__Enabled: "true"`
+- `Demo__SeedVersion: "2"`
+- `Demo__DisableOutboundEmail: "true"`
 - `Jwt__SigningKey: "demo-signing-key-not-for-production-use!!"`
-- Pre-seeded users with `demo123` passwords across two sample condominiums (`default` and `aurora`).
+- All five `FeatureManagement__*__UseWeb` flags to `"true"` (Residents, Visits, Vehicles, ServiceProviders, Administration)
+
+It also seeds demo data: users with `demo123` passwords across two sample condominiums — `demo-aurora` ([Demo] Residencial Aurora) and `demo-parque-verde` ([Demo] Condomínio Parque Verde) — plus the platform tenant. PlatformAdmin bootstrap is skipped in demo mode. A full reset re-seeds from scratch (`docker compose -f docker/docker-compose.yml -f docker/docker-compose.demo.yml down -v` then `up -d --build`), and `POST /api/v1/demo/reset` (PlatformAdmin auth) forces a re-seed without a rebuild.
 
 ### Production Mode
 - Set `ASPNETCORE_ENVIRONMENT=Production`.
