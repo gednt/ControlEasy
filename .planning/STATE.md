@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Integrated Visits & Account Operations (started 2026-09-19)
-current_phase: 18
-current_phase_name: Password Management
-status: complete
+status: Awaiting next milestone
 stopped_at: Milestone v2.1 complete — Phase 18 verified with full local CI gate passing.
-last_updated: "2026-09-19T19:35:00.000Z"
-last_activity: 2026-09-19
-last_activity_desc: Phase 18 verified complete with full local CI gate passing; Milestone v2.1 finished
-state_head: HEAD
+last_updated: "2026-09-21T02:22:17.886Z"
+last_activity: 2026-09-20
+last_activity_desc: Milestone v2.1 completed and archived
+state_head: 2134fcc2c3a0d839548b17b57337a2e4cd5fe242
 progress:
   total_phases: 3
   completed_phases: 3
   total_plans: 9
   completed_plans: 9
+current_phase: 18
+current_phase_name: Password Management
 ---
 
 # Project State
@@ -28,12 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-19)
 
 ## Current Position
 
-Phase: 18 (Password Management) — COMPLETE
-Plan: 3 of 3
-Status: Milestone v2.1 complete; all phases (16, 17, 18) verified green
-Last activity: 2026-09-19 — Phase 18 verified complete with full local CI gate passing
-
-Progress: [██████████] 100%
+Phase: Milestone v2.1 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-09-20 — Milestone v2.1 completed and archived
 
 ## Performance Metrics
 
@@ -93,9 +91,14 @@ Progress: [██████████] 100%
 | v2.2 | Reader events & device health (DOOR-02, DOOR-03) | Phase 15, gated on Phase 14 | 2026-08-23 | v2.2 |
 | Future access method | Facial biometrics | Requires separate approved specification | 2026-09-13 | future |
 | Fast-cycle | Multi-arch Docker/CI (ARCH-01, ARCH-02) | No milestone, ~1 week | 2026-06-24 | none |
+| todos | integrated-visits-flow.md | (presence-only) | 2026-09-20 | v2.1 |
 
 ## Session Continuity
 
 Last session: 2026-09-19
 Stopped at: v2.1 roadmap created — Phases 16–18 defined with full requirement coverage (VISIT-01..07, PANEL-01..05, PASS-01..05, INFRA-01..02); REQUIREMENTS.md traceability updated; Phase 16 ready for `/gsd-discuss-phase 16`.
 Resume file: None
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone

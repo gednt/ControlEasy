@@ -4,6 +4,9 @@ date: 2026-09-19
 priority: high
 resolves_phase: 16
 context: Derived from gsd-explore session; decisions in .planning/notes/integrated-visits-flow.md
+audit_acknowledged:
+  milestone: v2.1
+  at: 2026-09-21
 ---
 
 # Implement integrated visits flow
