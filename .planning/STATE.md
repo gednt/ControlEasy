@@ -21,10 +21,10 @@ current_phase_name: Password Management
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-19)
+See: .planning/PROJECT.md (updated 2026-09-20)
 
 **Core value:** Gatehouse staff can reliably register and control access through a fast, tenant-isolated web UI.
-**Current focus:** Milestone v2.1 — Complete
+**Current focus:** Planning next milestone — run `/gsd-new-milestone`
 
 ## Current Position
 
@@ -95,8 +95,8 @@ Last activity: 2026-09-20 — Milestone v2.1 completed and archived
 
 ## Session Continuity
 
-Last session: 2026-09-19
-Stopped at: v2.1 roadmap created — Phases 16–18 defined with full requirement coverage (VISIT-01..07, PANEL-01..05, PASS-01..05, INFRA-01..02); REQUIREMENTS.md traceability updated; Phase 16 ready for `/gsd-discuss-phase 16`.
+Last session: 2026-09-20
+Stopped at: Milestone v2.1 archived — roadmap/requirements/audit moved to `.planning/milestones/`, PROJECT.md evolved, git tagged v2.1. Next: `/gsd-new-milestone`.
 Resume file: None
 
 ## Operator Next Steps

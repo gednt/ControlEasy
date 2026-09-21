@@ -68,10 +68,51 @@
 - When implementation collapses roadmap phase boundaries (Phase 11 + 13 backend shipped together), update the roadmap to reflect the actual delivery shape rather than forcing the plan to match the original phase split.
 - Unplanned work should be captured in REQUIREMENTS.md as it starts, even if it's a bugfix or hardening task — future audits need the trail.
 
+## Milestone: v2.1 — Integrated Visits & Account Operations
+
+**Shipped:** 2026-09-20
+**Phases:** 3 (16–18) | **Plans:** 9
+
+### What Was Built
+
+- Unified visitor write path: single `VisitorArrivalHandler` for QR scan, manual lookup, and walk-in (`CheckInNow: true`); durable AccessEvent→VisitId links (migrations 14, 0011, 0012); entry-log re-scoped to privacy-consent role.
+- Package drops as first-class AccessEvents with description + carrier codes, filterable in the ledger.
+- One honest unified ledger: `GET /api/v1/reports/history` single UNION with native state stamps, `kind` discriminator, per-branch tenant predication, X-Total-Count pagination.
+- Consolidated `/gatehouse` operator panel (QR, manual lookup, walk-in, open visits tabs) with deep-link parity; `/visits` demoted to admin register; QR camera facingMode per-device persistence.
+- `/reports` page: date ranges, visit counts by day, residents per apartment, server-side filtering, millisecond-precision CSV export; dead dashboard link fixed.
+- Password management: enumeration-safe forgot-password (decoy verify + partitioned rate limiter), platform/tenant admin resets with token revocation, BCrypt ≥ 11 pinned, MailKit SMTP + Mailpit, redaction arch tests.
+
+### What Worked
+
+- Settling the visits unification design in gsd-explore before planning (`.planning/notes/integrated-visits-flow.md`) removed ambiguity — phases 16–18 executed autonomously without design churn.
+- Landing the write-path fold and read-model rewrite in the same phase (16) avoided the double-counting window trap.
+- Parallel-safe phase design (18 independent of 16/17) let password work proceed without waiting on ledger work.
+- Full local CI gate per plan (unit + integration + architecture + Angular) caught regressions immediately.
+
+### What Was Inefficient
+
+- The audit found 4 dead-code integration orphans (stale E2E specs, dead dashboard wiring, inert filter options) — removal of superseded frontend paths was not scoped into Phase 17 plans.
+- Nyquist validation was never run for any phase despite `nyquist_validation: true` in config — coverage TODO surfaced only at audit time.
+- Two requirements (INFRA-02 day-bucketing, PASS-03 TenantAdmin reset UI) passed phase verification yet surfaced partial at milestone audit — phase verification didn't check cross-endpoint consistency.
+
+### Patterns Established
+
+- Explicit per-branch tenant predication inside SQL UNIONs; never splice `TenantFilterInterceptor` into a UNION.
+- Entry-log is privacy-consent audit only; all operational visitor records live in Visits.
+- Temp-password machinery: one-time + `MustChangePassword` re-arm + refresh-token revoke-all + durable delivery state in the same transaction.
+
+### Key Lessons
+
+- When re-scoping an endpoint's role (entry-log), sweep the frontend for remnants in the same phase — dead wiring and stale types survive otherwise.
+- Filter option lists should be derived from backend enums/vocabulary, not hand-typed — hand-typed options silently return empty result sets.
+- Run `/gsd-validate-phase` when `nyquist_validation` is enabled, or turn the flag off — silent non-compliance is discovered only at audit.
+- Cross-endpoint consistency checks (summary vs ledger day-bucketing) belong in phase verification, not just milestone audit.
+
 ## Cross-Milestone Trends
 
 | Milestone | Requirements | Verification | Main debt |
 |---|---:|---|---|
 | v1.0 | 32/32 active | 79 unit, 55 integration, 6 architecture, 203 Angular | Generated-client adoption |
 | v1.1 (partial) | 3/5 done (DASH-01/02/04), 2/5 partial (UI-03/04) | Shipped without GSD artifacts | Phase 9 remaining pages; Phase 9/10 backfill |
-| v2.0 (in progress) | 3/5 done + 1 partial (CONSENT-03 UI pending) | 118 unit, 73 integration (Photos module) | Phase 12 (browser capture UI); Phase 13 UI; GSD artifact backfill |
+| v2.0 | 3/5 done + 1 partial (CONSENT-03 UI pending) | 118 unit, 73 integration (Photos module) | Phase 12 (browser capture UI); Phase 13 UI; forward-compatible shims |
+| v2.1 | 19/19 checked (17 satisfied, 2 partial: INFRA-02, PASS-03) | All phases passed; runtime CI gate green | Dead frontend remnants, stale E2E specs, Nyquist coverage missing |
