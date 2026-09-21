@@ -1620,7 +1620,7 @@ export class AccessCredentialsPage implements OnInit {
         color: nVal.color?.trim() || null,
         apartmentId: nVal.apartmentId || null,
         ownerName: nVal.ownerName?.trim() || null,
-        vehicleType: 'car',
+        vehicleType: 0,
       };
 
       this.vehiclesApi.create(createReq).subscribe({

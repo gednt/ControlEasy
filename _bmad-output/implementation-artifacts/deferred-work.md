@@ -34,3 +34,10 @@
 - Backfill UPDATE writes string.Join(",") without a length guard against AttendantProfiles.Permissions VARCHAR(2000) truncation (DemoSeederService.cs:310-316).
 - Stop-hook .ps1 uses PS7-only Get-Date -AsUTC but can be dispatched to Windows PowerShell 5.1; error is swallowed by SilentlyContinue, stamping an empty timestamp (scripts/hooks/verify-ci-agent-stop.ps1:189).
 - verify-ci-local.ps1 comment claims PIPESTATUS-based pipefail that the inner dash script does not implement (verify-ci-local.ps1:116-118).
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-fix-vehicle-create-500.md`
+  summary: Validate create and update vehicle type values before persisting them.
+  evidence: The request validators do not call `IsInEnum`, so a direct API request can persist an undefined numeric enum value.
+- source_spec: `_bmad-output/implementation-artifacts/spec-fix-vehicle-create-500.md`
+  summary: Make the access-control migration tolerant of databases that lack the Vehicles table.
+  evidence: `0009-access-control.sql` conditionally alters `Vehicles` but does not first create it, so a nonstandard legacy schema without that table makes `db-migrate` fail before the API starts.

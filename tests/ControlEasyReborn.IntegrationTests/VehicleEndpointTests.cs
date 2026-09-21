@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using ControlEasyReborn.Modules.Vehicles.Application.Contracts;
+using ControlEasyReborn.Modules.Vehicles.Domain.Entities;
 using FluentAssertions;
 using Xunit;
 
@@ -28,6 +29,24 @@ public sealed class VehicleEndpointTests
         var body = await response.Content.ReadFromJsonAsync<VehicleResponse>();
         body.Should().NotBeNull();
         body!.Plate.Should().Be("ABC1D23");
+    }
+
+    [Fact]
+    public async Task CreateVehicle_WithNumericVehicleType_ReturnsCreatedVehicleType()
+    {
+        var client = _factory.AsTenantA();
+
+        var response = await client.PostAsJsonAsync("/api/v1/vehicles", new
+        {
+            plate = "MOTO123",
+            vehicleType = 1
+        });
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+
+        var body = await response.Content.ReadFromJsonAsync<VehicleResponse>();
+        body.Should().NotBeNull();
+        body!.VehicleType.Should().Be(VehicleType.Motorcycle);
     }
 
     [Fact]

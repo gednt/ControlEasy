@@ -79,16 +79,16 @@ describe('AccessCredentialsPage', () => {
           createdAtUtc: '2026-09-18T12:00:00Z',
         },
       ],
-      [{ id: 'apt-1', block: '1', unit: '51', active: true }],
-      [{ id: '00000000-0000-0000-0000-0000000000aa', name: 'Felipe Silva', apartmentId: 'apt-1', active: true }],
+      [{ id: 'apt-garden-14', block: 'Garden', unit: '14', active: true }],
+      [{ id: '00000000-0000-0000-0000-0000000000aa', name: 'Taylor Morgan', apartmentId: 'apt-garden-14', active: true }],
       []
     );
 
     fixture.detectChanges();
     const html = (fixture.nativeElement as HTMLElement).innerHTML;
     expect(html).toContain('Access credentials');
-    expect(html).toContain('Felipe Silva');
-    expect(html).toContain('Block 1, Unit 51');
+    expect(html).toContain('Taylor Morgan');
+    expect(html).toContain('Block Garden, Unit 14');
     expect(html).toContain('active');
   });
 
@@ -158,9 +158,9 @@ describe('AccessCredentialsPage', () => {
     fixture.detectChanges();
     flushInitialRequests(
       [],
-      [{ id: 'apt-1', block: '1', unit: '51', active: true }],
+      [{ id: 'apt-garden-14', block: 'Garden', unit: '14', active: true }],
       [
-        { id: '00000000-0000-0000-0000-000000000011', name: 'Felipe Silva', apartmentId: 'apt-1', active: true },
+        { id: '00000000-0000-0000-0000-000000000011', name: 'Avery Chen', apartmentId: 'apt-garden-14', active: true },
         { id: '00000000-0000-0000-0000-000000000022', name: 'Maria Souza', apartmentId: null, active: true },
       ],
       []
@@ -174,20 +174,20 @@ describe('AccessCredentialsPage', () => {
 
     expect(component.residents().length).toBe(2);
     expect(component.selectedResidentId()).toBe('00000000-0000-0000-0000-000000000011');
-    expect(component.selectedResident()?.name).toBe('Felipe Silva');
-    expect(component.residentApartmentLabel()).toBe('Block 1, Unit 51');
+    expect(component.selectedResident()?.name).toBe('Avery Chen');
+    expect(component.residentApartmentLabel()).toBe('Block Garden, Unit 14');
 
     const html = (fixture.nativeElement as HTMLElement).innerHTML;
-    expect(html).toContain('Felipe Silva');
-    expect(html).toContain('Block 1, Unit 51');
+    expect(html).toContain('Avery Chen');
+    expect(html).toContain('Block Garden, Unit 14');
   });
 
   it('selects a vehicle and explicitly displays vehicle details, owner, and apartment', () => {
     fixture.detectChanges();
     flushInitialRequests(
       [],
-      [{ id: 'apt-1', block: '2', unit: '102', active: true }],
-      [{ id: 'res-1', name: 'Joao Resident', apartmentId: 'apt-1', active: true }],
+      [{ id: 'apt-tower-102', block: 'Tower', unit: '102', active: true }],
+      [{ id: 'res-1', name: 'Joao Resident', apartmentId: 'apt-tower-102', active: true }],
       [
         {
           id: 'veh-1',
@@ -195,7 +195,7 @@ describe('AccessCredentialsPage', () => {
           brand: 'Toyota',
           model: 'Corolla',
           color: 'Silver',
-          apartmentId: 'apt-1',
+          apartmentId: 'apt-tower-102',
           ownerName: 'Joao Resident',
           ownerResidentId: 'res-1',
           active: true,
@@ -212,12 +212,12 @@ describe('AccessCredentialsPage', () => {
     expect(component.vehicleMode()).toBe('select');
     expect(component.selectedVehicleId()).toBe('veh-1');
     expect(component.selectedVehicle()?.plate).toBe('ABC1D23');
-    expect(component.vehicleApartmentLabel()).toBe('Block 2, Unit 102');
+    expect(component.vehicleApartmentLabel()).toBe('Block Tower, Unit 102');
     expect(component.vehicleOwnerDisplay()).toBe('Joao Resident');
 
     const html = (fixture.nativeElement as HTMLElement).innerHTML;
     expect(html).toContain('ABC1D23');
-    expect(html).toContain('Block 2, Unit 102');
+    expect(html).toContain('Block Tower, Unit 102');
     expect(html).toContain('Joao Resident');
   });
 
@@ -225,8 +225,8 @@ describe('AccessCredentialsPage', () => {
     fixture.detectChanges();
     flushInitialRequests(
       [],
-      [{ id: 'apt-1', block: '1', unit: '51', active: true }],
-      [{ id: 'res-1', name: 'Felipe Silva', apartmentId: 'apt-1', active: true }],
+      [{ id: 'apt-garden-14', block: 'Garden', unit: '14', active: true }],
+      [{ id: 'res-1', name: 'Jordan Lee', apartmentId: 'apt-garden-14', active: true }],
       []
     );
 
@@ -240,8 +240,8 @@ describe('AccessCredentialsPage', () => {
       model: 'Civic',
       color: 'Black',
       ownerResidentId: 'res-1',
-      ownerName: 'Felipe Silva',
-      apartmentId: 'apt-1',
+      ownerName: 'Jordan Lee',
+      apartmentId: 'apt-garden-14',
     });
     fixture.detectChanges();
 
@@ -255,9 +255,9 @@ describe('AccessCredentialsPage', () => {
       brand: 'Honda',
       model: 'Civic',
       color: 'Black',
-      apartmentId: 'apt-1',
-      ownerName: 'Felipe Silva',
-      vehicleType: 'car',
+      apartmentId: 'apt-garden-14',
+      ownerName: 'Jordan Lee',
+      vehicleType: 0,
     });
     createVehReq.flush({
       id: 'veh-new-99',
@@ -265,8 +265,8 @@ describe('AccessCredentialsPage', () => {
       brand: 'Honda',
       model: 'Civic',
       color: 'Black',
-      apartmentId: 'apt-1',
-      ownerName: 'Felipe Silva',
+      apartmentId: 'apt-garden-14',
+      ownerName: 'Jordan Lee',
       active: true,
     });
 
@@ -288,6 +288,6 @@ describe('AccessCredentialsPage', () => {
     fixture.detectChanges();
     expect(component.qrPassModalOpen()).toBeTrue();
     expect(component.activeSubjectName()).toContain('BRA2E19');
-    expect(component.activeDestination()).toBe('Block 1, Unit 51');
+    expect(component.activeDestination()).toBe('Block Garden, Unit 14');
   });
 });
