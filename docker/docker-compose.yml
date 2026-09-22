@@ -45,10 +45,16 @@ services:
       Serilog__WriteTo__1__Args__serverUrl: http://seq:5341
       Storage__Provider: Local
       Storage__Local__Path: /storage/photos
-      Smtp__Host: mailpit
-      Smtp__Port: "1025"
-      Smtp__SenderEmail: noreply@controleasy.com
-      Smtp__SenderName: ControlEasy
+      # Outbound email (SMTP). Defaults deliver to the Mailpit dev sink.
+      # Set SMTP_HOST/SMTP_PORT in docker/.env to use a real provider (dev included);
+      # uncomment the auth/TLS lines when your provider requires them.
+      Smtp__Host: ${SMTP_HOST:-mailpit}
+      Smtp__Port: "${SMTP_PORT:-1025}"
+      # Smtp__SenderEmail: ${SMTP_SENDER_EMAIL:-noreply@controleasy.com}
+      # Smtp__SenderName: ${SMTP_SENDER_NAME:-ControlEasy}
+      # Smtp__Username: ${SMTP_USERNAME:-}
+      # Smtp__Password: ${SMTP_PASSWORD:-}
+      # Smtp__EnableSsl: ${SMTP_ENABLE_SSL:-false}
       TimeZone__Id: ${TIME_ZONE:-America/Sao_Paulo}
       TZ: ${TIME_ZONE:-America/Sao_Paulo}
     depends_on:

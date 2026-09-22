@@ -127,9 +127,42 @@ TIME_ZONE=America/Sao_Paulo                      # applied to both api and web (
 # Photo storage
 STORAGE__PROVIDER=Local                          # or S3 (+ STORAGE__S3__* variables for MinIO/S3-compatible)
 STORAGE__LOCAL__PATH=/storage/photos
+
+# Outbound email (SMTP) — REQUIRED for production (password-reset emails, etc.)
+# Uncomment and point at your provider. Compose default when unset is the Mailpit dev sink.
+# NOTE: after uncommenting these, ALSO uncomment the matching Smtp__* lines in
+# docker/docker-compose.yml (only SMTP_HOST/SMTP_PORT are wired there by default).
+SMTP_HOST=smtp.yourprovider.com
+SMTP_PORT=587
+SMTP_SENDER_EMAIL=noreply@yourdomain.com
+SMTP_SENDER_NAME=ControlEasy
+SMTP_USERNAME=your-smtp-user                     # if your provider requires auth
+SMTP_PASSWORD=<secret-from-secret-manager>       # if your provider requires auth
+SMTP_ENABLE_SSL=true                             # STARTTLS (587) or implicit TLS (465); never plaintext in production
 ```
 
-Secrets (`JWT_SIGNING_KEY`, `MYSQL_ROOT_PASSWORD`, `MYSQL_PASSWORD`) must come from the deployment platform's secret manager in production — never commit a real `.env`. <!-- VERIFY: production secret-management mechanism (platform secret manager vs. Docker secrets) -->
+Secrets (`JWT_SIGNING_KEY`, `MYSQL_ROOT_PASSWORD`, `MYSQL_PASSWORD`, `SMTP_PASSWORD`) must come from the deployment platform's secret manager in production — never commit a real `.env`. <!-- VERIFY: production secret-management mechanism (platform secret manager vs. Docker secrets) -->
+
+### 3. Outbound Email (SMTP) Configuration
+
+Without `SMTP_*` variables, outbound email is delivered to the Mailpit dev sink inside the stack and **no real email leaves the server** — fine for local dev, not for production.
+
+For production, set the `SMTP_*` variables in `docker/.env` (template: `docker/.env.example` — they are commented out there; uncomment and fill them):
+
+| Variable | Description |
+|---|---|
+| `SMTP_HOST` | Your SMTP relay/provider host (e.g. `smtp.sendgrid.net`, `smtp.mailgun.org`) |
+| `SMTP_PORT` | Usually `587` (STARTTLS) or `465` (implicit TLS) |
+| `SMTP_SENDER_EMAIL` | From address; must be a domain your provider is authorized to send for (SPF/DKIM) |
+| `SMTP_SENDER_NAME` | From display name |
+| `SMTP_USERNAME` / `SMTP_PASSWORD` | Provider credentials, if required; compose leaves these commented out |
+| `SMTP_ENABLE_SSL` | `true` in production (maps to MailKit `SecureSocketOptions.Auto` — STARTTLS on 587, implicit TLS on 465) |
+
+Notes:
+- **Two-level toggle:** after uncommenting the `SMTP_*` lines in `.env`, you must also uncomment the matching `Smtp__*` lines in `docker-compose.yml` (see step above) — otherwise only `SMTP_HOST`/`SMTP_PORT` take effect and, critically, `SMTP_ENABLE_SSL=true` is ignored (TLS stays off). Do not skip this in production.
+- Sender/username/password default to the code fallbacks (`noreply@controleasy.com` / `ControlEasy` / no auth) when their compose lines stay commented out — override at least `SMTP_SENDER_EMAIL` with a domain you control.
+- Demo mode still suppresses all external email (`Demo__DisableOutboundEmail=true`) regardless of these settings.
+- Verify delivery end-to-end with the forgot-password flow (`POST /api/v1/security/auth/forgot-password`) rather than assuming provider credentials work.
 
 ---
 

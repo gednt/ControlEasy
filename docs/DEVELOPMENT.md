@@ -55,6 +55,13 @@ docker compose `
 > `docker/`, not at the repo root, so Docker Compose will not discover it automatically.
 > Omitting it causes the JWT signing key and port variables to fall back to defaults, which can
 > break cross-worktree isolation.
+>
+> **SMTP note:** the generated worktree env file only sets worktree-isolation variables, and
+> `--env-file` replaces Compose's default `docker/.env` lookup — so `SMTP_*` values in
+> `docker/.env` are **not** visible to worktree stacks (they always use the Mailpit defaults).
+> To send through a real provider from a worktree stack, append the `SMTP_*` variables to
+> `docker/.env.worktree.<slug>` (and uncomment the matching `Smtp__*` lines in
+> `docker/docker-compose.yml`, see [CONFIGURATION.md](CONFIGURATION.md)).
 
 Or simply run the helper script from inside the worktree:
 

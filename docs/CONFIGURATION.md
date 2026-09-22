@@ -46,6 +46,22 @@ The application can be configured via environment variables supplied in Docker C
 
 Bound to `SmtpOptions` (`src/BuildingBlocks/ControlEasyReborn.SharedKernel/Email/SmtpOptions.cs`). Docker Compose points the API at the Mailpit dev mail server (UI on host port `8025`).
 
+Configure the sender via the `SMTP_*` variables in `docker/.env` (template: `docker/.env.example`); they are commented out there — uncomment and fill them to send through a real provider (dev included). When unset, Compose falls back to Mailpit defaults:
+
+> **Important:** Compose wires only `SMTP_HOST` and `SMTP_PORT` unconditionally. For the sender/auth/TLS variables to reach the API container, you must also uncomment the matching `Smtp__SenderEmail` / `Smtp__SenderName` / `Smtp__Username` / `Smtp__Password` / `Smtp__EnableSsl` lines in `docker/docker-compose.yml` (they are intentionally commented out so unset values fall back to the code defaults). `SMTP_PORT` must be numeric.
+
+| Compose env var | Feeds | Default when unset |
+|---|---|---|
+| `SMTP_HOST` | `Smtp__Host` | `mailpit` (dev sink) |
+| `SMTP_PORT` | `Smtp__Port` | `1025` |
+| `SMTP_SENDER_EMAIL` | `Smtp__SenderEmail` | `noreply@controleasy.com` (code fallback) |
+| `SMTP_SENDER_NAME` | `Smtp__SenderName` | `ControlEasy` (code fallback) |
+| `SMTP_USERNAME` | `Smtp__Username` | *(empty — no SMTP auth)* |
+| `SMTP_PASSWORD` | `Smtp__Password` | *(empty — no SMTP auth)* |
+| `SMTP_ENABLE_SSL` | `Smtp__EnableSsl` | `false` (plaintext; **never in production**) |
+
+The underlying application settings (bindable via `Smtp__*` environment variables instead, if you deploy outside Compose) are:
+
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `Smtp__Host` | Optional | `127.0.0.1` | SMTP server host (Compose sets `mailpit`) |
@@ -54,7 +70,9 @@ Bound to `SmtpOptions` (`src/BuildingBlocks/ControlEasyReborn.SharedKernel/Email
 | `Smtp__SenderName` | Optional | `ControlEasy` | From display name for outbound email |
 | `Smtp__Username` | Optional | *(empty)* | SMTP authentication username |
 | `Smtp__Password` | Optional | *(empty)* | SMTP authentication password |
-| `Smtp__EnableSsl` | Optional | `false` | Use TLS for the SMTP connection |
+| `Smtp__EnableSsl` | Optional | `false` | Use TLS for the SMTP connection (`SecureSocketOptions.Auto` — handles STARTTLS on 587 and implicit TLS on 465) |
+
+Changes take effect on the next `docker compose up -d` (the `api` container is recreated). Demo mode still suppresses all external email via `Demo__DisableOutboundEmail=true` regardless of SMTP settings.
 
 ### Reverse Proxy & Networking Configuration
 
