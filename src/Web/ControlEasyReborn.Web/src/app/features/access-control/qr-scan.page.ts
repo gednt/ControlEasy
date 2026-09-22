@@ -16,10 +16,15 @@ import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
 import { GatewayControlService } from './gateway-control.service';
 import { AccessScanResultComponent } from './components/access-scan-result.component';
 import { ScanResult, ScanRefusal } from './access-control.types';
+import {
+  AccessDirection,
+  getSavedAccessDirection,
+  saveAccessDirection,
+} from './direction-storage';
 
 interface UiState {
   qrPayload: string;
-  direction: 'entrance' | 'exit';
+  direction: AccessDirection;
   busy: boolean;
   result: ScanResult | null;
   refusal: ScanRefusal | null;
@@ -41,7 +46,7 @@ const CAMERA_START_FAILED = 'Could not start the camera. Use the text input belo
 
 const initialState = (): UiState => ({
   qrPayload: '',
-  direction: 'entrance',
+  direction: getSavedAccessDirection(),
   busy: false,
   result: null,
   refusal: null,
@@ -397,8 +402,9 @@ export class QrScanPage implements AfterViewInit, OnDestroy {
     this.state.update((s) => ({ ...s, qrPayload: value }));
   }
 
-  onDirectionChange(value: 'entrance' | 'exit'): void {
+  onDirectionChange(value: AccessDirection): void {
     this.state.update((s) => ({ ...s, direction: value }));
+    saveAccessDirection(value);
   }
 
   private startScanner(): void {
