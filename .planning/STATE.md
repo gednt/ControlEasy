@@ -1,20 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.1
-milestone_name: Integrated Visits & Account Operations (started 2026-09-19)
-status: Awaiting next milestone
-stopped_at: Milestone v2.1 complete — Phase 18 verified with full local CI gate passing.
-last_updated: "2026-09-21T02:22:17.886Z"
-last_activity: 2026-09-20
-last_activity_desc: Milestone v2.1 completed and archived
-state_head: 2134fcc2c3a0d839548b17b57337a2e4cd5fe242
+milestone: v2.2
+milestone_name: UI Parity & Operational Closeout
+status: planning
+last_updated: "2026-09-22T18:44:18.023Z"
+last_activity: 2026-09-22
 progress:
-  total_phases: 3
-  completed_phases: 3
-  total_plans: 9
-  completed_plans: 9
-current_phase: 18
-current_phase_name: Password Management
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -28,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-09-20)
 
 ## Current Position
 
-Phase: Milestone v2.1 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-09-20 — Milestone v2.1 completed and archived
+Status: Defining requirements
+Last activity: 2026-09-22 — Milestone v2.2 started
 
 ## Performance Metrics
 

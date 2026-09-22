@@ -28,25 +28,21 @@ Gatehouse staff can reliably register and control access for residents, visitors
 
 ## Current Milestone
 
-**None — v2.1 shipped 2026-09-20. Next milestone not yet defined.**
+**v2.2 — UI Parity & Operational Closeout** (started 2026-09-22)
 
-Run `/gsd-new-milestone` to start the next milestone (questioning → research → requirements → roadmap).
+**Goal:** Close out every hardware-independent gap — finish the ledger, complete pending UI surfaces (password reset, consent audit review, photo capture), and advance mockup parity — so the platform is feature-complete for software-only operation while Door Integration waits on hardware.
 
-**v2.2 Door Integration** (defined 2026-08-23, renumbered from v2.1 on 2026-09-19) — gated on real condominium hardware; Phases 14–15 reserved.
+**Target features:**
+- Ledger & reports polish (day-bucketing, status filter vocabulary, search scope, condominium-level package drops, X-Total-Count exposure)
+- Account operations UI (TenantAdmin password reset surface)
+- Consent audit review UI (CONSENT-03)
+- Photo browser capture UI (PHOTO-02)
+- Mockup visual parity + functional fixes (UI-03, UI-04)
+- Test-suite hygiene (stale E2E specs, Nyquist validation coverage)
 
-## Next Milestone Goals
-
-**v2.2 Door Integration** (defined 2026-08-23, renumbered from v2.1 on 2026-09-19; Phases 14–15 reserved) — gated on real condominium hardware:
-- Door Relay & Unlock Commands (Phase 14 — `DOOR-01`): `IDoorController`, HMAC-signed unlock, rate-limited, audit-logged, hardware fallback, threat model
-- Reader Events & Device Health (Phase 15 — `DOOR-02`, `DOOR-03`): `IDeviceHandler` (from 2 real integrations), `DeviceEvent` normalization, enforced ledger, device health monitoring
+**Key context:** Door Integration renumbered to v2.3 (gated on real condominium hardware; Phases 14–15 stay reserved). Research skipped — all work is completion against existing specs (`.specs/photo-capture/`, `.specs/consent-gatehouse/`, `.specs/mockup-visual-parity/`, `.specs/2-mockup-functional-fixes/`) and audit findings (`.planning/milestones/v2.1-MILESTONE-AUDIT.md`). Two unmerged worktrees carry overlapping cleanup (`feat/unified-visits-flow-cleanup` — entry-log write-path retirement + dead widget deletion; `fix/gatehouse-direction-persistence`); roadmap phases must not re-scope items already fixed there.
 
 Fast-cycle (no milestone): multi-arch Docker/CI (`ARCH-01`, `ARCH-02`).
-
-**Carried-forward gaps from v2.1 (candidates for next milestone scope):**
-- INFRA-02 day-bucketing on `GetVisitCountsByDayAsync` (summary vs ledger mismatch near São Paulo boundary)
-- TenantAdmin reset UI surface (PASS-03 backend complete, no UI caller)
-- Ledger filter/search scope fixes (inert status options, search placeholder vs backend `q`)
-- Stale E2E suite for removed dashboard buttons/tiles
 
 ## Requirements
 
@@ -80,18 +76,18 @@ Fast-cycle (no milestone): multi-arch Docker/CI (`ARCH-01`, `ARCH-02`).
 - ✓ Unified ledger & package drops: `GET /api/v1/reports/history` UNION stream, package description + carrier codes (VISIT-04..07) — Phase 16, v2.1 shipped 2026-09-20
 - ✓ Gatehouse operator panel & reports page (PANEL-01..05) — Phase 17, v2.1 shipped 2026-09-20
 - ✓ Password management: forgot-password self-service, admin resets, delivery-state machinery (PASS-01..05, INFRA-01) — Phase 18, v2.1 shipped 2026-09-20
+- ✓ Service provider management — edit, search/filter, and soft-disable flow — `.specs/service-provider-management/` (commit `f84aa8f`, full local CI gate passed 2026-09-21)
 
 ### Active
 
 - [~] Mockup visual parity (v1.1, Phase 9) — `UI-03` — residents page done; other pages pending — `.specs/mockup-visual-parity/`
 - [~] Mockup functional fixes (v1.1, Phase 9) — `UI-04` — residents page interactions done; login form, toasts, other pages pending — `.specs/2-mockup-functional-fixes/`
-- [~] Service provider management — edit, search/filter, and soft-disable flow — `.specs/service-provider-management/`
-- [ ] Photo browser capture & display (v2.0, Phase 12) — `PHOTO-02` — `.specs/photo-capture/`
-- [~] Consent gatehouse workflow UI (v2.0, Phase 13) — `CONSENT-03` — backend done; audit review UI pending — `.specs/consent-gatehouse/`
-- [~] Service provider management — edit, search/filter, and soft-disable flow (in progress on this worktree)
-- [~] TenantAdmin password reset UI (v2.1 PASS-03 partial) — backend done; UI surface pending
-- [ ] Ledger polish (v2.1 carryover) — day-bucketing INFRA-02, inert status filter options, search scope, stale E2E specs
-- [ ] Door integration (v2.2, gated on hardware; renumbered from v2.1 on 2026-09-19) — `.specs/door-integration/`
+- [~] Service provider management — VALIDATED (moved above; commit `f84aa8f`)
+- [ ] Photo browser capture & display (v2.0, Phase 12) — `PHOTO-02` — `.specs/photo-capture/` — v2.2 target
+- [~] Consent gatehouse workflow UI (v2.0, Phase 13) — `CONSENT-03` — backend done; audit review UI pending — `.specs/consent-gatehouse/` — v2.2 target
+- [~] TenantAdmin password reset UI (v2.1 PASS-03 partial) — backend done; UI surface pending — v2.2 target
+- [ ] Ledger polish (v2.1 carryover) — day-bucketing INFRA-02, inert status filter options, search scope, condominium-level package-drop trigger, X-Total-Count exposure — v2.2 target
+- [ ] Door integration (v2.3 — renumbered from v2.2 on 2026-09-22; gated on hardware) — `.specs/door-integration/`
 - [ ] Multi-arch Docker/CI (fast-cycle) — `.specs/1 - modernization-roadmap-arm64/`
 
 ### Out of Scope
@@ -151,6 +147,7 @@ Known concerns from codebase map: dual tenant column patterns, JWT/localStorage 
 | v2.1 password reset: SMTP self-service for admins only | Gatekeeper self-reset deferred; temp passwords one-time + `MustChangePassword` re-armed + refresh-token revoke-all | ✓ Good — Phase 18; gatekeeper self-reset deferred (PASS-03 UI partial) |
 | Enumeration-safe forgot password: uniform response + constant-cost decoy verify | Prevent user enumeration via timing/response diffing | ✓ Good — Phase 18 `ForgotPasswordHandler` |
 | Durable `PasswordResetRequest` table doubles as rate-limit counter | Consolidated single-table design; per-process IMemoryCache idempotent resend is a documented single-instance tradeoff | ⚠️ Revisit — multi-replica deployments lose resend idempotency |
+| v2.2 milestone is software-only closeout; Door Integration renumbered to v2.3 | No real condominium hardware available; planning against absent hardware builds on abstractions; completion work delivers user value now | ✓ Good — party-mode planning session 2026-09-22, Phases 14–15 stay reserved for v2.3 |
 
 ## Evolution
 
@@ -170,4 +167,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-20 after v2.1 milestone (Integrated Visits & Account Operations)*
+*Last updated: 2026-09-22 — v2.2 UI Parity & Operational Closeout started (party-mode planning session); Door Integration renumbered to v2.3*
