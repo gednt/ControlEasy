@@ -17,10 +17,10 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-20)
+See: .planning/PROJECT.md (updated 2026-09-22)
 
 **Core value:** Gatehouse staff can reliably register and control access through a fast, tenant-isolated web UI.
-**Current focus:** Planning next milestone — run `/gsd-new-milestone`
+**Current focus:** v2.2 UI Parity & Operational Closeout — defining requirements
 
 ## Current Position
 
@@ -64,6 +64,7 @@ Last activity: 2026-09-22 — Milestone v2.2 started
 - v2.0 photo capture: browser-only, client-side compression (0.8→0.6→0.3 ladder), EXIF strip via canvas redraw, 3× retry with 1s/2s/4s backoff
 - v2.0 consent model: per-tenant per-category policy, five entry states, append-only audit log, hardcoded override reason codes
 - v2.2 Door Integration (Phases 14–15, renumbered from v2.1 on 2026-09-19) gated on real condominium hardware
+- v2.2 milestone is software-only closeout (party-mode planning session 2026-09-22); Door Integration renumbered to v2.3, Phases 14–15 stay reserved
 - Gatehouse access is software-only validation/audit: QR initial credential + manual lookup fallback; every visit requires a destination; biometrics require separate approved spec
 - Multi-arch Docker/CI is fast-cycle (no milestone)
 
@@ -78,23 +79,23 @@ Last activity: 2026-09-22 — Milestone v2.2 started
 
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
-| v1.1 | UI Parity & Functional Fixes (Phase 9 partial) | Residents page only; login/dashboard/showcase/visits/vehicles/etc. pending | 2026-09-13 | v1.1 |
-| v2.0 (tech debt) | Backend /api/v1/photos/{id}/thumbnail route | Forward-compatible shim (CSS object-fit cover) | 2026-09-13 | v2.0 |
-| v2.0 (tech debt) | Backend /api/v1/consent-policy list endpoint | Forward-compatible shim (4× parallel calls) | 2026-09-13 | v2.0 |
-| v2.0 (tech debt) | Backend X-Total-Count header on /api/v1/entry-log | Forward-compatible shim (entries.length approximation) | 2026-09-13 | v2.0 |
+| v1.1 | UI Parity & Functional Fixes (Phase 9 partial) | Residents page only; login/dashboard/showcase/visits/vehicles/etc. pending | 2026-09-13 | v2.2 target (UI-03/UI-04) |
+| v2.0 (tech debt) | Backend /api/v1/photos/{id}/thumbnail route | Forward-compatible shim (CSS object-fit cover) | 2026-09-13 | v2.2 candidate |
+| v2.0 (tech debt) | Backend /api/v1/consent-policy list endpoint | Forward-compatible shim (4× parallel calls) | 2026-09-13 | v2.2 candidate |
+| v2.0 (tech debt) | Backend X-Total-Count header on /api/v1/entry-log | Forward-compatible shim (entries.length approximation) | 2026-09-13 | v2.2 target |
 | v2.1 | Webhook/WhatsApp temp-password delivery, photo on packages, CPF pre-reg matching, purpose codes, resident visit history, visitor self-check-in, badge printing | Deferred requirements (REQUIREMENTS.md) | 2026-09-19 | v2.1+ |
-| v2.2 | Door relay & unlock commands (DOOR-01) | Phase 14, gated on hardware | 2026-08-23 | v2.2 |
-| v2.2 | Reader events & device health (DOOR-02, DOOR-03) | Phase 15, gated on Phase 14 | 2026-08-23 | v2.2 |
+| v2.3 | Door relay & unlock commands (DOOR-01) | Phase 14, gated on hardware (renumbered from v2.2 on 2026-09-22) | 2026-08-23 | v2.3 |
+| v2.3 | Reader events & device health (DOOR-02, DOOR-03) | Phase 15, gated on Phase 14 | 2026-08-23 | v2.3 |
 | Future access method | Facial biometrics | Requires separate approved specification | 2026-09-13 | future |
 | Fast-cycle | Multi-arch Docker/CI (ARCH-01, ARCH-02) | No milestone, ~1 week | 2026-06-24 | none |
 | todos | integrated-visits-flow.md | (presence-only) | 2026-09-20 | v2.1 |
 
 ## Session Continuity
 
-Last session: 2026-09-20
-Stopped at: Milestone v2.1 archived — roadmap/requirements/audit moved to `.planning/milestones/`, PROJECT.md evolved, git tagged v2.1. Next: `/gsd-new-milestone`.
+Last session: 2026-09-22
+Stopped at: Milestone v2.2 started (UI Parity & Operational Closeout) — PROJECT.md updated, STATE.md reset, requirements being defined.
 Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Requirements + roadmap being defined autonomously (party-mode planning session)

@@ -1,0 +1,86 @@
+# Requirements: ControlEasy Reborn — Milestone v2.2
+
+**Defined:** 2026-09-22 (party-mode planning session, autonomous)
+**Core Value:** Gatehouse staff can reliably register and control access through a fast, tenant-isolated web UI.
+
+## v2.2 Requirements
+
+Software-only closeout: finish the ledger, complete pending UI surfaces, advance mockup parity. Derived from `.planning/milestones/v2.1-MILESTONE-AUDIT.md` carryovers, v2.0/v2.1 partial requirements, and `.specs/` work in progress.
+
+### Ledger & Reports Polish
+
+- [ ] **LEDGER-01**: Daily visit-count summary matches the unified ledger at the tenant day boundary (INFRA-02 closeout — `GetVisitCountsByDayAsync` bucketed via TenantDayBoundary, not raw UTC)
+- [ ] **LEDGER-02**: Ledger status filter offers only statuses the backend can return; selecting any option returns real rows or a correct empty state (no inert 'Recorded'/'Refused' options)
+- [ ] **LEDGER-03**: Ledger search scope is honest — placeholder promises only what backend `q` covers (PackageDescription/SubjectName/Purpose) or backend scope is extended to match the promise
+- [ ] **LEDGER-04**: Package-drop UI can register condominium-level drops (DestinationApartmentId omitted), not only apartment-bound ones (VISIT-06/07 capability surfaced)
+- [ ] **LEDGER-05**: `X-Total-Count` header exposed via `WithExposedHeaders` so pagination works for non-same-origin consumers (v2.0 tech-debt shim closeout)
+
+### Account Operations UI
+
+- [ ] **ACCNT-01**: TenantAdmin can reset another admin's or porteiro's password from the condominium management UI (PASS-03 closeout — UI caller behind TenantAdmin-reachable guard, not platformAdmin-only)
+- [ ] **ACCNT-02**: Reset flow shows delivery feedback (temp password dispatched via SMTP) and enforces `MustChangePassword` on next login
+
+### Consent Audit UI
+
+- [ ] **CONSU-01**: Consent audit review UI: filter by date range, category, entry state, porteiro (CONSENT-03 closeout)
+- [ ] **CONSU-02**: Audit rows render state-appropriate evidence — `entered_with_consent` photo thumbnail with lightbox, `entered_override` highlighted with reason + porteiro, `gatehouse_only`/`denied` badges
+- [ ] **CONSU-03**: Consent audit CSV export with millisecond-precision `recorded_at`
+
+### Photo Capture UI
+
+- [ ] **PHOTO-01**: `ce-photo-capture` component: camera mode (`getUserMedia`) and file-picker mode with client-side compression ladder (≤1280px, 0.8→0.6→0.3) and EXIF strip via canvas redraw (per `.specs/photo-capture/` PHOTO-02)
+- [ ] **PHOTO-02**: Photo display: thumbnails in record lists (lazy), source in detail view, click-to-enlarge lightbox, integrated into resident/visitor/vehicle/service-provider record pages
+- [ ] **PHOTO-03**: Upload resilience: 3 attempts with 1s/2s/4s backoff, clear error states for camera-denied, file-too-large, and retries-exhausted
+
+### Mockup Parity & Functional Fixes
+
+- [ ] **UI-01**: Mockup visual parity extended beyond residents page to the next set of high-traffic screens (login, dashboard, visits, vehicles) per `.specs/mockup-visual-parity/` (UI-03 continuation)
+- [ ] **UI-02**: Mockup functional fixes extended: login form behavior, toast patterns, and page interactions per `.specs/2-mockup-functional-fixes/` (UI-04 continuation)
+
+### Test Hygiene & Validation
+
+- [ ] **TEST-01**: Stale E2E suite refreshed or removed — `e2e/gatehouse-workflow.spec.ts` no longer tests removed dashboard buttons/tiles; E2E coverage reflects current gatehouse panel
+- [ ] **TEST-02**: Nyquist validation coverage exists for milestone phases (`*-VALIDATION.md` per phase — v2.1 left 3 phases without any)
+
+## v2.3+ Requirements (deferred)
+
+### Door Integration (v2.3 — renumbered from v2.2 on 2026-09-22)
+
+- **DOOR-01**: Door relay & unlock commands — `IDoorController`, HMAC-signed unlock, rate-limited, audit-logged, hardware fallback, threat model (Phase 14, gated on real condominium hardware)
+- **DOOR-02**: Reader events normalization & enforced ledger (Phase 15, gated on Phase 14)
+- **DOOR-03**: Device health monitoring (Phase 15, gated on Phase 14)
+
+### Future
+
+- **FUT-01**: Facial biometrics access method — requires separate approved specification (privacy, storage, enrollment, matching, liveness)
+- **ARCH-01/02**: Multi-arch Docker/CI — fast-cycle work, no milestone
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| Door Integration hardware work | No real condominium hardware available; planning against absent hardware builds on abstractions (v2.3, gated) |
+| Webhook/WhatsApp temp-password delivery | Meta approval + per-tenant numbers required (deferred v2.1) |
+| Photo on packages | No requirement pull; package drops already filterable in ledger |
+| CPF pre-reg matching, purpose codes, visitor self-check-in, badge printing | Deferred v2.1 requirements, no new demand signal |
+| Resident/vehicle QR scans folded into Visits table | Settled v2.1 — they remain AccessEvent ledger context rows |
+| Reset-token email links | Temp-password machinery covers it; avoids second credential subsystem (settled v2.1) |
+| Native WhatsApp Business API integration | Meta approval + per-tenant numbers |
+| Items fixed in unmerged worktrees (`feat/unified-visits-flow-cleanup`, `fix/gatehouse-direction-persistence`) | Already carried by those branches — entry-log write-path retirement, dead widget deletion, direction persistence; roadmap must not duplicate |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| *(pending roadmap)* | | |
+
+**Coverage:**
+- v2.2 requirements: 15 total
+- Mapped to phases: pending roadmap
+- Unmapped: pending roadmap
+
+---
+*Requirements defined: 2026-09-22 — party-mode planning session*
+*Sources: v2.1 milestone audit carryovers, v2.0 deferred shims, `.specs/photo-capture/`, `.specs/consent-gatehouse/`, `.specs/mockup-visual-parity/`, `.specs/2-mockup-functional-fixes/`*
