@@ -28,9 +28,9 @@ Software-only closeout: finish the ledger, complete pending UI surfaces, advance
 
 ### Photo Capture UI
 
-- [ ] **PHOTO-01**: `ce-photo-capture` component: camera mode (`getUserMedia`) and file-picker mode with client-side compression ladder (≤1280px, 0.8→0.6→0.3) and EXIF strip via canvas redraw (per `.specs/photo-capture/` PHOTO-02)
-- [ ] **PHOTO-02**: Photo display: thumbnails in record lists (lazy), source in detail view, click-to-enlarge lightbox, integrated into resident/visitor/vehicle/service-provider record pages
-- [ ] **PHOTO-03**: Upload resilience: 3 attempts with 1s/2s/4s backoff, clear error states for camera-denied, file-too-large, and retries-exhausted
+- [ ] **PCAP-01**: `ce-photo-capture` component: camera mode (`getUserMedia`) and file-picker mode with client-side compression ladder (≤1280px, 0.8→0.6→0.3) and EXIF strip via canvas redraw (implements `.specs/photo-capture/` PHOTO-02; renamed PCAP to avoid colliding with validated v2.0 PHOTO-01 storage requirement)
+- [ ] **PCAP-02**: Photo display: thumbnails in record lists (lazy), source in detail view, click-to-enlarge lightbox, integrated into resident/visitor/vehicle/service-provider record pages
+- [ ] **PCAP-03**: Upload resilience: 3 attempts with 1s/2s/4s backoff, clear error states for camera-denied, file-too-large, and retries-exhausted
 
 ### Mockup Parity & Functional Fixes
 
@@ -74,12 +74,28 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| *(pending roadmap)* | | |
+| LEDGER-01 | Phase 19 | Pending |
+| LEDGER-02 | Phase 19 | Pending |
+| LEDGER-03 | Phase 19 | Pending |
+| LEDGER-04 | Phase 19 | Pending |
+| LEDGER-05 | Phase 19 | Pending |
+| ACCNT-01 | Phase 20 | Pending |
+| ACCNT-02 | Phase 20 | Pending |
+| CONSU-01 | Phase 20 | Pending |
+| CONSU-02 | Phase 20 | Pending |
+| CONSU-03 | Phase 20 | Pending |
+| PCAP-01 | Phase 21 | Pending |
+| PCAP-02 | Phase 21 | Pending |
+| PCAP-03 | Phase 21 | Pending |
+| UI-01 | Phase 22 | Pending |
+| UI-02 | Phase 22 | Pending |
+| TEST-01 | Phase 22 | Pending |
+| TEST-02 | Phase 22 | Pending |
 
 **Coverage:**
-- v2.2 requirements: 15 total
-- Mapped to phases: pending roadmap
-- Unmapped: pending roadmap
+- v2.2 requirements: 17 total (5 LEDGER + 2 ACCNT + 3 CONSU + 3 PCAP + 2 UI + 2 TEST)
+- Mapped to phases: 17/17 (Phases 19–22, v2.2)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-09-22 — party-mode planning session*
