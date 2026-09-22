@@ -1,9 +1,9 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.2
-milestone_name: UI Parity & Operational Closeout
+milestone: v2.3
+milestone_name: Door Integration & Hardware Access (simulator-first)
 status: planning
-last_updated: "2026-09-22T18:44:18.023Z"
+last_updated: "2026-09-22T19:23:34.545Z"
 last_activity: 2026-09-22
 progress:
   total_phases: 0
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-22)
 
 **Core value:** Gatehouse staff can reliably register and control access through a fast, tenant-isolated web UI.
-**Current focus:** v2.2 UI Parity & Operational Closeout — defining requirements
+**Current focus:** v2.3 Door Integration (simulator-first) — roadmap created; ready for `/gsd-plan-phase 23`
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Not started (roadmap defined)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-22 — Milestone v2.2 started
+Status: Planning complete — awaiting phase planning
+Last activity: 2026-09-22 — Milestone v2.3 requirements + roadmap created
 
 ## Performance Metrics
 
@@ -65,6 +65,7 @@ Last activity: 2026-09-22 — Milestone v2.2 started
 - v2.0 consent model: per-tenant per-category policy, five entry states, append-only audit log, hardcoded override reason codes
 - v2.2 Door Integration (Phases 14–15, renumbered from v2.1 on 2026-09-19) gated on real condominium hardware
 - v2.2 milestone is software-only closeout (party-mode planning session 2026-09-22); Door Integration renumbered to v2.3, Phases 14–15 stay reserved
+- v2.3 door integration is simulator-first (2026-09-22): `IDoorController`/`IDeviceHandler` abstractions, HMAC-SHA256 unlock security, event normalization, ledger integration, health monitoring, and admin UI are all built and verified against a simulated/loopback device adapter; real vendor drivers stay out of scope until hardware exists; Phases 14–15 reservations retired, v2.3 phases start at 23
 - Gatehouse access is software-only validation/audit: QR initial credential + manual lookup fallback; every visit requires a destination; biometrics require separate approved spec
 - Multi-arch Docker/CI is fast-cycle (no milestone)
 
@@ -84,8 +85,9 @@ Last activity: 2026-09-22 — Milestone v2.2 started
 | v2.0 (tech debt) | Backend /api/v1/consent-policy list endpoint | Forward-compatible shim (4× parallel calls) | 2026-09-13 | v2.2 candidate |
 | v2.0 (tech debt) | Backend X-Total-Count header on /api/v1/entry-log | Forward-compatible shim (entries.length approximation) | 2026-09-13 | v2.2 target |
 | v2.1 | Webhook/WhatsApp temp-password delivery, photo on packages, CPF pre-reg matching, purpose codes, resident visit history, visitor self-check-in, badge printing | Deferred requirements (REQUIREMENTS.md) | 2026-09-19 | v2.1+ |
-| v2.3 | Door relay & unlock commands (DOOR-01) | Phase 14, gated on hardware (renumbered from v2.2 on 2026-09-22) | 2026-08-23 | v2.3 |
-| v2.3 | Reader events & device health (DOOR-02, DOOR-03) | Phase 15, gated on Phase 14 | 2026-08-23 | v2.3 |
+| v2.3 | Door relay & unlock commands (DOOR-01) | Re-scoped simulator-first into v2.3 Phase 23+ (2026-09-22) | 2026-08-23 | v2.3 |
+| v2.3 | Reader events & device health (DOOR-02, DOOR-03) | Re-scoped simulator-first into v2.3 Phase 23+ (2026-09-22) | 2026-08-23 | v2.3 |
+| v2.3 | Real vendor device drivers (relay + reader) | Blocked: no real condominium hardware; swap simulator for real adapter later — driver task, not redesign | 2026-09-22 | post-v2.3 |
 | Future access method | Facial biometrics | Requires separate approved specification | 2026-09-13 | future |
 | Fast-cycle | Multi-arch Docker/CI (ARCH-01, ARCH-02) | No milestone, ~1 week | 2026-06-24 | none |
 | todos | integrated-visits-flow.md | (presence-only) | 2026-09-20 | v2.1 |
@@ -93,9 +95,9 @@ Last activity: 2026-09-22 — Milestone v2.2 started
 ## Session Continuity
 
 Last session: 2026-09-22
-Stopped at: Milestone v2.2 started (UI Parity & Operational Closeout) — PROJECT.md updated, STATE.md reset, requirements being defined.
+Stopped at: Milestone v2.3 (Door Integration, simulator-first) requirements + roadmap created on `feat/v2-3-milestone-planning`; PROJECT.md, REQUIREMENTS.md, ROADMAP.md, STATE.md updated.
 Resume file: None
 
 ## Operator Next Steps
 
-- Requirements + roadmap being defined autonomously (party-mode planning session)
+- Review v2.3 roadmap, then run `/gsd-plan-phase 23`

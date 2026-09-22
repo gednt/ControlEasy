@@ -28,19 +28,18 @@ Gatehouse staff can reliably register and control access for residents, visitors
 
 ## Current Milestone
 
-**v2.2 — UI Parity & Operational Closeout** (started 2026-09-22)
+**v2.3 — Door Integration & Hardware Access (simulator-first)** (started 2026-09-22)
 
-**Goal:** Close out every hardware-independent gap — finish the ledger, complete pending UI surfaces (password reset, consent audit review, photo capture), and advance mockup parity — so the platform is feature-complete for software-only operation while Door Integration waits on hardware.
+**Goal:** Build the complete door-integration software, security, and UI surface against a simulated device adapter — `IDoorController`/`IDeviceHandler` abstractions, HMAC-signed rate-limited unlock, device events feeding the ledger, device health monitoring — so that swapping the simulator for a real vendor adapter later is a driver-implementation task, not a redesign.
 
 **Target features:**
-- Ledger & reports polish (day-bucketing, status filter vocabulary, search scope, condominium-level package drops, X-Total-Count exposure)
-- Account operations UI (TenantAdmin password reset surface)
-- Consent audit review UI (CONSENT-03)
-- Photo browser capture UI (PHOTO-02)
-- Mockup visual parity + functional fixes (UI-03, UI-04)
-- Test-suite hygiene (stale E2E specs, Nyquist validation coverage)
+- Device abstractions (`IDoorController`, `IDeviceHandler`) + loopback/simulated device adapter (Docker-hosted mock device service behind the same interfaces)
+- Secure remote unlock: HMAC-SHA256, nonce+timestamp replay window, rate limiting, append-only tamper-evident audit, porteiro-role authorization, per-tenant AES-256-GCM-encrypted connection params
+- Tenant opt-in admin UI (`door_integration_enabled` flag) and device registration/management UI
+- Reader-event ingestion → `DeviceEvent` normalization → ledger entries (post-cleanup contract); replay-on-reconnect
+- Device health: heartbeats, health dashboard UI, offline alert toast in porteiro UI
 
-**Key context:** Door Integration renumbered to v2.3 (gated on real condominium hardware; Phases 14–15 stay reserved). Research skipped — all work is completion against existing specs (`.specs/photo-capture/`, `.specs/consent-gatehouse/`, `.specs/mockup-visual-parity/`, `.specs/2-mockup-functional-fixes/`) and audit findings (`.planning/milestones/v2.1-MILESTONE-AUDIT.md`). Two unmerged worktrees carry overlapping cleanup (`feat/unified-visits-flow-cleanup` — entry-log write-path retirement + dead widget deletion; `fix/gatehouse-direction-persistence`); roadmap phases must not re-scope items already fixed there.
+**Key context:** Re-scope of the original door-integration spec (`.specs/door-integration/`) — real vendor driver work and any hardware-dependent verification stay OUT OF SCOPE until real condominium hardware exists; Phases 14–15 reservations are retired and v2.3 phases continue from 23. Milestone v2.2 (UI Parity & Operational Closeout, Phases 19–22) is planned and in flight in parallel (`.worktrees/feat-v2-2-milestone-planning`); it does not conflict with v2.3's door module work. Two cleanup worktrees in flight (`feat/unified-visits-flow-cleanup`, `fix/gatehouse-direction-persistence`) fix ledger/entry-log adjacent issues — v2.3 ledger work builds on the post-cleanup contract and must not re-scope their items.
 
 Fast-cycle (no milestone): multi-arch Docker/CI (`ARCH-01`, `ARCH-02`).
 
@@ -87,7 +86,7 @@ Fast-cycle (no milestone): multi-arch Docker/CI (`ARCH-01`, `ARCH-02`).
 - [~] Consent gatehouse workflow UI (v2.0, Phase 13) — `CONSENT-03` — backend done; audit review UI pending — `.specs/consent-gatehouse/` — v2.2 target
 - [~] TenantAdmin password reset UI (v2.1 PASS-03 partial) — backend done; UI surface pending — v2.2 target
 - [ ] Ledger polish (v2.1 carryover) — day-bucketing INFRA-02, inert status filter options, search scope, condominium-level package-drop trigger, X-Total-Count exposure — v2.2 target
-- [ ] Door integration (v2.3 — renumbered from v2.2 on 2026-09-22; gated on hardware) — `.specs/door-integration/`
+- [~] Door integration (v2.3, simulator-first; renumbered from v2.2 on 2026-09-22) — `.specs/door-integration/` — requirements re-scoped for v2.3; phases 23+
 - [ ] Multi-arch Docker/CI (fast-cycle) — `.specs/1 - modernization-roadmap-arm64/`
 
 ### Out of Scope
@@ -148,6 +147,7 @@ Known concerns from codebase map: dual tenant column patterns, JWT/localStorage 
 | Enumeration-safe forgot password: uniform response + constant-cost decoy verify | Prevent user enumeration via timing/response diffing | ✓ Good — Phase 18 `ForgotPasswordHandler` |
 | Durable `PasswordResetRequest` table doubles as rate-limit counter | Consolidated single-table design; per-process IMemoryCache idempotent resend is a documented single-instance tradeoff | ⚠️ Revisit — multi-replica deployments lose resend idempotency |
 | v2.2 milestone is software-only closeout; Door Integration renumbered to v2.3 | No real condominium hardware available; planning against absent hardware builds on abstractions; completion work delivers user value now | ✓ Good — party-mode planning session 2026-09-22, Phases 14–15 stay reserved for v2.3 |
+| v2.3 door integration is simulator-first | The `IDoorController`/`IDeviceHandler` abstractions, security machinery (HMAC-SHA256, nonce+timestamp replay window, rate limiting, tamper-evident audit, AES-256-GCM connection params), event normalization, ledger integration, health monitoring, and admin UI are all verifiable against a simulated/loopback device adapter; swapping in a real vendor driver later is a driver-implementation task, not a redesign. Real vendor drivers stay out of scope until hardware exists | ✓ Good — v2.3 planning session 2026-09-22; Phases 14–15 reservations retired, phases continue from 23 |
 
 ## Evolution
 
@@ -167,4 +167,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-22 — v2.2 UI Parity & Operational Closeout started (party-mode planning session); Door Integration renumbered to v2.3*
+*Last updated: 2026-09-22 — v2.3 Door Integration & Hardware Access (simulator-first) planning started on `feat/v2-3-milestone-planning`; v2.2 in flight in parallel*
