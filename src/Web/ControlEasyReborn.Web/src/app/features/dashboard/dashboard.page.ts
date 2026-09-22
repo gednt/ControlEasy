@@ -1,11 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { CeButtonComponent, CeEntryWorkflowComponent, CeIconComponent, CeSpinnerComponent } from '../../design-system';
+import { CeButtonComponent, CeIconComponent, CeSpinnerComponent } from '../../design-system';
 import { DashboardApiService, DashboardStatsResponse, RecentVisit } from './dashboard-api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
-import { VisitCreateModalComponent } from '../visits/visit-create-modal.component';
 
 @Component({
   selector: 'ce-dashboard-page',
@@ -14,10 +13,8 @@ import { VisitCreateModalComponent } from '../visits/visit-create-modal.componen
     CommonModule,
     RouterLink,
     CeButtonComponent,
-    CeEntryWorkflowComponent,
     CeIconComponent,
     CeSpinnerComponent,
-    VisitCreateModalComponent,
   ],
   template: `
     <header class="ledger-heading">
@@ -40,19 +37,6 @@ import { VisitCreateModalComponent } from '../visits/visit-create-modal.componen
         }
       </div>
     </header>
-
-    <ce-entry-workflow
-      [open]="entryWorkflowOpen()"
-      [closeOnEntry]="true"
-      (closed)="entryWorkflowOpen.set(false)"
-      (entryLogged)="onEntryLogged()"
-    />
-
-    <ce-visit-create-modal
-      [open]="visitCreateOpen()"
-      (closed)="visitCreateOpen.set(false)"
-      (created)="onVisitCreated()"
-    />
 
     @if (pageError()) {
       <div class="page-error" role="alert">{{ pageError() }}</div>
@@ -647,24 +631,10 @@ export class DashboardPage {
   stats = signal<DashboardStatsResponse | null>(null);
   loading = signal(true);
   pageError = signal<string | null>(null);
-  entryWorkflowOpen = signal(false);
-  visitCreateOpen = signal(false);
   handoffUpdated = signal(false);
 
   canUseGatehouse = (): boolean =>
     this.auth.roles().includes('AttendantProfile') || this.auth.roles().includes('TenantAdmin');
-
-  onEntryLogged(): void {
-    this.handoffUpdated.set(true);
-    this.refresh();
-    setTimeout(() => this.handoffUpdated.set(false), 1800);
-  }
-
-  onVisitCreated(): void {
-    this.handoffUpdated.set(true);
-    this.refresh();
-    setTimeout(() => this.handoffUpdated.set(false), 1800);
-  }
 
   constructor() {
     this.load();

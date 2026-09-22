@@ -6,7 +6,6 @@ export type { CreateApartmentRequest } from './models/create-apartment-request';
 export type { CreateAttendantProfileRequest } from './models/create-attendant-profile-request';
 export type { CreateAuditLogRequest } from './models/create-audit-log-request';
 export type { CreateConfigurationRequest } from './models/create-configuration-request';
-export type { CreateEntryLogRequest } from './models/create-entry-log-request';
 export type { CreateGatehouseRequest } from './models/create-gatehouse-request';
 export type { CreatePorteiroRequest } from './models/create-porteiro-request';
 export type { CreateResidentRequest } from './models/create-resident-request';

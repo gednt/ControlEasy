@@ -14,8 +14,6 @@ import { apiV1EntryLogExportGet } from '../fn/entry-log/api-v-1-entry-log-export
 import { ApiV1EntryLogExportGet$Params } from '../fn/entry-log/api-v-1-entry-log-export-get';
 import { apiV1EntryLogGet } from '../fn/entry-log/api-v-1-entry-log-get';
 import { ApiV1EntryLogGet$Params } from '../fn/entry-log/api-v-1-entry-log-get';
-import { apiV1EntryLogPost } from '../fn/entry-log/api-v-1-entry-log-post';
-import { ApiV1EntryLogPost$Params } from '../fn/entry-log/api-v-1-entry-log-post';
 
 @Injectable({ providedIn: 'root' })
 export class EntryLogService extends BaseService {
@@ -45,33 +43,6 @@ export class EntryLogService extends BaseService {
    */
   apiV1EntryLogGet(params?: ApiV1EntryLogGet$Params, context?: HttpContext): Observable<void> {
     const resp = this.apiV1EntryLogGet$Response(params, context);
-    return resp.pipe(
-      map((r: StrictHttpResponse<void>): void => r.body)
-    );
-  }
-
-  /** Path part for operation `apiV1EntryLogPost()` */
-  static readonly ApiV1EntryLogPostPath = '/api/v1/entry-log';
-
-  /**
-   * This method provides access to the full `HttpResponse`, allowing access to response headers.
-   * To access only the response body, use `apiV1EntryLogPost()` instead.
-   *
-   * This method sends `application/json` and handles request body of type `application/json`.
-   */
-  apiV1EntryLogPost$Response(params: ApiV1EntryLogPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
-    const obs = apiV1EntryLogPost(this.http, this.rootUrl, params, context);
-    return obs;
-  }
-
-  /**
-   * This method provides access only to the response body.
-   * To access the full response (for headers, for example), `apiV1EntryLogPost$Response()` instead.
-   *
-   * This method sends `application/json` and handles request body of type `application/json`.
-   */
-  apiV1EntryLogPost(params: ApiV1EntryLogPost$Params, context?: HttpContext): Observable<void> {
-    const resp = this.apiV1EntryLogPost$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<void>): void => r.body)
     );

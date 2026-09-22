@@ -20,15 +20,6 @@ export type SubjectType = 'dweller' | 'visitor' | 'service_provider' | 'vehicle'
 /** Hardcoded override reasons per ROADMAP — no free-text. */
 export type OverrideReason = 'emergency' | 'vouched';
 
-export interface CreateEntryLogRequest {
-  entryState: EntryState;
-  subjectType: SubjectType;
-  subjectName?: string | undefined;
-  subjectDocument?: string | undefined;
-  photoId?: string | undefined;
-  overrideReason?: OverrideReason | undefined;
-}
-
 /**
  * Backend returns Guid ids; we serialize as strings on the wire to match the
  * existing handwritten service pattern (see PhotosApiService).
@@ -56,12 +47,16 @@ export interface AuditFilters {
 }
 
 /**
- * Thin handwritten service for the Phase 11/13 entry-log endpoints.
+ * Read-only handwritten service for the entry-log endpoints over the
+ * append-only ConsentAuditLog (privacy-consent audit trail).
  *
  * Endpoints used:
- *   POST /api/v1/entry-log            — create entry log (gatehouse write path)
  *   GET  /api/v1/entry-log            — list entries with optional filters
  *   GET  /api/v1/entry-log/export     — CSV download of current filter
+ *
+ * The legacy POST write path was retired: walk-in registration uses
+ * POST /api/v1/visits (checkInNow) and operational entry events are recorded
+ * by the AccessControl module (POST /api/v1/access-events/*).
  *
  * Phase 13 deviation: backend does NOT return X-Total-Count. Use entries.length
  * for pagination display. If/when the backend adds the header, swap to read
@@ -71,10 +66,6 @@ export interface AuditFilters {
 export class EntryLogService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = '/api/v1/entry-log';
-
-  create(request: CreateEntryLogRequest): Observable<EntryLogResponse> {
-    return this.http.post<EntryLogResponse>(this.baseUrl, request);
-  }
 
   list(filters: AuditFilters): Observable<EntryLogResponse[]> {
     let params = new HttpParams().set('skip', filters.skip.toString()).set('take', filters.take.toString());
