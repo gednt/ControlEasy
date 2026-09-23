@@ -1,66 +1,64 @@
-# Requirements: ControlEasy Reborn — Milestone v2.3
+# Requirements: ControlEasy Reborn — Milestone v2.4
 
-**Defined:** 2026-09-22 (v2.3 planning session, autonomous)
+**Defined:** 2026-09-23 (v2.4 planning session — BMAD party-mode session 6, autonomous)
 **Core Value:** Gatehouse staff can reliably register and control access through a fast, tenant-isolated web UI.
 
-## v2.3 Requirements
+## v2.4 Requirements
 
-**Door Integration & Hardware Access — simulator-first.** The original door-integration spec (`.specs/door-integration/`) assumed Phases 14–15 executed against REAL hardware at a real condominium. That hardware access does not exist yet. v2.3 delivers the complete hardware-independent portion: the `IDoorController`/`IDeviceHandler` abstractions, the full security machinery, device-event normalization and ledger integration, device health monitoring, and the admin/porteiro UI — all built and integration-tested against a **simulated/loopback device adapter** (Docker-hosted mock device service or in-memory test double wired behind the same interfaces). Swapping the simulator for a real vendor adapter later is a driver-implementation task, not a redesign.
+**Resident Self-Service & Visitor Experience.** The resident stops being a row in someone else's table. They get portal access scoped to their own apartment, pre-register expected visitors (identity, purpose, validity window), watch arrivals in their visit history, and receive in-app arrival notifications. Visitors self check-in through a pre-authorization against the SAME unified write path the gatehouse uses. The porteiro sees pending pre-registrations at the gatehouse panel and prints badges for pre-authorized arrivals. Scope sourced from the v2.1 deferred requirements pool (CPF pre-reg matching, purpose codes, resident visit history, visitor self check-in, badge printing) — zero external dependencies.
 
-**Constitutional security bar (applies throughout):** BCrypt ≥ 11 (no passwords stored for devices, but admin-configured credentials follow platform rules); `ProblemDetails` (RFC 7807) errors; no EF Core — DBTools `Linq<TModel>`/`IAsyncSqlClient` only, raw SQL only for stored procs; no MediatR; minimal API endpoints only; all tenant-scoped reads/writes via `ITenantAwareLinqFactory`; Serilog structured logging. Remote unlock is security-sensitive: HMAC-SHA256 per-tenant key, nonce + timestamp replay window, rate limiting, append-only tamper-evident audit log, AES-256-GCM per-tenant encryption of device connection params, porteiro-role authorization.
+**Constitutional security bar (applies throughout):** BCrypt ≥ 11 for resident credentials; `ProblemDetails` (RFC 7807) errors; no EF Core — DBTools `Linq<TModel>`/`IAsyncSqlClient` only, raw SQL only for stored procs; no MediatR; minimal API endpoints only; all tenant-scoped reads/writes via `ITenantAwareLinqFactory`; Serilog structured logging. Resident authentication is the second-biggest credential-surface addition after door unlock: enumeration-safe login flows, uniform denials, apartment-scoped isolation integration tests mandatory, and self check-in MUST reuse the unified `VisitorArrivalHandler` write path (no second door into the Visits data model).
 
-### Device Abstractions & Secure Unlock
+### Resident Access & Isolation
 
-- [ ] **DOOR-01**: `IDoorController` abstraction (`UnlockAsync(deviceId, command)`) implemented by a simulated device adapter; `POST /api/v1/devices/{deviceId}/unlock` sends an HMAC-SHA256-signed command through it and returns success/failure — verified end-to-end against the simulator
-- [ ] **DOOR-02**: Unlock endpoint enforces the security bar: porteiro-role authorization, per-tenant HMAC-SHA256 key, nonce + timestamp replay window (a captured command replayed later fails), rate limit (max 1 unlock per 3 seconds per device), and 404/403 ProblemDetails when the tenant flag is off or the role lacks permission
-- [ ] **DOOR-03**: Every unlock command is audit-logged append-only and tamper-evidently (requesting user, device ID, timestamp, command hash, response status); DB triggers reject UPDATE/DELETE on the audit table, verified by integration test
-- [ ] **DOOR-04**: Device connection params are encrypted at rest per tenant (AES-256-GCM); `devices` table stores `id`, `tenant_id`, `device_type`, `vendor`, `connection_params` (encrypted), `gatehouse_id`, `is_active` — never persisted or logged in plaintext
-- [ ] **DOOR-05**: Door integration is opt-in per condominium: `door_integration_enabled` defaults false; when false, no door endpoints are exposed (404), no unlock UI renders, and a TenantAdmin can enable the flag from an administration UI
-- [ ] **DOOR-06**: Device management UI: a TenantAdmin can register, edit, activate/deactivate, and remove devices for their condominium, with connection params entered once and never displayed back in plaintext
-- [ ] **DOOR-07**: Unlock command rate limiting and abuse response are observable: exceeding the per-device rate returns 429 ProblemDetails, attempts are audit-logged, and legitimate retry after the window succeeds
+- [ ] **RES-01**: A TenantAdmin can provision resident portal access for a resident of an apartment (credential creation/activation) and suspend or revoke it — revocation takes effect on the resident's next request
+- [ ] **RES-02**: A resident can log into the portal with their own credential (new resident role, BCrypt ≥ 11, enumeration-safe uniform responses, same JWT machinery as staff)
+- [ ] **RES-03**: Apartment-scoped data isolation: a resident sees ONLY their own apartment's visitors, visits, and pre-registrations; cross-apartment access (e.g. resident of 101 reading 302's data) is denied and covered by integration tests
 
-### Reader Events & Ledger Integration
+### Visitor Pre-Registration
 
-- [ ] **DOOR-08**: `IDeviceHandler` abstraction (`HandleEventAsync(deviceEvent)`) normalizes simulated reader events into the unified `DeviceEvent` model (`device_id`, `event_type`, `payload_json`, `occurred_at`) — business logic stays vendor-agnostic
-- [ ] **DOOR-09**: `device_events` table (`id`, `tenant_id`, `device_id`, `event_type`, `payload_json`, `occurred_at`, `processed_at`, `entry_log_id` nullable) persists every ingested event with tenant scoping via `ITenantAwareLinqFactory`
-- [ ] **DOOR-10**: Reader events feed the ledger: a card-match event creates the corresponding entry-log/ledger record automatically (post-cleanup contract: `feat/unified-visits-flow-cleanup` entry-log write-path retirement + AccessEvent→VisitId links); unknown-card events are logged as denied attempts without creating ledger entries
-- [ ] **DOOR-11**: Event replay on reconnect: events queued during downtime are ingested when the simulated device reconnects; `processed_at` vs `occurred_at` distinguishes ingestion time from event time; no event is lost or double-processed (idempotent replay)
+- [ ] **RES-04**: A resident can create a visitor pre-registration for their apartment: full name, document number, optional vehicle plate, purpose code, and a validity window (start/end date)
+- [ ] **RES-05**: A resident can edit a pending pre-registration or cancel it; cancelled and consumed pre-registrations become read-only history
+- [ ] **RES-06**: Purpose codes: a per-tenant configurable list (e.g. Visit, Delivery, Service, Maintenance) selectable at pre-registration and stamped on the resulting visit record
 
-### Device Health Monitoring
+### Visitor Self Check-In
 
-- [ ] **DOOR-12**: `device_heartbeats` tracking (`device_id`, `last_heartbeat_at`, `status` online/offline/degraded, `error_count`) updated by simulated heartbeat ingestion with per-device alert thresholds (`offline_after_seconds` default 60, `error_rate_threshold` default 10%)
-- [ ] **DOOR-13**: Device health dashboard UI: per-device status (online/offline/degraded), last heartbeat, error rate, and alert badges, visible to TenantAdmin and porteiro
-- [ ] **DOOR-14**: Offline alert toast in the porteiro UI fires when a device crosses its offline threshold, so gatehouse staff know to use manual entry
-- [ ] **DOOR-15**: Simulator test harness: the Docker-hosted mock device service (or in-memory test double) exposes the same surface a real adapter would (commands in, events/heartbeats out) and is exercised by the integration-test suite, proving the abstraction is swappable without redesign
+- [ ] **RES-07**: An arriving visitor can self check-in with a pre-authorization (document match or pre-auth code) — the resulting Visit is created through the unified `VisitorArrivalHandler` write path and lands in the same states as a gatehouse check-in
+- [ ] **RES-08**: Denied self check-in paths (unknown code, expired window, revoked registration, exhausted use) return uniform enumeration-safe ProblemDetails, are rate-limited per source, and are audit-logged
+
+### Resident Visibility & Notifications
+
+- [ ] **RES-09**: A resident can view their apartment's visit history (past and expected visitors) — read-only, honest data from the same source the porteiro and reports use
+- [ ] **RES-10**: When a pre-registered visitor checks in (self or gatehouse), the resident's portal shows an in-app arrival notification (no push/mobile-native — portal-only)
+
+### Gatehouse Integration
+
+- [ ] **RES-11**: The gatehouse panel shows pending pre-registrations expected today with one-click check-in against the pre-authorization (same `VisitorArrivalHandler` path), and CPF/document matching surfaces the pending registration when a visitor arrives
+- [ ] **RES-12**: Badge printing: at check-in (self-service or gatehouse), a printable badge is generated (visitor name, apartment, date, validity, QR credential) via browser print — no printer hardware integration
 
 ## v2.4+ Requirements (deferred)
 
-### Real Hardware Integration (post-v2.3 — gated on real condominium hardware)
+### Post-v2.4 (carried from v2.1 deferred pool / future)
 
-- **DOOR-R1**: Real vendor door-relay driver implementing `IDoorController` for the first real condominium (vendor TBD)
-- **DOOR-R2**: Real vendor reader driver implementing `IDeviceHandler` from a second integration — proves the abstraction (`IDeviceHandler` emerges from the second real integration, not speculatively)
-- **DOOR-R3**: Hardware fallback verification on-site (card reader + manual release work without the API; ControlEasy logs events on reconnect)
-
-### Future
-
-- **FUT-01**: Facial biometrics access method — requires separate approved specification (privacy, storage, enrollment, matching, liveness)
+- **WhatsApp/visitor notification delivery** — Meta approval + per-tenant numbers required (parked since v2.1)
+- **Visitor self-service registration without pre-registration** — walk-in self-enrollment is a trust-model change; only pre-authorized self check-in ships in v2.4
+- **DOOR-R1..R3**: Real vendor hardware drivers (gated on real condominium hardware; v2.3+)
+- **FUT-01**: Facial biometrics access method — requires separate approved specification
 - **ARCH-01/02**: Multi-arch Docker/CI — fast-cycle work, no milestone
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Real vendor device drivers (relay + reader) | No real condominium hardware available; simulator-first covers all software; driver swap is a later task (DOOR-R1..R3) |
-| Hardware fallback on-site verification | Requires physical hardware; simulator proves API-side behavior only (deferred to DOOR-R3) |
-| Camera integration / NVR proxy / WebRTC / media server | Cameras belong to the condominium (settled door-integration spec) |
-| MQTT-based sensor ingestion framework | Not building a platform; building one integration abstraction |
-| Biometric template storage and encryption (AES-256-GCM) | No biometrics in v2.3; card/credential events only (biometrics reserved — FUT-01) |
-| Video recording and storage / AI facial recognition | Future specs |
-| Multi-vendor device support from day one | One simulated adapter now; second integration proves the abstraction later |
-| Approval workflow for unlock overrides | Visibility first; no approval chain in v2.3 |
-| Webhook/WhatsApp temp-password delivery | Meta approval + per-tenant numbers required (deferred v2.1) |
-| Items fixed in unmerged worktrees (`feat/unified-visits-flow-cleanup`, `fix/gatehouse-direction-persistence`) | Already carried by those branches — entry-log write-path retirement, dead widget deletion, direction persistence; v2.3 ledger work builds on the post-cleanup contract |
-| v2.2 milestone scope (LEDGER/ACCNT/CONSU/PCAP/UI/TEST) | Tracked in the parallel in-flight v2.2 milestone (Phases 19–22, `feat/v2-2-milestone-planning`); not re-scoped here |
+| Resident-facing mobile app / push notifications | v2.4 delivers in-app portal notifications only; responsive web / PWA is the platform standard |
+| Visitor identity verification hardware / ID scanners | Self check-in matches entered data against the pending pre-registration; no scanner hardware |
+| Un-registered walk-in visitor self-enrollment | Trust-model change; visitors without a pre-registration follow the existing gatehouse flow |
+| Visitor self check-in creating new resident permissions | Self check-in uses the pre-authorization only; residents never delegate portal credentials |
+| Badge printer hardware/ESC-POS integration | Browser print covers the need (party-mode session 6) |
+| WhatsApp/SMS visitor arrival notifications | Meta approval + per-tenant numbers; parked since v2.1 |
+| v2.2 milestone scope (LEDGER/ACCNT/CONSU/PCAP/UI/TEST) | Tracked in the parallel planned v2.2 milestone (Phases 19–22) |
+| v2.3 milestone scope (DOOR-01..15) | Tracked in the parallel planned v2.3 milestone (Phases 23–26) |
+| Items fixed in unmerged worktrees (`feat/unified-visits-flow-cleanup`, `fix/gatehouse-direction-persistence`) | Already carried by those branches; v2.4 self check-in builds on the unified write path (post-cleanup contract) |
 
 ## Traceability
 
@@ -68,28 +66,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DOOR-01 | Phase 23 | Pending |
-| DOOR-02 | Phase 23 | Pending |
-| DOOR-03 | Phase 23 | Pending |
-| DOOR-04 | Phase 23 | Pending |
-| DOOR-05 | Phase 24 | Pending |
-| DOOR-06 | Phase 24 | Pending |
-| DOOR-07 | Phase 23 | Pending |
-| DOOR-08 | Phase 25 | Pending |
-| DOOR-09 | Phase 25 | Pending |
-| DOOR-10 | Phase 25 | Pending |
-| DOOR-11 | Phase 25 | Pending |
-| DOOR-12 | Phase 26 | Pending |
-| DOOR-13 | Phase 26 | Pending |
-| DOOR-14 | Phase 26 | Pending |
-| DOOR-15 | Phase 23 | Pending |
-
-**Coverage:**
-- v2.3 requirements: 15 total (7 device-abstraction/unlock DOOR-01..07 + 4 reader-events DOOR-08..11 + 4 device-health DOOR-12..14 + 1 simulator harness DOOR-15)
-- Mapped to phases: 15/15 (Phases 23–26, v2.3)
-- Unmapped: 0
-- Note: DOOR-15 (simulator test harness) maps to Phase 23 because the simulator is the foundation everything else tests against; it is re-verified by every later phase's integration suite
+| (pending roadmap) | | |
 
 ---
-*Requirements defined: 2026-09-22 — v2.3 planning session (simulator-first re-scope of `.specs/door-integration/`)*
-*Sources: `.specs/door-integration/requirements.md`, PROJECT.md Key Decisions (door: participant-not-gatekeeper), AGENTS.md security bar, v2.2 REQUIREMENTS.md door deferral, worktree sequencing notes*
+*Requirements defined: 2026-09-23 — v2.4 planning session (party-mode session 6, autonomous)*
+*Sources: v2.1 REQUIREMENTS.md deferred pool (CPF pre-reg matching, purpose codes, resident visit history, visitor self check-in, badge printing), PROJECT.md Key Decisions (v2.1 visits unification: one data model), AGENTS.md security bar, party-mode session 6 decisions (single write path, apartment-scoped isolation)*
