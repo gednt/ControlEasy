@@ -27,12 +27,10 @@ public static class PhotosModuleServiceCollectionExtensions
         services.AddScoped<ListPhotosHandler>();
         services.AddScoped<GetPhotoHandler>();
         services.AddScoped<SoftDeletePhotoHandler>();
-        services.AddScoped<CreateEntryLogHandler>();
         services.AddScoped<ListEntryLogsHandler>();
         services.AddScoped<ExportEntryLogCsvHandler>();
         services.AddScoped<UpdateConsentPolicyHandler>();
         services.AddScoped<IValidator<UploadPhotoMetadata>, UploadPhotoMetadataValidator>();
-        services.AddScoped<IValidator<CreateEntryLogRequest>, CreateEntryLogRequestValidator>();
         services.AddScoped<IValidator<UpdateConsentPolicyRequest>, UpdateConsentPolicyRequestValidator>();
         return services;
     }

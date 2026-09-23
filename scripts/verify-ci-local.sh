@@ -236,6 +236,7 @@ else
     -v "${NUGET_CACHE_VOL}:/root/.nuget/packages" \
     -v "${DOCKER_SOCK}:${DOCKER_SOCK}" \
     -e DOCKER_HOST="unix://${DOCKER_SOCK}" \
+    -e DOTNET_RUNNING_IN_CONTAINER= \
     "${TC_ENV[@]+"${TC_ENV[@]}"}" \
     "${CE_ITEST_ENV[@]+"${CE_ITEST_ENV[@]}"}" \
     -e FAST_ONLY="${FAST_ONLY}" \

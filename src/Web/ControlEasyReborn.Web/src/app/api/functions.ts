@@ -67,8 +67,6 @@ export type { ApiV1DemoResetPost$Params as ApiV1DemoResetPost$Params } from './f
 export { apiV1DemoResetPost as apiV1DemoResetPost } from './fn/demo/api-v-1-demo-reset-post';
 export type { ApiV1EntryLogGet$Params as ApiV1EntryLogGet$Params } from './fn/entry-log/api-v-1-entry-log-get';
 export { apiV1EntryLogGet as apiV1EntryLogGet } from './fn/entry-log/api-v-1-entry-log-get';
-export type { ApiV1EntryLogPost$Params as ApiV1EntryLogPost$Params } from './fn/entry-log/api-v-1-entry-log-post';
-export { apiV1EntryLogPost as apiV1EntryLogPost } from './fn/entry-log/api-v-1-entry-log-post';
 export type { ApiV1EntryLogExportGet$Params as ApiV1EntryLogExportGet$Params } from './fn/entry-log/api-v-1-entry-log-export-get';
 export { apiV1EntryLogExportGet as apiV1EntryLogExportGet } from './fn/entry-log/api-v-1-entry-log-export-get';
 export type { ApiV1FeaturesGet$Params as ApiV1FeaturesGet$Params } from './fn/features/api-v-1-features-get';

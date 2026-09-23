@@ -20,14 +20,6 @@ public sealed record PhotoResponse(
     string? EntityType = null,
     string? EntityId = null);
 
-public sealed record CreateEntryLogRequest(
-    string EntryState,
-    string SubjectType,
-    string? SubjectName,
-    string? SubjectDocument,
-    Guid? PhotoId,
-    string? OverrideReason);
-
 public sealed record EntryLogResponse(
     Guid Id,
     Guid TenantId,

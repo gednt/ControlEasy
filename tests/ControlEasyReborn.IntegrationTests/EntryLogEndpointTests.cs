@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.RegularExpressions;
 using ControlEasyReborn.Modules.Photos.Application.Contracts;
@@ -9,6 +8,12 @@ using Xunit;
 
 namespace ControlEasyReborn.IntegrationTests;
 
+/// <summary>
+/// The /api/v1/entry-log read path (list + CSV export) over the append-only
+/// ConsentAuditLog. The legacy POST write path was retired: operational
+/// entries are Visits (POST /api/v1/visits) and AccessEvents
+/// (POST /api/v1/access-events/*). Rows here are seeded via direct SQL.
+/// </summary>
 [Collection("MySql Collection")]
 public sealed class EntryLogEndpointTests
 {
@@ -21,102 +26,23 @@ public sealed class EntryLogEndpointTests
         _factory = new TestcontainersWebApplicationFactory(mySql);
     }
 
-    private async Task<Guid> UploadTestPhotoAsync(HttpClient client)
+    private async Task SeedEntryAsync(Guid tenantId, string entryState, string subjectName, string subjectDocument, string? overrideReason = null)
     {
-        var content = new ByteArrayContent(new byte[] { 0xFF, 0xD8, 0xFF, 0xE0, 0x01, 0x02 });
-        content.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
-        var response = await client.PostAsync("/api/v1/photos?fileName=entry-test.jpg", content);
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var photo = await response.Content.ReadFromJsonAsync<PhotoResponse>();
-        return photo!.Id;
-    }
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
 
-    [Fact]
-    public async Task Create_WhenEnteredWithConsentAndValidPhoto_ReturnsCreated()
-    {
-        var client = _factory.AsTenantA();
-        var photoId = await UploadTestPhotoAsync(client);
+        var sql = @"
+            INSERT INTO ConsentAuditLog (Id, TenantId, EntryState, OverrideReason, PhotoId, SubjectType, SubjectName, SubjectDocument, PerformedByProfileId, RecordedAt, tenant_id)
+            VALUES (@Id, @TenantId, @EntryState, @OverrideReason, NULL, 'visitor', @SubjectName, @SubjectDocument, NULL, UTC_TIMESTAMP(3), @TenantId);";
 
-        var request = new CreateEntryLogRequest(
-            EntryState: "entered_with_consent",
-            SubjectType: "visitor",
-            SubjectName: "Alice Walker",
-            SubjectDocument: "12345678901",
-            PhotoId: photoId,
-            OverrideReason: null);
-
-        var response = await client.PostAsJsonAsync("/api/v1/entry-log", request);
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
-
-        var body = await response.Content.ReadFromJsonAsync<EntryLogResponse>();
-        body.Should().NotBeNull();
-        body!.Id.Should().NotBeEmpty();
-        body.PhotoId.Should().Be(photoId);
-        body.EntryState.Should().Be("entered_with_consent");
-        body.SubjectName.Should().Be("Alice Walker");
-    }
-
-    [Fact]
-    public async Task Create_WhenEnteredWithConsentAndNullPhoto_ReturnsBadRequest()
-    {
-        var client = _factory.AsTenantA();
-        var request = new CreateEntryLogRequest(
-            EntryState: "entered_with_consent",
-            SubjectType: "visitor",
-            SubjectName: "Bob NoPhoto",
-            SubjectDocument: "98765432100",
-            PhotoId: null,
-            OverrideReason: null);
-
-        var response = await client.PostAsJsonAsync("/api/v1/entry-log", request);
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-    }
-
-    [Fact]
-    public async Task Create_WhenGatehouseOnly_ReturnsBadRequest()
-    {
-        var client = _factory.AsTenantA();
-
-        var request = new CreateEntryLogRequest(
-            EntryState: "gatehouse_only",
-            SubjectType: "service_provider",
-            SubjectName: "Legacy Walk-in Probe",
-            SubjectDocument: "12345678901",
-            PhotoId: null,
-            OverrideReason: null);
-
-        var response = await client.PostAsJsonAsync("/api/v1/entry-log", request);
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-    }
-
-    [Fact]
-    public async Task Create_WhenEnteredOverride_RequiresValidReason()
-    {
-        var client = _factory.AsTenantA();
-
-        // Missing override reason -> 400
-        var missingOverrideReq = new CreateEntryLogRequest(
-            EntryState: "entered_override",
-            SubjectType: "visitor",
-            SubjectName: "Charlie Refused",
-            SubjectDocument: "11122233344",
-            PhotoId: null,
-            OverrideReason: null);
-
-        var badResponse = await client.PostAsJsonAsync("/api/v1/entry-log", missingOverrideReq);
-        badResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-
-        // With valid override reason -> 201
-        var validOverrideReq = new CreateEntryLogRequest(
-            EntryState: "entered_override",
-            SubjectType: "visitor",
-            SubjectName: "Charlie Refused",
-            SubjectDocument: "11122233344",
-            PhotoId: null,
-            OverrideReason: "emergency");
-
-        var goodResponse = await client.PostAsJsonAsync("/api/v1/entry-log", validOverrideReq);
-        goodResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        await using var cmd = new MySqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("@Id", Guid.NewGuid().ToString());
+        cmd.Parameters.AddWithValue("@TenantId", tenantId.ToString());
+        cmd.Parameters.AddWithValue("@EntryState", entryState);
+        cmd.Parameters.AddWithValue("@OverrideReason", (object?)overrideReason ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@SubjectName", subjectName);
+        cmd.Parameters.AddWithValue("@SubjectDocument", subjectDocument);
+        await cmd.ExecuteNonQueryAsync();
     }
 
     [Fact]
@@ -199,79 +125,27 @@ public sealed class EntryLogEndpointTests
     }
 
     [Fact]
-    public async Task Policy_WhenPhotoRequired_RejectsEntryWithoutPhoto_AndAcceptsEntryWithPhoto()
+    public async Task List_ReturnsSeededEntries()
     {
         var client = _factory.AsTenantA();
+        var uniqueName = $"Seeded List {Guid.NewGuid()}";
 
-        // 1. Configure policy for category "visitor" to require photo
-        var updatePolicyReq = new UpdateConsentPolicyRequest("visitor", PhotoRequired: true, DwellTimeLimitMinutes: 480);
-        var policyResp = await client.PutAsJsonAsync("/api/v1/consent-policy", updatePolicyReq);
-        policyResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        await SeedEntryAsync(TenantAwareWebApplicationFactory.TenantAId, "entered_without_consent", uniqueName, "12345678901");
 
-        // Verify policy GET
-        var getPolicyResp = await client.GetAsync("/api/v1/consent-policy/visitor");
-        getPolicyResp.StatusCode.Should().Be(HttpStatusCode.OK);
-        var policy = await getPolicyResp.Content.ReadFromJsonAsync<ConsentPolicyResponse>();
-        policy!.PhotoRequired.Should().BeTrue();
-
-        // 2. Entry attempt without photo should fail validation (400)
-        // Per .specs/consent-gatehouse: the PhotoRequired policy gate only applies
-        // to entries with consent (entered_with_consent). entered_without_consent
-        // (refusal) is recorded without a photo regardless of policy.
-        var entryWithoutPhoto = new CreateEntryLogRequest(
-            EntryState: "entered_with_consent",
-            SubjectType: "visitor",
-            SubjectName: "Policy Test Visitor",
-            SubjectDocument: "99988877766",
-            PhotoId: null,
-            OverrideReason: null);
-
-        var badResp = await client.PostAsJsonAsync("/api/v1/entry-log", entryWithoutPhoto);
-        badResp.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-
-        // 2b. Sanity: refused-consent entry is recorded even when policy requires photo
-        // (a refusal means no photo is taken by design).
-        var refusedEntry = new CreateEntryLogRequest(
-            EntryState: "entered_without_consent",
-            SubjectType: "visitor",
-            SubjectName: "Policy Test Visitor Refused",
-            SubjectDocument: "99988877767",
-            PhotoId: null,
-            OverrideReason: null);
-
-        var refusedResp = await client.PostAsJsonAsync("/api/v1/entry-log", refusedEntry);
-        refusedResp.StatusCode.Should().Be(HttpStatusCode.Created);
-
-        // 3. Entry attempt with photo succeeds (201)
-        var photoId = await UploadTestPhotoAsync(client);
-        var entryWithPhoto = new CreateEntryLogRequest(
-            EntryState: "entered_with_consent",
-            SubjectType: "visitor",
-            SubjectName: "Policy Test Visitor",
-            SubjectDocument: "99988877766",
-            PhotoId: photoId,
-            OverrideReason: null);
-
-        var goodResp = await client.PostAsJsonAsync("/api/v1/entry-log", entryWithPhoto);
-        goodResp.StatusCode.Should().Be(HttpStatusCode.Created);
+        var listResp = await client.GetAsync("/api/v1/entry-log");
+        listResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var list = await listResp.Content.ReadFromJsonAsync<List<EntryLogResponse>>();
+        list.Should().NotBeNull();
+        list.Should().Contain(x => x.SubjectName == uniqueName);
     }
 
     [Fact]
     public async Task ExportCsv_ReturnsCsvWithMillisecondPrecision()
     {
         var client = _factory.AsTenantA();
-        var photoId = await UploadTestPhotoAsync(client);
+        var uniqueName = $"Csv Test Person {Guid.NewGuid()}";
 
-        var createReq = new CreateEntryLogRequest(
-            EntryState: "entered_with_consent",
-            SubjectType: "visitor",
-            SubjectName: "Csv Test Person",
-            SubjectDocument: "12345678901",
-            PhotoId: photoId,
-            OverrideReason: null);
-
-        var createResp = await client.PostAsJsonAsync("/api/v1/entry-log", createReq);
-        createResp.StatusCode.Should().Be(HttpStatusCode.Created);
+        await SeedEntryAsync(TenantAwareWebApplicationFactory.TenantAId, "entered_without_consent", uniqueName, "12345678901");
 
         var csvResp = await client.GetAsync("/api/v1/entry-log/export");
         csvResp.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -279,7 +153,7 @@ public sealed class EntryLogEndpointTests
 
         var csvText = await csvResp.Content.ReadAsStringAsync();
         csvText.Should().Contain("id,entry_state,override_reason,photo_id,subject_type,subject_name,subject_document,performed_by_profile_id,recorded_at");
-        csvText.Should().Contain("Csv Test Person");
+        csvText.Should().Contain(uniqueName);
 
         // Verify millisecond precision format in the exported text (e.g., 2026-09-12 19:04:24.123)
         Regex.IsMatch(csvText, @"\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3}").Should().BeTrue();
@@ -291,32 +165,30 @@ public sealed class EntryLogEndpointTests
         var clientA = _factory.AsTenantA();
         var clientB = _factory.AsTenantB();
 
-        var photoId = await UploadTestPhotoAsync(clientA);
         var uniqueName = $"TenantA Exclusive {Guid.NewGuid()}";
 
-        var createReq = new CreateEntryLogRequest(
-            EntryState: "entered_with_consent",
-            SubjectType: "visitor",
-            SubjectName: uniqueName,
-            SubjectDocument: "12345678901",
-            PhotoId: photoId,
-            OverrideReason: null);
-
-        var createResp = await clientA.PostAsJsonAsync("/api/v1/entry-log", createReq);
-        createResp.StatusCode.Should().Be(HttpStatusCode.Created);
-        var created = await createResp.Content.ReadFromJsonAsync<EntryLogResponse>();
+        await SeedEntryAsync(TenantAwareWebApplicationFactory.TenantAId, "entered_without_consent", uniqueName, "12345678901");
 
         // Tenant B lists entry logs
         var listRespB = await clientB.GetAsync("/api/v1/entry-log");
         listRespB.StatusCode.Should().Be(HttpStatusCode.OK);
         var listB = await listRespB.Content.ReadFromJsonAsync<List<EntryLogResponse>>();
-        listB.Should().NotContain(x => x.Id == created!.Id || x.SubjectName == uniqueName);
+        listB.Should().NotBeNull();
+        listB.Should().NotContain(x => x.SubjectName == uniqueName);
 
         // Tenant B exports CSV
         var csvRespB = await clientB.GetAsync("/api/v1/entry-log/export");
         csvRespB.StatusCode.Should().Be(HttpStatusCode.OK);
         var csvTextB = await csvRespB.Content.ReadAsStringAsync();
-        csvTextB.Should().NotContain(created!.Id.ToString());
         csvTextB.Should().NotContain(uniqueName);
+    }
+
+    [Fact]
+    public async Task Post_IsRetired_ReturnsNotFoundOrMethodNotAllowed()
+    {
+        var client = _factory.AsTenantA();
+
+        var response = await client.PostAsJsonAsync("/api/v1/entry-log", new { entryState = "entered_without_consent", subjectType = "visitor" });
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.NotFound, HttpStatusCode.MethodNotAllowed);
     }
 }

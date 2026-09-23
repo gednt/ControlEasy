@@ -21,25 +21,6 @@ describe('EntryLogService', () => {
 
   afterEach(() => httpMock.verify());
 
-  it('create POSTs to /api/v1/entry-log with the request body', () => {
-    service
-      .create({
-        entryState: 'entered_without_consent',
-        subjectType: 'visitor',
-        subjectName: 'Refused',
-      })
-      .subscribe();
-
-    const req = httpMock.expectOne('/api/v1/entry-log');
-    expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({
-      entryState: 'entered_without_consent',
-      subjectType: 'visitor',
-      subjectName: 'Refused',
-    });
-    req.flush({ id: 'e-1', tenantId: 't-1', recordedAt: new Date().toISOString() });
-  });
-
   it('list GETs with skip/take and optional filters as query params', () => {
     const filters: AuditFilters = {
       skip: 10,

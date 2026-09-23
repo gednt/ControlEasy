@@ -26,8 +26,6 @@ export { CePhotoCaptureComponent } from './components/photo/photo-capture.compon
 export { CePhotoPanelComponent } from './components/photo/photo-panel.component';
 export type { PhotoPanelEntity } from './components/photo/photo-panel.component';
 export { CeEntryStateBadgeComponent } from './components/entry-state-badge/entry-state-badge.component';
-export { CeOverrideReasonComponent } from './components/override-reason/override-reason.component';
-export { CeEntryWorkflowComponent } from './components/entry-workflow/entry-workflow.component';
 export { CeAuditFiltersComponent } from './components/audit-filters/audit-filters.component';
 export { CeAuditRowComponent } from './components/audit-row/audit-row.component';
 export { CeToggleComponent } from './components/toggle/toggle.component';
