@@ -97,7 +97,7 @@ Last activity: 2026-09-23 — Milestone v2.4 requirements + roadmap created
 ## Session Continuity
 
 Last session: 2026-09-23
-Stopped at: Milestone v2.4 (Resident Self-Service & Visitor Experience) requirements + roadmap created on `feat/v2-4-milestone-planning`; REQUIREMENTS.md, ROADMAP.md, STATE.md updated.
+Stopped at: Milestone v2.4 (Resident Self-Service & Visitor Experience) requirements + roadmap created; v2.2/v2.3/v2.4 planning lineage unified on `feat/planning-lineage-unification`; REQUIREMENTS.md, ROADMAP.md, STATE.md updated.
 Resume file: None
 
 ## Operator Next Steps

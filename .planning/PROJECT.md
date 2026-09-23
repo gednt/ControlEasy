@@ -41,7 +41,7 @@ Gatehouse staff can reliably register and control access for residents, visitors
 - In-app arrival notifications to the resident's portal
 - Badge printing for pre-authorized visitors at check-in (browser print, no printer hardware)
 
-**Key context:** Planned autonomously in BMAD party-mode session 6 (2026-09-23); scope sourced from the v2.1 deferred requirements pool (CPF pre-reg matching, purpose codes, resident visit history, visitor self check-in, badge printing). Continues the parallel-milestone pattern: v2.2 (Phases 19–22) and v2.3 (Phases 23–26) are planned but not yet executed; v2.4 phases continue from 27 and stack on `feat/v2-3-milestone-planning` tip. Security bar carried into requirements: resident auth is the second-biggest credential-surface addition (after door unlock) — BCrypt ≥ 11, enumeration-safe flows, apartment-scoped isolation integration tests mandatory, and self check-in MUST reuse `VisitorArrivalHandler` (no second write path into the Visits data model).
+**Key context:** Planned autonomously in BMAD party-mode session 6 (2026-09-23); scope sourced from the v2.1 deferred requirements pool (CPF pre-reg matching, purpose codes, resident visit history, visitor self check-in, badge printing). Continues the parallel-milestone pattern: v2.2 (Phases 19–22) and v2.3 (Phases 23–26) are planned but not yet executed; v2.4 phases continue from 27. Planning lineage for v2.2/v2.3/v2.4 unified 2026-09-23 on `feat/planning-lineage-unification`. Security bar carried into requirements: resident auth is the second-biggest credential-surface addition (after door unlock) — BCrypt ≥ 11, enumeration-safe flows, apartment-scoped isolation integration tests mandatory, and self check-in MUST reuse `VisitorArrivalHandler` (no second write path into the Visits data model).
 
 Fast-cycle (no milestone): multi-arch Docker/CI (`ARCH-01`, `ARCH-02`).
 
@@ -175,4 +175,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-23 — v2.4 Resident Self-Service & Visitor Experience planning started on `feat/v2-4-milestone-planning`; v2.3 and v2.2 planned in parallel (unexecuted)*
+*Last updated: 2026-09-23 — planning lineage for v2.2/v2.3/v2.4 unified on `feat/planning-lineage-unification`; all three milestones planned, unexecuted*

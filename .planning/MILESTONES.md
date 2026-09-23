@@ -12,7 +12,7 @@
 - Simulator-first re-scope (2026-09-22): the original Phases 14–15 reservations assumed real hardware that does not exist; reservations retired, phase numbering continues from 23
 - Remote unlock is security-sensitive — full constitutional security bar applies (rate limiting, HMAC-SHA256, replay protection, tamper-evident audit, encrypted connection params, porteiro-role authorization)
 - Ledger integration (Phase 25) builds on the post-cleanup entry-log contract (`feat/unified-visits-flow-cleanup`)
-- Milestone v2.2 (Phases 19–22) executes in parallel on `feat/v2-2-milestone-planning`; no phase overlap
+- Milestone v2.2 (Phases 19–22) is planned and unexecuted; lineage unified with v2.3/v2.4 on `feat/planning-lineage-unification` (2026-09-23); no phase overlap
 
 **Specs:** `.specs/door-integration/` (original spec — re-scoped by this milestone)
 **Roadmap:** `.planning/ROADMAP.md` (v2.3 section) · **Requirements:** `.planning/REQUIREMENTS.md`
@@ -20,10 +20,10 @@
 
 ---
 
-## v2.2 UI Parity & Operational Closeout (Started: 2026-09-22 — in flight on `feat/v2-2-milestone-planning`)
+## v2.2 UI Parity & Operational Closeout (Started: 2026-09-22 — planning lineage unified 2026-09-23)
 
 **Phases:** 19, 20, 21, 22
-**Status:** In flight (planning artifacts complete; executed in a parallel worktree)
+**Status:** Planned (planning artifacts complete; not yet executed)
 
 **Scope:** Software-only closeout — finish the ledger (day-bucketing, filter vocabulary, search scope, condominium-level package drops, X-Total-Count), complete pending UI surfaces (TenantAdmin password reset, consent audit review, photo capture), advance mockup parity, and refresh the test suite. Derived from `.planning/milestones/v2.1-MILESTONE-AUDIT.md` carryovers and v2.0/v2.1 partial requirements.
 
