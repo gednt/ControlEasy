@@ -1,12 +1,12 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.3
-milestone_name: Door Integration & Hardware Access (simulator-first)
+milestone: v2.4
+milestone_name: Resident Self-Service & Visitor Experience
 status: planning
-last_updated: "2026-09-22T19:23:34.545Z"
-last_activity: 2026-09-22
+last_updated: "2026-09-23T10:43:00.952Z"
+last_activity: 2026-09-23
 progress:
-  total_phases: 4
+  total_phases: 0
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -24,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-09-22)
 
 ## Current Position
 
-Phase: Not started (roadmap defined)
+Phase: Not started (defining requirements)
 Plan: —
-Status: Planning complete — awaiting phase planning
-Last activity: 2026-09-22 — Milestone v2.3 requirements + roadmap created
+Status: Defining requirements
+Last activity: 2026-09-23 — Milestone v2.4 started
 
 ## Performance Metrics
 

@@ -28,18 +28,20 @@ Gatehouse staff can reliably register and control access for residents, visitors
 
 ## Current Milestone
 
-**v2.3 — Door Integration & Hardware Access (simulator-first)** (started 2026-09-22)
+**v2.4 — Resident Self-Service & Visitor Experience** (planning started 2026-09-23)
 
-**Goal:** Build the complete door-integration software, security, and UI surface against a simulated device adapter — `IDoorController`/`IDeviceHandler` abstractions, HMAC-signed rate-limited unlock, device events feeding the ledger, device health monitoring — so that swapping the simulator for a real vendor adapter later is a driver-implementation task, not a redesign.
+**Goal:** Turn the resident from a row in someone else's table into a first-class platform user — pre-registering expected visitors, viewing their apartment's visit history, receiving arrival notifications — while visitors self check-in through the same unified write path and the gatehouse prints badges for pre-authorized arrivals.
 
 **Target features:**
-- Device abstractions (`IDoorController`, `IDeviceHandler`) + loopback/simulated device adapter (Docker-hosted mock device service behind the same interfaces)
-- Secure remote unlock: HMAC-SHA256, nonce+timestamp replay window, rate limiting, append-only tamper-evident audit, porteiro-role authorization, per-tenant AES-256-GCM-encrypted connection params
-- Tenant opt-in admin UI (`door_integration_enabled` flag) and device registration/management UI
-- Reader-event ingestion → `DeviceEvent` normalization → ledger entries (post-cleanup contract); replay-on-reconnect
-- Device health: heartbeats, health dashboard UI, offline alert toast in porteiro UI
+- Resident portal access: new resident credential class, apartment-scoped authorization and data isolation
+- Visitor pre-registration: resident creates visitor authorizations (identity, purpose, validity window) and can cancel/revoke them before use
+- Document (CPF) matching: arriving visitors match pending pre-registrations by document number
+- Visitor self check-in via pre-authorization code, riding the unified `VisitorArrivalHandler` write path
+- Resident visit history view (read-only, honest — same data the porteiro sees)
+- In-app arrival notifications to the resident's portal
+- Badge printing for pre-authorized visitors at check-in (browser print, no printer hardware)
 
-**Key context:** Re-scope of the original door-integration spec (`.specs/door-integration/`) — real vendor driver work and any hardware-dependent verification stay OUT OF SCOPE until real condominium hardware exists; Phases 14–15 reservations are retired and v2.3 phases continue from 23. Milestone v2.2 (UI Parity & Operational Closeout, Phases 19–22) is planned and in flight in parallel (`.worktrees/feat-v2-2-milestone-planning`); it does not conflict with v2.3's door module work. Two cleanup worktrees in flight (`feat/unified-visits-flow-cleanup`, `fix/gatehouse-direction-persistence`) fix ledger/entry-log adjacent issues — v2.3 ledger work builds on the post-cleanup contract and must not re-scope their items.
+**Key context:** Planned autonomously in BMAD party-mode session 6 (2026-09-23); scope sourced from the v2.1 deferred requirements pool (CPF pre-reg matching, purpose codes, resident visit history, visitor self check-in, badge printing). Continues the parallel-milestone pattern: v2.2 (Phases 19–22) and v2.3 (Phases 23–26) are planned but not yet executed; v2.4 phases continue from 27 and stack on `feat/v2-3-milestone-planning` tip. Security bar carried into requirements: resident auth is the second-biggest credential-surface addition (after door unlock) — BCrypt ≥ 11, enumeration-safe flows, apartment-scoped isolation integration tests mandatory, and self check-in MUST reuse `VisitorArrivalHandler` (no second write path into the Visits data model).
 
 Fast-cycle (no milestone): multi-arch Docker/CI (`ARCH-01`, `ARCH-02`).
 
@@ -87,6 +89,7 @@ Fast-cycle (no milestone): multi-arch Docker/CI (`ARCH-01`, `ARCH-02`).
 - [~] TenantAdmin password reset UI (v2.1 PASS-03 partial) — backend done; UI surface pending — v2.2 target
 - [ ] Ledger polish (v2.1 carryover) — day-bucketing INFRA-02, inert status filter options, search scope, condominium-level package-drop trigger, X-Total-Count exposure — v2.2 target
 - [~] Door integration (v2.3, simulator-first; renumbered from v2.2 on 2026-09-22) — `.specs/door-integration/` — requirements re-scoped for v2.3; phases 23+
+- [ ] Resident self-service & visitor experience (v2.4) — CPF pre-registration matching, purpose codes, resident visit history, visitor self check-in, badge printing, arrival notifications (deferred pool from v2.1 REQUIREMENTS.md) — planning started 2026-09-23
 - [ ] Multi-arch Docker/CI (fast-cycle) — `.specs/1 - modernization-roadmap-arm64/`
 
 ### Out of Scope
@@ -100,6 +103,8 @@ Fast-cycle (no milestone): multi-arch Docker/CI (`ARCH-01`, `ARCH-02`).
 - Resident/vehicle QR scans folded into the Visits table — they remain AccessEvents facts shown as ledger context rows (settled v2.1)
 - Reset-token email links — temp-password machinery covers it; avoids a second credential subsystem (settled v2.1)
 - Native WhatsApp Business API integration — Meta approval + per-tenant numbers; webhook/WhatsApp temp-password delivery deferred
+- Resident-facing mobile app / push notifications — v2.4 delivers in-app portal notifications only; push/mobile-native stays future
+- Visitor identity verification hardware / ID scanners — self check-in uses entered + pre-registered data matched against the pending authorization; no scanner hardware
 
 ## Context
 
@@ -148,6 +153,9 @@ Known concerns from codebase map: dual tenant column patterns, JWT/localStorage 
 | Durable `PasswordResetRequest` table doubles as rate-limit counter | Consolidated single-table design; per-process IMemoryCache idempotent resend is a documented single-instance tradeoff | ⚠️ Revisit — multi-replica deployments lose resend idempotency |
 | v2.2 milestone is software-only closeout; Door Integration renumbered to v2.3 | No real condominium hardware available; planning against absent hardware builds on abstractions; completion work delivers user value now | ✓ Good — party-mode planning session 2026-09-22, Phases 14–15 stay reserved for v2.3 |
 | v2.3 door integration is simulator-first | The `IDoorController`/`IDeviceHandler` abstractions, security machinery (HMAC-SHA256, nonce+timestamp replay window, rate limiting, tamper-evident audit, AES-256-GCM connection params), event normalization, ledger integration, health monitoring, and admin UI are all verifiable against a simulated/loopback device adapter; swapping in a real vendor driver later is a driver-implementation task, not a redesign. Real vendor drivers stay out of scope until hardware exists | ✓ Good — v2.3 planning session 2026-09-22; Phases 14–15 reservations retired, phases continue from 23 |
+| v2.4 = Resident Self-Service & Visitor Experience | The resident is the forgotten user — the v2.1 deferred pool (CPF pre-reg, purpose codes, visit history, self check-in, badge printing) is a coherent resident-facing theme with zero external dependencies; WhatsApp delivery stays parked (Meta approval) | ✓ Good — party-mode session 6, 2026-09-23 |
+| v2.4 self check-in rides the unified `VisitorArrivalHandler` write path | v2.1 unified visits precisely so there is ONE door into the Visits data model; a second self-service write path would fork the state machine | ✓ Good — party-mode session 6, 2026-09-23 (Murat's condition) |
+| v2.4 resident auth is apartment-scoped, not tenant-scoped | Residents see only their apartment's visits/authorizations; a resident of 101 seeing 302's data is a cross-tenant failure in miniature — apartment-scoped isolation tests mandatory | ✓ Good — party-mode session 6, 2026-09-23 |
 
 ## Evolution
 
@@ -167,4 +175,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-22 — v2.3 Door Integration & Hardware Access (simulator-first) planning started on `feat/v2-3-milestone-planning`; v2.2 in flight in parallel*
+*Last updated: 2026-09-23 — v2.4 Resident Self-Service & Visitor Experience planning started on `feat/v2-4-milestone-planning`; v2.3 and v2.2 planned in parallel (unexecuted)*
