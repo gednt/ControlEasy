@@ -1,5 +1,18 @@
 # Milestones
 
+## v2.4 Resident Self-Service & Visitor Experience (Started: 2026-09-23)
+
+**Phases:** 27, 28, 29, 30
+**Status:** Planning (requirements + roadmap defined; phases not started)
+
+**Scope:** Turn the resident into a first-class platform user — resident portal access (new credential class, apartment-scoped isolation), visitor pre-registration with validity windows and per-tenant purpose codes, visitor self check-in riding the unified `VisitorArrivalHandler` write path (no second door into the Visits data model), apartment-scoped visit history, in-app arrival notifications, and printable badges via browser print (no printer hardware). Planned in BMAD party-mode session 6.
+
+**Specs:** TBD per phase
+**Roadmap:** `.planning/ROADMAP.md` (v2.4 section) · **Requirements:** `.planning/REQUIREMENTS.md`
+**Origin:** party-mode session 6 (2026-09-23), sourced from the v2.1 deferred requirements pool
+
+---
+
 ## v2.3 Door Integration & Hardware Access — Simulator-First (Started: 2026-09-22)
 
 **Phases:** 23, 24, 25, 26
@@ -15,7 +28,7 @@
 - Milestone v2.2 (Phases 19–22) is planned and unexecuted; lineage unified with v2.3/v2.4 on `feat/planning-lineage-unification` (2026-09-23); no phase overlap
 
 **Specs:** `.specs/door-integration/` (original spec — re-scoped by this milestone)
-**Roadmap:** `.planning/ROADMAP.md` (v2.3 section) · **Requirements:** `.planning/REQUIREMENTS.md`
+**Roadmap:** `.planning/ROADMAP.md` (v2.3 section) · **Requirements:** `.planning/milestones/v2.3-REQUIREMENTS.md`
 **Origin:** v2.3 planning session (2026-09-22), re-scope of the 2026-08-23 party-mode door-integration spec
 
 ---

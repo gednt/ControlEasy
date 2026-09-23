@@ -32,12 +32,12 @@ Full details in Phase Details below · requirements: [REQUIREMENTS.md](REQUIREME
 - [ ] **Phase 25: Reader Events & Ledger Integration** - `device_events` table, event ingestion → `DeviceEvent` normalization, ledger entries from card-match events, denied-attempt logging, idempotent replay-on-reconnect
 - [ ] **Phase 26: Device Health Monitoring** - `device_heartbeats` tracking with per-device alert thresholds, health dashboard UI, offline alert toast in porteiro UI
 
-Full details in Phase Details below · requirements: [REQUIREMENTS.md](REQUIREMENTS.md)
+Full details in Phase Details below · requirements: [milestones/v2.3-REQUIREMENTS.md](milestones/v2.3-REQUIREMENTS.md)
 
 </details>
 
 <details>
-<summary>🚧 v2.2 UI Parity & Operational Closeout (Phases 19-22) — IN FLIGHT (started 2026-09-22)</summary>
+<summary>🚧 v2.2 UI Parity & Operational Closeout (Phases 19-22) — PLANNED (started 2026-09-22)</summary>
 
 - [ ] **Phase 19: Ledger & Reports Polish** - Summary day-bucketing, honest filter vocabulary and search scope, condominium-level package drops, X-Total-Count exposure
 - [ ] **Phase 20: Account Operations & Consent Audit UI** - TenantAdmin password-reset surface and consent-audit review with evidence rendering + CSV export

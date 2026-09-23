@@ -8,7 +8,7 @@ status: planning
 last_updated: "2026-09-23T10:43:00.952Z"
 last_activity: 2026-09-23
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -19,7 +19,7 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-22)
+See: .planning/PROJECT.md (updated 2026-09-23)
 
 **Core value:** Gatehouse staff can reliably register and control access through a fast, tenant-isolated web UI.
 **Current focus:** v2.4 Resident Self-Service & Visitor Experience — roadmap created (Phases 27–30); ready for `/gsd-plan-phase 27`
@@ -65,7 +65,7 @@ Last activity: 2026-09-23 — Milestone v2.4 requirements + roadmap created
 - v2.1 password reset: SMTP self-service for admins only (gatekeeper self-reset deferred); temp passwords one-time + `MustChangePassword` re-armed + refresh-token revoke-all; enumeration-safe uniform response + decoy verify; durable `PasswordResetRequest` table doubles as rate-limit counter (consolidated single-table design to settle in Phase 18 planning)
 - v2.0 photo capture: browser-only, client-side compression (0.8→0.6→0.3 ladder), EXIF strip via canvas redraw, 3× retry with 1s/2s/4s backoff
 - v2.0 consent model: per-tenant per-category policy, five entry states, append-only audit log, hardcoded override reason codes
-- v2.2 Door Integration (Phases 14–15, renumbered from v2.1 on 2026-09-19) gated on real condominium hardware
+- (superseded 2026-09-22) v2.2 Door Integration (Phases 14–15, renumbered from v2.1 on 2026-09-19) gated on real condominium hardware — see next entries
 - v2.2 milestone is software-only closeout (party-mode planning session 2026-09-22); Door Integration renumbered to v2.3, Phases 14–15 stay reserved
 - v2.3 door integration is simulator-first (2026-09-22): `IDoorController`/`IDeviceHandler` abstractions, HMAC-SHA256 unlock security, event normalization, ledger integration, health monitoring, and admin UI are all built and verified against a simulated/loopback device adapter; real vendor drivers stay out of scope until hardware exists; Phases 14–15 reservations retired, v2.3 phases start at 23
 - Gatehouse access is software-only validation/audit: QR initial credential + manual lookup fallback; every visit requires a destination; biometrics require separate approved spec
@@ -86,7 +86,8 @@ Last activity: 2026-09-23 — Milestone v2.4 requirements + roadmap created
 | v2.0 (tech debt) | Backend /api/v1/photos/{id}/thumbnail route | Forward-compatible shim (CSS object-fit cover) | 2026-09-13 | v2.2 candidate |
 | v2.0 (tech debt) | Backend /api/v1/consent-policy list endpoint | Forward-compatible shim (4× parallel calls) | 2026-09-13 | v2.2 candidate |
 | v2.0 (tech debt) | Backend X-Total-Count header on /api/v1/entry-log | Forward-compatible shim (entries.length approximation) | 2026-09-13 | v2.2 target |
-| v2.1 | Webhook/WhatsApp temp-password delivery, photo on packages, CPF pre-reg matching, purpose codes, resident visit history, visitor self-check-in, badge printing | Deferred requirements (REQUIREMENTS.md) | 2026-09-19 | v2.1+ |
+| v2.1 | Webhook/WhatsApp temp-password delivery, photo on packages | Deferred requirements (REQUIREMENTS.md) | 2026-09-19 | v2.1+ |
+| v2.1 | CPF pre-reg matching, purpose codes, resident visit history, visitor self-check-in, badge printing | Deferred requirements (REQUIREMENTS.md) — concretely scoped as v2.4 (2026-09-23) | 2026-09-19 | v2.4 |
 | v2.3 | Door relay & unlock commands (DOOR-01) | Re-scoped simulator-first into v2.3 Phase 23+ (2026-09-22) | 2026-08-23 | v2.3 |
 | v2.3 | Reader events & device health (DOOR-02, DOOR-03) | Re-scoped simulator-first into v2.3 Phase 23+ (2026-09-22) | 2026-08-23 | v2.3 |
 | v2.3 | Real vendor device drivers (relay + reader) | Blocked: no real condominium hardware; swap simulator for real adapter later — driver task, not redesign | 2026-09-22 | post-v2.3 |
