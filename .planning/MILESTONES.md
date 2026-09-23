@@ -1,5 +1,44 @@
 # Milestones
 
+## v2.3 Door Integration & Hardware Access — Simulator-First (Started: 2026-09-22)
+
+**Phases:** 23, 24, 25, 26
+**Status:** Planning (requirements + roadmap defined; phases not started)
+
+**Scope:** The complete hardware-independent portion of the door-integration spec (`.specs/door-integration/`), re-scoped simulator-first: `IDoorController`/`IDeviceHandler` abstractions, the full security machinery (HMAC-SHA256 per-tenant keys, nonce+timestamp replay window, rate limiting, append-only tamper-evident audit, AES-256-GCM-encrypted connection params, porteiro-role authorization), device-event normalization feeding the ledger, device health monitoring, and the admin/porteiro UI — all integration-tested against a simulated/loopback device adapter. Real vendor driver work and on-site hardware verification are deferred to DOOR-R1..R3 (gated on real condominium hardware); swapping the simulator for a real adapter later is a driver-implementation task, not a redesign.
+
+**Key decisions:**
+
+- Simulator-first re-scope (2026-09-22): the original Phases 14–15 reservations assumed real hardware that does not exist; reservations retired, phase numbering continues from 23
+- Remote unlock is security-sensitive — full constitutional security bar applies (rate limiting, HMAC-SHA256, replay protection, tamper-evident audit, encrypted connection params, porteiro-role authorization)
+- Ledger integration (Phase 25) builds on the post-cleanup entry-log contract (`feat/unified-visits-flow-cleanup`)
+- Milestone v2.2 (Phases 19–22) executes in parallel on `feat/v2-2-milestone-planning`; no phase overlap
+
+**Specs:** `.specs/door-integration/` (original spec — re-scoped by this milestone)
+**Roadmap:** `.planning/ROADMAP.md` (v2.3 section) · **Requirements:** `.planning/REQUIREMENTS.md`
+**Origin:** v2.3 planning session (2026-09-22), re-scope of the 2026-08-23 party-mode door-integration spec
+
+---
+
+## v2.2 UI Parity & Operational Closeout (Started: 2026-09-22 — in flight on `feat/v2-2-milestone-planning`)
+
+**Phases:** 19, 20, 21, 22
+**Status:** In flight (planning artifacts complete; executed in a parallel worktree)
+
+**Scope:** Software-only closeout — finish the ledger (day-bucketing, filter vocabulary, search scope, condominium-level package drops, X-Total-Count), complete pending UI surfaces (TenantAdmin password reset, consent audit review, photo capture), advance mockup parity, and refresh the test suite. Derived from `.planning/milestones/v2.1-MILESTONE-AUDIT.md` carryovers and v2.0/v2.1 partial requirements.
+
+**Phases:**
+
+- Phase 19: Ledger & Reports Polish (`LEDGER-01..05`)
+- Phase 20: Account Operations & Consent Audit UI (`ACCNT-01..02`, `CONSU-01..03`)
+- Phase 21: Photo Capture & Display UI (`PCAP-01..03`)
+- Phase 22: Mockup Parity & Test Closeout (`UI-01`, `UI-02`, `TEST-01`, `TEST-02`)
+
+**Roadmap:** `.planning/milestones/v2.2-ROADMAP.md` (snapshot) · **Requirements:** `.planning/milestones/v2.2-REQUIREMENTS.md`
+**Origin:** Party-mode planning session (2026-09-22)
+
+---
+
 ## v2.1 Integrated Visits & Account Operations (Shipped: 2026-09-20)
 
 **Phases completed:** 3 phases (16–18), 9 plans
@@ -32,7 +71,7 @@
 
 **Git range:** `eeebe37`..`2134fcc` (2026-09-19 → 2026-09-20); 121 files, +11,143/−1,018 lines
 
-**What's next:** v2.2 Door Integration (Phases 14–15, gated on real condominium hardware); multi-arch Docker/CI as fast-cycle work.
+**What's next:** ~~v2.2 Door Integration~~ → superseded: v2.2 became UI Parity & Operational Closeout; Door Integration re-scoped simulator-first as v2.3 (2026-09-22). Multi-arch Docker/CI as fast-cycle work.
 
 ---
 
@@ -113,7 +152,11 @@ All shims are documented inline and in each phase VERIFICATION.md. Future backen
 
 ---
 
-## v2.2 Door Integration — Optional (Defined: 2026-08-23; renumbered from v2.1 on 2026-09-19 — v2.1 reassigned to the Integrated Visits & Account Operations milestone)
+## v2.2 Door Integration — Superseded (Defined: 2026-08-23; renumbered v2.1 → v2.2 on 2026-09-19; re-scoped simulator-first into milestone v2.3 on 2026-09-22)
+
+> This original definition assumed real condominium hardware (Phases 14–15). Hardware access
+> does not exist yet; the hardware-independent portion is now milestone **v2.3 (simulator-first)**
+> above, with real vendor drivers deferred to DOOR-R1..R3. Kept for design-decision history.
 
 **Phases:** 14, 15
 **Status:** Defined (gated on real condominium with hardware)
