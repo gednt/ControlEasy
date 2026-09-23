@@ -2,7 +2,18 @@ import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GatewayControlService } from './gateway-control.service';
-import { LookupResponse, ManualLookupResult, ManualLookupType, ScanResult, SubjectKind } from './access-control.types';
+import {
+  LookupResponse,
+  ManualLookupResult,
+  ManualLookupType,
+  ScanResult,
+  SubjectKind,
+} from './access-control.types';
+import {
+  AccessDirection,
+  getSavedAccessDirection,
+  saveAccessDirection,
+} from './direction-storage';
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
 import { AccessScanResultComponent } from './components/access-scan-result.component';
 import { ToastService } from '../../design-system/components/toast/toast.component';
@@ -24,12 +35,12 @@ interface UiState {
   results: ManualLookupResult[];
   narrowHint: string | null;
   selected: ManualLookupResult | null;
-  direction: 'entrance' | 'exit';
+  direction: AccessDirection;
   recorded: {
     decision: ScanResult['decision'];
     accessEventId: string;
     subjectType: SubjectKind;
-    direction: 'entrance' | 'exit';
+    direction: AccessDirection;
     destinationBlock: string;
     destinationUnit: string;
   } | null;
@@ -54,7 +65,7 @@ const initialState = (): UiState => ({
   results: [],
   narrowHint: null,
   selected: null,
-  direction: 'entrance',
+  direction: getSavedAccessDirection(),
   recorded: null,
 });
 
@@ -530,8 +541,9 @@ export class ManualLookupPage implements OnDestroy {
     this.state.update((s) => ({ ...s, block: value, error: null }));
   }
 
-  onDirectionChange(direction: 'entrance' | 'exit'): void {
+  onDirectionChange(direction: AccessDirection): void {
     this.state.update((s) => ({ ...s, direction }));
+    saveAccessDirection(direction);
   }
 
   subjectTypeLabel(type: SubjectKind): string {

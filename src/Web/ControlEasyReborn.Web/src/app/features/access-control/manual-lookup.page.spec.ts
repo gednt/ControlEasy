@@ -3,6 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { ManualLookupPage } from './manual-lookup.page';
 import { GatewayControlService } from './gateway-control.service';
+import { ACCESS_DIRECTION_STORAGE_KEY } from './direction-storage';
 
 describe('ManualLookupPage', () => {
   let fixture: ComponentFixture<ManualLookupPage>;
@@ -131,6 +132,22 @@ describe('ManualLookupPage', () => {
     const html = (fixture.nativeElement as HTMLElement).innerHTML;
     expect(html).toContain('Access recorded');
     expect(html).toContain('A/101');
+  });
+
+  it('loads direction from localStorage and persists it when changed', () => {
+    localStorage.setItem(ACCESS_DIRECTION_STORAGE_KEY, 'exit');
+    const localFixture = TestBed.createComponent(ManualLookupPage);
+    const localComp = localFixture.componentInstance;
+    localFixture.detectChanges();
+
+    expect(localComp.state().direction).toBe('exit');
+
+    localComp.onDirectionChange('entrance');
+
+    expect(localComp.state().direction).toBe('entrance');
+    expect(localStorage.getItem(ACCESS_DIRECTION_STORAGE_KEY)).toBe('entrance');
+
+    localStorage.removeItem(ACCESS_DIRECTION_STORAGE_KEY);
   });
 
   it('surfaces a server-side refusal without leaving the confirm step', () => {

@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testin
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { QrScanPage, CAMERA_FACING_MODE_STORAGE_KEY } from './qr-scan.page';
+import { ACCESS_DIRECTION_STORAGE_KEY } from './direction-storage';
 import { AccessScanResultComponent } from './components/access-scan-result.component';
 import { GatewayControlService } from './gateway-control.service';
 import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
@@ -272,6 +273,24 @@ describe('QrScanPage', () => {
     expect(localStorage.getItem(CAMERA_FACING_MODE_STORAGE_KEY)).toBe('environment');
 
     localStorage.removeItem(CAMERA_FACING_MODE_STORAGE_KEY);
+  }));
+
+  it('loads direction from localStorage and persists it when changed', fakeAsync(() => {
+    localStorage.setItem(ACCESS_DIRECTION_STORAGE_KEY, 'exit');
+    const localFixture = TestBed.createComponent(QrScanPage);
+    const localComp = localFixture.componentInstance;
+    localFixture.detectChanges();
+    tick();
+
+    expect(localComp.state().direction).toBe('exit');
+
+    localComp.onDirectionChange('entrance');
+    tick();
+
+    expect(localComp.state().direction).toBe('entrance');
+    expect(localStorage.getItem(ACCESS_DIRECTION_STORAGE_KEY)).toBe('entrance');
+
+    localStorage.removeItem(ACCESS_DIRECTION_STORAGE_KEY);
   }));
 });
 
