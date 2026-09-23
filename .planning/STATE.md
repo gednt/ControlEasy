@@ -2,6 +2,8 @@
 gsd_state_version: 1.0
 milestone: v2.4
 milestone_name: Resident Self-Service & Visitor Experience
+current_phase: 27
+current_phase_name: Resident Access Foundation
 status: planning
 last_updated: "2026-09-23T10:43:00.952Z"
 last_activity: 2026-09-23
@@ -20,14 +22,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-22)
 
 **Core value:** Gatehouse staff can reliably register and control access through a fast, tenant-isolated web UI.
-**Current focus:** v2.3 Door Integration (simulator-first) — roadmap created; ready for `/gsd-plan-phase 23`
+**Current focus:** v2.4 Resident Self-Service & Visitor Experience — roadmap created (Phases 27–30); ready for `/gsd-plan-phase 27`
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Not started (roadmap defined)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-23 — Milestone v2.4 started
+Status: Roadmap complete — awaiting phase planning
+Last activity: 2026-09-23 — Milestone v2.4 requirements + roadmap created
 
 ## Performance Metrics
 
@@ -94,10 +96,10 @@ Last activity: 2026-09-23 — Milestone v2.4 started
 
 ## Session Continuity
 
-Last session: 2026-09-22
-Stopped at: Milestone v2.3 (Door Integration, simulator-first) requirements + roadmap created on `feat/v2-3-milestone-planning`; PROJECT.md, REQUIREMENTS.md, ROADMAP.md, STATE.md updated.
+Last session: 2026-09-23
+Stopped at: Milestone v2.4 (Resident Self-Service & Visitor Experience) requirements + roadmap created on `feat/v2-4-milestone-planning`; REQUIREMENTS.md, ROADMAP.md, STATE.md updated.
 Resume file: None
 
 ## Operator Next Steps
 
-- Review v2.3 roadmap, then run `/gsd-plan-phase 23`
+- Review v2.4 roadmap, then run `/gsd-plan-phase 27`

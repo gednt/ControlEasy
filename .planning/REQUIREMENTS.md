@@ -66,7 +66,20 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (pending roadmap) | | |
+| RES-01 | Phase 27 | Pending |
+| RES-02 | Phase 27 | Pending |
+| RES-03 | Phase 27 | Pending |
+| RES-04 | Phase 28 | Pending |
+| RES-05 | Phase 28 | Pending |
+| RES-06 | Phase 28 | Pending |
+| RES-07 | Phase 29 | Pending |
+| RES-08 | Phase 29 | Pending |
+| RES-09 | Phase 30 | Pending |
+| RES-10 | Phase 30 | Pending |
+| RES-11 | Phase 30 | Pending |
+| RES-12 | Phase 29 | Pending |
+
+**Coverage:** v2.4 requirements: 12 total — mapped to phases 12/12 (Phases 27–30, v2.4); unmapped: 0.
 
 ---
 *Requirements defined: 2026-09-23 — v2.4 planning session (party-mode session 6, autonomous)*

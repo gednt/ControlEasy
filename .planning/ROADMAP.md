@@ -2,6 +2,7 @@
 
 ## Milestones
 
+- 🚧 **v2.4 — Resident Self-Service & Visitor Experience** — Phases 27-30 (planning 2026-09-23)
 - 🚧 **v2.3 — Door Integration & Hardware Access (simulator-first)** — Phases 23-26 (planning 2026-09-22)
 - 🚧 **v2.2 — UI Parity & Operational Closeout** — Phases 19-22 (started 2026-09-22, in flight on `feat/v2-2-milestone-planning`)
 - ✅ **v2.1 — Integrated Visits & Account Operations** — Phases 16-18 (shipped 2026-09-20)
@@ -10,6 +11,18 @@
 - ✅ **v1.0 — Modular Monolith MVP** — Phases 1-8 (shipped 2026-07-13)
 
 ## Phases
+
+<details>
+<summary>🚧 v2.4 Resident Self-Service & Visitor Experience (Phases 27-30) — PLANNING 2026-09-23</summary>
+
+- [ ] **Phase 27: Resident Access Foundation** - TenantAdmin resident-credential provisioning (activate/suspend/revoke), resident role login with BCrypt ≥ 11 + enumeration-safe responses, apartment-scoped isolation with cross-apartment integration tests
+- [ ] **Phase 28: Visitor Pre-Registration & Purpose Codes** - Resident pre-registration CRUD with validity windows, edit/cancel lifecycle with read-only consumed history, per-tenant purpose codes stamped on visits
+- [ ] **Phase 29: Visitor Self Check-In** - Pre-authorized self check-in through the unified `VisitorArrivalHandler` write path, denied-path security (uniform ProblemDetails, rate limiting, audit), printable badge at check-in
+- [ ] **Phase 30: Resident Visibility, Notifications & Gatehouse Panel Integration** - Apartment-scoped visit history, in-app arrival notifications, gatehouse panel pending pre-registrations with document matching + badge print trigger
+
+Full details in Phase Details below · requirements: [REQUIREMENTS.md](REQUIREMENTS.md)
+
+</details>
 
 <details>
 <summary>🚧 v2.3 Door Integration & Hardware Access — simulator-first (Phases 23-26) — PLANNING 2026-09-22</summary>
@@ -76,29 +89,78 @@ Full details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 
 </details>
 
-## Next Milestone: v2.3 — Door Integration & Hardware Access (simulator-first)
+## Next Milestone: v2.4 — Resident Self-Service & Visitor Experience
 
-**Started:** 2026-09-22
+**Started:** 2026-09-23
 
-**Goal:** Build the complete door-integration software, security, and UI surface against a simulated device adapter, so that swapping the simulator for a real vendor adapter later is a driver-implementation task, not a redesign. The original door-integration spec (`.specs/door-integration/`, Phases 14–15) assumed real hardware that does not exist yet; v2.3 delivers everything that is hardware-independent and retires the Phase 14–15 reservations (phase numbering continues from 23).
+**Goal:** The resident stops being a row in someone else's table. Residents get portal access scoped to their own apartment, pre-register expected visitors (identity, purpose, validity window), watch arrivals in their visit history, and receive in-app arrival notifications. Visitors self check-in through a pre-authorization against the SAME unified write path the gatehouse uses. The porteiro sees pending pre-registrations at the gatehouse panel and prints badges for pre-authorized arrivals. Scope sourced from the v2.1 deferred requirements pool — zero external dependencies.
 
-**Scope principle:** Real vendor driver work and any on-site hardware verification stay OUT OF SCOPE (deferred to DOOR-R1..R3). All software, security, and UI work is integration-tested against a Docker-hosted mock device service / in-memory test double wired behind the same `IDoorController`/`IDeviceHandler` interfaces.
+**Scope principle:** Resident authentication is the second-biggest credential-surface addition after door unlock — the constitutional security bar applies throughout (BCrypt ≥ 11, enumeration-safe uniform responses, apartment-scoped isolation integration tests mandatory, all tenant-scoped reads/writes via `ITenantAwareLinqFactory`, `ProblemDetails` RFC 7807 everywhere). Self check-in MUST reuse the unified `VisitorArrivalHandler` write path — no second door into the Visits data model. Portal-only notifications (no push/mobile-native), data matching (no ID-scanner hardware), browser print (no badge-printer hardware).
 
-**Sequencing note (worktrees in flight):** `feat/unified-visits-flow-cleanup` (entry-log write-path retirement, dead widget deletion) and `fix/gatehouse-direction-persistence` (direction persistence) must land on `main` first; Phase 25 ledger integration builds on the post-cleanup contract and does NOT re-scope items fixed on those branches. Milestone v2.2 (Phases 19–22) executes in parallel on `feat/v2-2-milestone-planning` — no phase overlap with v2.3.
+**Sequencing note (worktrees in flight):** `feat/unified-visits-flow-cleanup` and `fix/gatehouse-direction-persistence` must land on `main` first — Phase 29 self check-in builds on the unified write path's post-cleanup contract and does NOT re-scope items fixed on those branches. Milestones v2.2 (Phases 19–22) and v2.3 (Phases 23–26) are planned/executed in parallel — no phase overlap with v2.4 (Phases 27–30).
 
-- [ ] **Phase 23: Device Foundation & Simulator Harness** - `IDoorController`/`IDeviceHandler` abstractions + simulated device adapter, encrypted `devices` table, HMAC-signed rate-limited unlock endpoint, tamper-evident unlock audit log
-- [ ] **Phase 24: Device Administration & Tenant Opt-In** - `door_integration_enabled` opt-in flag with admin enablement UI; device registration/management UI for TenantAdmins
-- [ ] **Phase 25: Reader Events & Ledger Integration** - Event ingestion + `DeviceEvent` normalization, `device_events` persistence, card-match events create ledger entries, idempotent replay-on-reconnect
-- [ ] **Phase 26: Device Health Monitoring** - Heartbeat ingestion with per-device thresholds, health dashboard UI, offline alert toast in the porteiro UI
+- [ ] **Phase 27: Resident Access Foundation** - TenantAdmin resident-credential provisioning (create/activate, suspend/revoke), new resident role + login with BCrypt ≥ 11 and enumeration-safe uniform responses, apartment-scoped data isolation with cross-apartment integration tests
+- [ ] **Phase 28: Visitor Pre-Registration & Purpose Codes** - Resident pre-registration CRUD (full name, document, optional plate, purpose code, validity window), edit/cancel lifecycle with read-only cancelled/consumed history, per-tenant configurable purpose codes stamped on the resulting visit
+- [ ] **Phase 29: Visitor Self Check-In** - Self check-in via document match or pre-auth code through the unified `VisitorArrivalHandler` write path (same states as gatehouse check-in), denied-path security (uniform enumeration-safe ProblemDetails, per-source rate limits, audit log), printable badge at check-in via browser print
+- [ ] **Phase 30: Resident Visibility, Notifications & Gatehouse Panel Integration** - Apartment-scoped visit history from the honest source, in-app arrival notifications, gatehouse panel pending pre-registrations expected today with CPF/document matching, one-click check-in, and badge print trigger
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 23. Device Foundation & Simulator Harness | 0/TBD | Not started | - |
-| 24. Device Administration & Tenant Opt-In | 0/TBD | Not started | - |
-| 25. Reader Events & Ledger Integration | 0/TBD | Not started | - |
-| 26. Device Health Monitoring | 0/TBD | Not started | - |
+| 27. Resident Access Foundation | 0/TBD | Not started | - |
+| 28. Visitor Pre-Registration & Purpose Codes | 0/TBD | Not started | - |
+| 29. Visitor Self Check-In | 0/TBD | Not started | - |
+| 30. Resident Visibility, Notifications & Gatehouse Panel Integration | 0/TBD | Not started | - |
 
 ## Phase Details
+
+### Phase 27: Resident Access Foundation
+**Goal**: A resident is a first-class authenticated portal user — provisioned by their condominium's administrator, logged in with their own credential, and isolated to their own apartment by integration tests, not by convention.
+**Depends on**: Nothing within v2.4 (new Residents-module surface). External: unified write-path contract — `feat/unified-visits-flow-cleanup` and `fix/gatehouse-direction-persistence` must land on `main` first.
+**Requirements**: RES-01, RES-02, RES-03
+**Success Criteria** (what must be TRUE):
+  1. A TenantAdmin can provision resident portal access for a resident of an apartment (credential creation/activation) and suspend or revoke it; after revocation the resident's next request is denied — verified by integration test (RES-01)
+  2. A provisioned resident can log into the portal with their own credential: passwords hashed with BCrypt ≥ 11, failed logins return uniform enumeration-safe responses, and the resident authenticates with the same JWT machinery as staff under a new resident role (RES-02)
+  3. A resident sees ONLY their own apartment's visitors, visits, and pre-registrations; a resident of apartment 101 requesting apartment 302's data is denied — cross-apartment isolation covered by integration tests on every resident-reachable endpoint (RES-03)
+  4. All resident-scoped reads/writes flow through `ITenantAwareLinqFactory` (no cross-tenant access) and every error returns `ProblemDetails` (RFC 7807) — verified by architecture and integration tests (RES-01, RES-02, RES-03)
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 28: Visitor Pre-Registration & Purpose Codes
+**Goal**: A resident manages expected visitors for their own apartment — creating pre-registrations with identity, purpose, and a validity window, editing or cancelling pending ones — with per-tenant purpose codes stamped on the resulting visit records.
+**Depends on**: Phase 27 (resident auth and apartment-scoped authorization must exist before residents can create data).
+**Requirements**: RES-04, RES-05, RES-06
+**Success Criteria** (what must be TRUE):
+  1. A resident can create a visitor pre-registration for their OWN apartment with full name, document number, optional vehicle plate, purpose code, and validity window (start/end); creating one for another apartment is denied by integration test (RES-04)
+  2. A resident can edit a pending pre-registration or cancel it; cancelled and consumed pre-registrations become read-only history and reject further edits — verified by integration test (RES-05)
+  3. A TenantAdmin can manage the per-tenant purpose code list (e.g. Visit, Delivery, Service, Maintenance); the code selected at pre-registration is stamped on the resulting visit record (RES-06)
+  4. Pre-registration state transitions (pending → cancelled / consumed) are tenant-scoped via `ITenantAwareLinqFactory` and errors return `ProblemDetails` (RES-05, RES-06)
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 29: Visitor Self Check-In
+**Goal**: An arriving visitor checks themselves in against a pre-authorization through the SAME unified write path the gatehouse uses — and every denied attempt fails closed: uniform responses, rate-limited, audit-logged.
+**Depends on**: Phase 28 (pre-registrations must exist to be consumed).
+**Requirements**: RES-07, RES-08, RES-12
+**Success Criteria** (what must be TRUE):
+  1. An arriving visitor can self check-in with a pre-authorization (document match or pre-auth code); the resulting Visit is created through the unified `VisitorArrivalHandler` write path and lands in the same states as a gatehouse check-in — integration test proves a single write path with no second door into the Visits data model (RES-07)
+  2. A pre-registration is consumed on use: an expired validity window, a revoked registration, or an exhausted use is rejected and the registration cannot be reused — verified by integration test (RES-07)
+  3. Denied self check-in paths (unknown code, expired window, revoked registration, exhausted use) return uniform enumeration-safe ProblemDetails, are rate-limited per source, and are audit-logged — each denial path verified by integration test (RES-08)
+  4. At check-in (self-service or gatehouse), a printable badge is generated (visitor name, apartment, date, validity, QR credential) via browser print — no printer hardware integration (RES-12)
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 30: Resident Visibility, Notifications & Gatehouse Panel Integration
+**Goal**: The loop closes — residents watch their apartment's visit history and receive in-app arrival notifications, while the porteiro sees pending pre-registrations expected today, matches arriving visitors by document, and checks them in with one click.
+**Depends on**: Phase 28 (pre-registrations), Phase 29 (self check-in + badge generation).
+**Requirements**: RES-09, RES-10, RES-11
+**Success Criteria** (what must be TRUE):
+  1. A resident can view their apartment's visit history (past and expected visitors) — read-only, honest data from the same source the porteiro and reports use (RES-09)
+  2. When a pre-registered visitor checks in (self or gatehouse), the resident's portal shows an in-app arrival notification — portal-only, no push/mobile-native (RES-10)
+  3. The gatehouse panel shows pending pre-registrations expected today, and a porteiro can check a visitor in against a pre-authorization with one click through the same `VisitorArrivalHandler` path (RES-11)
+  4. When a visitor arrives, CPF/document matching surfaces the pending pre-registration in the gatehouse panel (RES-11)
+  5. From the gatehouse check-in, the porteiro can trigger the badge print for the checked-in visitor (RES-11, RES-12)
+**Plans**: TBD
+**UI hint**: yes
 
 ### Phase 23: Device Foundation & Simulator Harness
 **Goal**: A gatehouse attendant can trigger a verified, fully-audited, cryptographically protected unlock through the same abstraction a real vendor device will implement — proven end-to-end against a simulated device adapter.
