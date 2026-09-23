@@ -42,7 +42,7 @@
 
 - **WhatsApp/visitor notification delivery** — Meta approval + per-tenant numbers required (parked since v2.1)
 - **Visitor self-service registration without pre-registration** — walk-in self-enrollment is a trust-model change; only pre-authorized self check-in ships in v2.4
-- **DOOR-R1..R3**: Real vendor hardware drivers (gated on real condominium hardware; v2.3+)
+- **DOOR-R1..R3**: Real vendor hardware drivers — concretized as milestone v2.5 (Control iD, Intelbras, Hikvision; Phases 31–34)
 - **FUT-01**: Facial biometrics access method — requires separate approved specification
 - **ARCH-01/02**: Multi-arch Docker/CI — fast-cycle work, no milestone
 

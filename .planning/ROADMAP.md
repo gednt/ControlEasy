@@ -2,6 +2,7 @@
 
 ## Milestones
 
+- 🚧 **v2.5 — Real Vendor Hardware Integration (Control iD, Intelbras, Hikvision)** — Phases 31-34 (planning 2026-09-23)
 - 🚧 **v2.4 — Resident Self-Service & Visitor Experience** — Phases 27-30 (planning 2026-09-23)
 - 🚧 **v2.3 — Door Integration & Hardware Access (simulator-first)** — Phases 23-26 (planning 2026-09-22)
 - 🚧 **v2.2 — UI Parity & Operational Closeout** — Phases 19-22 (started 2026-09-22, planning artifacts complete)
@@ -11,6 +12,18 @@
 - ✅ **v1.0 — Modular Monolith MVP** — Phases 1-8 (shipped 2026-07-13)
 
 ## Phases
+
+<details>
+<summary>🚧 v2.5 Real Vendor Hardware Integration — Control iD, Intelbras, Hikvision (Phases 31-34) — PLANNING 2026-09-23</summary>
+
+- [ ] **Phase 31: Edge Agent & Driver Foundation** - Outbound-only WSS edge agent (per-agent credentials, agent health rides `device_heartbeats`), local event queue with idempotent replay, vendor contract-test simulators (zero hardware in CI), real-device provisioning with vendor profiles, Hikvision partner-doc access request
+- [ ] **Phase 32: Control iD Driver (DOOR-R1)** - Unlock via public Access API; access-log/turnstile/heartbeat webhooks normalized to `DeviceEvent`; ledger + denied-attempt paths; HTTPS verification task (UNVERIFIED in research)
+- [ ] **Phase 33: Intelbras Driver (DOOR-R2 — abstraction proven)** - Edge-agent-resident connect-and-subscribe ingestion (API doc V1.3), relay unlock, firmware-quirk verification against the actual device
+- [ ] **Phase 34: Hikvision Driver & On-Site Pilot (DOOR-R3)** - ISAPI door commands with digest auth, alert-stream events, mandatory VLAN isolation; on-site pilot at a real condominium (fallback verification, replay, latency, health dashboard) + pilot report
+
+Full details in Phase Details below · requirements: [milestones/v2.5-REQUIREMENTS.md](milestones/v2.5-REQUIREMENTS.md)
+
+</details>
 
 <details>
 <summary>🚧 v2.4 Resident Self-Service & Visitor Experience (Phases 27-30) — PLANNING 2026-09-23</summary>
@@ -259,8 +272,56 @@ Full details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 **Plans**: TBD
 **UI hint**: yes
 
+### Phase 31: Edge Agent & Driver Foundation
+**Goal**: A small on-site runtime connects the condominium's real hardware to the platform over one outbound-only channel — authenticating per-agent, queueing events through outages, and letting the integration suite exercise vendor simulators with zero physical hardware.
+**Depends on**: v2.3 Phases 23–26 (device abstractions, `devices`/`device_events`/`device_heartbeats` tables, unlock security machinery, simulator harness, device admin UI must exist and be shipped).
+**Requirements**: HW-01, HW-02, HW-03, HW-04, HW-08
+**Success Criteria** (what must be TRUE):
+  1. The edge agent connects to the cloud API via a single outbound WSS channel — no inbound ports opened on the condominium network (CGNAT-compatible); each agent authenticates with a per-agent credential issued at provisioning, and a revoked agent's next connection is rejected (HW-01)
+  2. Agent link status surfaces in the existing health dashboard via `device_heartbeats` — a dead agent flips its devices to offline, firing the porteiro offline toast (HW-01, rides DOOR-13/DOOR-14)
+  3. Events from we-dial-them devices queue locally with per-device sequence numbers and replay on reconnect; replay is idempotent (no event lost, none double-processed) — verified by integration test with connection interruption (HW-02, extends DOOR-11)
+  4. Simulators for Control iD (REST + webhook mock), Intelbras (connect-and-subscribe mock), and Hikvision (ISAPI mock with digest auth + alert stream) are exercised by the integration suite with zero physical hardware (HW-03)
+  5. The v2.3 unlock/event integration suites run unchanged against each vendor simulator — the security bar (HMAC, replay window, rate limit, tamper-evident audit, encrypted connection params) is vendor-agnostic, proven not assumed (HW-08)
+  6. A TenantAdmin registers a real device choosing vendor + model profile; per-vendor connection params are validated and AES-256-GCM-encrypted (riding DOOR-04/DOOR-06), we-dial-them devices are bound to an agent (HW-04)
+  7. Hikvision partner-portal doc access requested (unblocks Phase 34) (HW-07 dependency)
+**Plans**: TBD
+
+### Phase 32: Control iD Driver (DOOR-R1)
+**Goal**: The first real integration — a porteiro's unlock click opens a real Control iD door/turnstile, and real card events flow into the ledger through the same abstractions the simulator proved.
+**Depends on**: Phase 31 (agent foundation, contract harness, provisioning).
+**Requirements**: HW-05, HW-08
+**Success Criteria** (what must be TRUE):
+  1. `POST /api/v1/devices/{deviceId}/unlock` reaches a real Control iD device through the Access API (remote door/turnstile release) and returns observable success/failure — verified end-to-end against the Control iD simulator and the pilot device (HW-05, DOOR-R1)
+  2. Device-push notifications (access logs, catraca turn confirmations, `device_is_alive` heartbeats) are ingested and normalized to `DeviceEvent`; a card-match event creates the ledger entry, an unknown card logs a denied attempt — riding the DOOR-08..10 pipeline (HW-05)
+  3. Control iD's HTTPS support for device callbacks is verified against the actual device; if absent, the callback path is documented as agent-relayed with the residual risk stated (research-flagged UNVERIFIED) (HW-05)
+  4. The v2.3 security suite passes against the Control iD simulator unchanged (HW-08)
+**Plans**: TBD
+
+### Phase 33: Intelbras Driver (DOOR-R2 — the abstraction is proven)
+**Goal**: The second real integration — Intelbras events and unlock ride the SAME seams Control iD used, with only a driver swap; any change to the shared abstraction is the signal the abstraction was wrong.
+**Depends on**: Phase 32 (first driver; the abstraction now has one real implementation to be proven by a second).
+**Requirements**: HW-06, HW-08
+**Success Criteria** (what must be TRUE):
+  1. The Intelbras driver ingests events via connect-and-subscribe (official integration API, doc V1.3, 2020 — no webhook push) as an edge-agent-resident adapter; relay actuation performs unlock (HW-06)
+  2. Every endpoint used is verified against the actual device or vendor-confirmed documentation before sign-off; firmware-generation quirks (doc V1.3 is 2020-era) are recorded in the driver docs (HW-06)
+  3. The driver swap adds no changes to `IDoorController`/`IDeviceHandler` shared contracts beyond additive model needs — the second integration proves the abstraction (DOOR-R2); any non-additive change is escalated as a redesign finding, not absorbed silently
+  4. The v2.3 security suite passes against the Intelbras simulator unchanged (HW-08)
+**Plans**: TBD
+
+### Phase 34: Hikvision Driver & On-Site Pilot (DOOR-R3)
+**Goal**: The third driver lands behind VLAN isolation with digest auth — and the milestone ends where the hardware lives: a real condominium where the door opens without us, the events arrive when we return, and the porteiro's day is unchanged.
+**Depends on**: Phase 31 (doc access requested), Phase 33 (abstraction proven by two drivers).
+**Requirements**: HW-07, HW-09
+**Success Criteria** (what must be TRUE):
+  1. Unlock executes via the ISAPI door-command family with digest auth; events arrive via the alert-stream subscription — edge-agent-resident, exact endpoints verified against vendor-confirmed docs (partner access from Phase 31) (HW-07)
+  2. Hikvision deployment documentation mandates VLAN isolation and forbids internet exposure — enforced by a deployment checklist, not convention (CVE history) (HW-07)
+  3. At the pilot condominium with real hardware of at least one supported vendor: card reader + manual release operate with the API down (participant, not gatekeeper), missed events replay on reconnect, unlock latency is acceptable, and the health dashboard reflects the real devices (HW-09, DOOR-R3)
+  4. Pilot findings are recorded in a pilot report (latency, reliability, installer friction, doc-vs-reality gaps) feeding the second-wave driver decisions (HW-09)
+**Plans**: TBD
+**UI hint**: yes
+
 ## Future Milestones
 
-- 📋 **Real hardware integration (post-v2.3)** — DOOR-R1..R3: real vendor relay/reader drivers implementing `IDoorController`/`IDeviceHandler`, on-site hardware fallback verification (gated on real condominium hardware)
+- 📋 **Second hardware wave (post-v2.5)** — Henry catraca driver (community-reverse-engineered TCP protocol), Shelly relay tier (gate motors: Nice, Garen, Peccinin, Rozzi), TopData driver (WebSocket online mode) — see `milestones/v2.5-REQUIREMENTS.md` deferred pool; DOOR-R1..R3 themselves concretized as v2.5
 - 📋 **Facial biometrics** — FUT-01, requires separate approved specification
 - 📋 Multi-arch Docker/CI (fast-cycle, no milestone)

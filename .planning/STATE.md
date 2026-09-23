@@ -22,7 +22,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-23)
 
 **Core value:** Gatehouse staff can reliably register and control access through a fast, tenant-isolated web UI.
-**Current focus:** v2.4 Resident Self-Service & Visitor Experience — roadmap created (Phases 27–30); ready for `/gsd-plan-phase 27`
+**Current focus:** v2.4 Resident Self-Service & Visitor Experience — roadmap created (Phases 27–30); ready for `/gsd-plan-phase 27`. Next milestone v2.5 (Real Vendor Hardware Integration — Control iD, Intelbras, Hikvision; Phases 31–34) defined 2026-09-23, executes after v2.3 ships.
 
 ## Current Position
 
@@ -68,6 +68,7 @@ Last activity: 2026-09-23 — Milestone v2.4 requirements + roadmap created
 - (superseded 2026-09-22) v2.2 Door Integration (Phases 14–15, renumbered from v2.1 on 2026-09-19) gated on real condominium hardware — see next entries
 - v2.2 milestone is software-only closeout (party-mode planning session 2026-09-22); Door Integration renumbered to v2.3, Phases 14–15 stay reserved
 - v2.3 door integration is simulator-first (2026-09-22): `IDoorController`/`IDeviceHandler` abstractions, HMAC-SHA256 unlock security, event normalization, ledger integration, health monitoring, and admin UI are all built and verified against a simulated/loopback device adapter; real vendor drivers stay out of scope until hardware exists; Phases 14–15 reservations retired, v2.3 phases start at 23
+- v2.5 real hardware milestone defined (2026-09-23): Control iD (DOOR-R1, Phase 32) → Intelbras (DOOR-R2, Phase 33) → Hikvision (Phase 34) + edge agent (outbound-only WSS, all drivers ride it — forced by the two we-dial-them vendors) + vendor simulators (zero hardware in CI) + on-site pilot (DOOR-R3, Phase 34); second wave (Henry, Shelly relay tier, TopData) parked in the v2.5 deferred pool
 - Gatehouse access is software-only validation/audit: QR initial credential + manual lookup fallback; every visit requires a destination; biometrics require separate approved spec
 - Multi-arch Docker/CI is fast-cycle (no milestone)
 
@@ -90,7 +91,7 @@ Last activity: 2026-09-23 — Milestone v2.4 requirements + roadmap created
 | v2.1 | CPF pre-reg matching, purpose codes, resident visit history, visitor self-check-in, badge printing | Deferred requirements (REQUIREMENTS.md) — concretely scoped as v2.4 (2026-09-23) | 2026-09-19 | v2.4 |
 | v2.3 | Door relay & unlock commands (DOOR-01) | Re-scoped simulator-first into v2.3 Phase 23+ (2026-09-22) | 2026-08-23 | v2.3 |
 | v2.3 | Reader events & device health (DOOR-02, DOOR-03) | Re-scoped simulator-first into v2.3 Phase 23+ (2026-09-22) | 2026-08-23 | v2.3 |
-| v2.3 | Real vendor device drivers (relay + reader) | Blocked: no real condominium hardware; swap simulator for real adapter later — driver task, not redesign | 2026-09-22 | post-v2.3 |
+| v2.3 | Real vendor device drivers (relay + reader) | Concretized as milestone v2.5 (Control iD, Intelbras, Hikvision; Phases 31–34) — party-mode hardware-research session 2026-09-23 | 2026-09-22 | v2.5 |
 | Future access method | Facial biometrics | Requires separate approved specification | 2026-09-13 | future |
 | Fast-cycle | Multi-arch Docker/CI (ARCH-01, ARCH-02) | No milestone, ~1 week | 2026-06-24 | none |
 | todos | integrated-visits-flow.md | (presence-only) | 2026-09-20 | v2.1 |
@@ -98,9 +99,10 @@ Last activity: 2026-09-23 — Milestone v2.4 requirements + roadmap created
 ## Session Continuity
 
 Last session: 2026-09-23
-Stopped at: Milestone v2.4 (Resident Self-Service & Visitor Experience) requirements + roadmap created; v2.2/v2.3/v2.4 planning lineage unified on `feat/planning-lineage-unification`; REQUIREMENTS.md, ROADMAP.md, STATE.md updated.
+Stopped at: Milestone v2.5 (Real Vendor Hardware Integration — Control iD, Intelbras, Hikvision) requirements + roadmap created on `feat/planning-lineage-unification`; MILESTONES.md, REQUIREMENTS.md (v2.4 file frontmatter), v2.3-REQUIREMENTS.md DOOR-R1..R3 pointers, ROADMAP.md, PROJECT.md, STATE.md updated. Planning artifacts only — no code changes.
 Resume file: None
 
 ## Operator Next Steps
 
 - Review v2.4 roadmap, then run `/gsd-plan-phase 27`
+- v2.5 sits behind v2.3's simulator foundation: review `milestones/v2.5-REQUIREMENTS.md`, request Hikvision partner-portal doc access early (Phase 31 entry gate for Phase 34), and line up the pilot condominium (HW-09)

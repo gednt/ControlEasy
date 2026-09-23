@@ -30,6 +30,8 @@ Gatehouse staff can reliably register and control access for residents, visitors
 
 **v2.4 — Resident Self-Service & Visitor Experience** (planning started 2026-09-23)
 
+**Next milestone:** **v2.5 — Real Vendor Hardware Integration (Control iD, Intelbras, Hikvision)** (defined 2026-09-23; Phases 31–34; executes after v2.3's simulator foundation ships) — three first-party vendor drivers implementing the v2.3 `IDoorController`/`IDeviceHandler` abstractions, the edge agent (outbound-only WSS on-site runtime, forced into scope by the two we-dial-them vendors), vendor contract-test simulators with zero physical hardware in CI, security-bar parity, and the on-site pilot (DOOR-R3). See `.planning/milestones/v2.5-REQUIREMENTS.md`.
+
 **Goal:** Turn the resident from a row in someone else's table into a first-class platform user — pre-registering expected visitors, viewing their apartment's visit history, receiving arrival notifications — while visitors self check-in through the same unified write path and the gatehouse prints badges for pre-authorized arrivals.
 
 **Target features:**
@@ -90,6 +92,7 @@ Fast-cycle (no milestone): multi-arch Docker/CI (`ARCH-01`, `ARCH-02`).
 - [ ] Ledger polish (v2.1 carryover) — day-bucketing INFRA-02, inert status filter options, search scope, condominium-level package-drop trigger, X-Total-Count exposure — v2.2 target
 - [~] Door integration (v2.3, simulator-first; renumbered from v2.2 on 2026-09-22) — `.specs/door-integration/` — requirements re-scoped for v2.3; phases 23+
 - [ ] Resident self-service & visitor experience (v2.4) — CPF pre-registration matching, purpose codes, resident visit history, visitor self check-in, badge printing, arrival notifications (deferred pool from v2.1 REQUIREMENTS.md) — planning started 2026-09-23
+- [ ] Real vendor hardware integration (v2.5) — Control iD, Intelbras, Hikvision drivers + edge agent + vendor simulators + on-site pilot (DOOR-R1..R3 concretized) — defined 2026-09-23, `.planning/milestones/v2.5-REQUIREMENTS.md`
 - [ ] Multi-arch Docker/CI (fast-cycle) — `.specs/1 - modernization-roadmap-arm64/`
 
 ### Out of Scope
@@ -156,6 +159,9 @@ Known concerns from codebase map: dual tenant column patterns, JWT/localStorage 
 | v2.4 = Resident Self-Service & Visitor Experience | The resident is the forgotten user — the v2.1 deferred pool (CPF pre-reg, purpose codes, visit history, self check-in, badge printing) is a coherent resident-facing theme with zero external dependencies; WhatsApp delivery stays parked (Meta approval) | ✓ Good — party-mode session 6, 2026-09-23 |
 | v2.4 self check-in rides the unified `VisitorArrivalHandler` write path | v2.1 unified visits precisely so there is ONE door into the Visits data model; a second self-service write path would fork the state machine | ✓ Good — party-mode session 6, 2026-09-23 (Murat's condition) |
 | v2.4 resident auth is apartment-scoped, not tenant-scoped | Residents see only their apartment's visits/authorizations; a resident of 101 seeing 302's data is a cross-tenant failure in miniature — apartment-scoped isolation tests mandatory | ✓ Good — party-mode session 6, 2026-09-23 |
+| v2.5 = Real Vendor Hardware Integration; vendors picked from research gold-signal list | Felipe picked Control iD, Intelbras, Hikvision (2026-09-23) — all cross-validated by SaaS portaria-platform integration lists; Henry/TopData/Shelly-relay deferred to the second wave; direct cloud→LAN exposure rejected (CGNAT); OSDP stays reader↔controller (cloud never terminates it); ONVIF A/C rejected (thin adoption) | ✓ Good — party-mode hardware-research session 2026-09-23 |
+| v2.5 edge agent is outbound-only and all drivers ride it | Two of three vendors are we-dial-the-device surfaces behind CGNAT — the edge agent is a consequence of the vendor pick, not a speculative platform component; one channel, one credential story, one queue/replay semantic; Control iD relayed through the agent rather than special-cased | ✓ Good — party-mode hardware-research session 2026-09-23 |
+| Zero physical hardware in CI, ever | Vendor simulators (Control iD REST/webhook mock, Intelbras connect-and-subscribe mock, Hikvision ISAPI/digest mock) exercise the integration suite; real devices appear only at the on-site pilot — Murat's condition, written as requirement HW-03 | ✓ Good — party-mode hardware-research session 2026-09-23 |
 
 ## Evolution
 

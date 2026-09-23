@@ -1,5 +1,26 @@
 # Milestones
 
+## v2.5 Real Vendor Hardware Integration — Control iD, Intelbras, Hikvision (Defined: 2026-09-23)
+
+**Phases:** 31, 32, 33, 34
+**Status:** Planning (requirements + roadmap defined; phases not started; executes after v2.3's simulator foundation ships)
+
+**Scope:** Three first-party vendor drivers implementing the v2.3 `IDoorController`/`IDeviceHandler` abstractions — Control iD (public Access API + device-push webhooks), Intelbras (connect-and-subscribe, doc V1.3), Hikvision (ISAPI, VLAN-isolated, digest auth) — plus the **edge agent** (outbound-only WSS on-site runtime, forced into scope by the two we-dial-them vendors; all three drivers ride it), vendor contract-test simulators (zero physical hardware in CI), real-device provisioning with vendor profiles, security-bar parity, and the on-site pilot (DOOR-R3). Second hardware wave (Henry, Shelly relay tier for gate motors, TopData) deferred to the v2.5-REQUIREMENTS.md pool.
+
+**Key decisions:**
+
+- Felipe's vendor pick (2026-09-23): Control iD, Hikvision, Intelbras — all from the research gold-signal list (Condfy cross-validation); Henry/TopData/Shelly deferred to the second wave
+- Edge agent forced into scope: two of three vendors are we-dial-the-device surfaces behind CGNAT; direct cloud→LAN exposure rejected; all drivers ride one channel
+- Driver order: Control iD (DOOR-R1) → Intelbras (second proves the abstraction, DOOR-R2) → Hikvision (partner-gated docs; access requested in Phase 31 to unblock Phase 34)
+- Zero physical hardware in CI — vendor simulators per surface; real-device verification only at the pilot
+- Research-flagged UNVERIFIED items (Control iD HTTPS, Intelbras V1.3 firmware quirks, Hikvision endpoint paths) become per-driver verification tasks
+
+**Specs:** `.specs/door-integration/` (original spec — hardware layer concretized by this milestone)
+**Roadmap:** `.planning/ROADMAP.md` (v2.5 section) · **Requirements:** `.planning/milestones/v2.5-REQUIREMENTS.md`
+**Origin:** party-mode hardware-research session (2026-09-23), concretizing DOOR-R1..R3
+
+---
+
 ## v2.4 Resident Self-Service & Visitor Experience (Started: 2026-09-23)
 
 **Phases:** 27, 28, 29, 30
