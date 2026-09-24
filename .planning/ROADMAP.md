@@ -169,8 +169,13 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. From a record page, staff can capture a photo via device camera (`getUserMedia`) or file picker; the stored image is client-side compressed (≤1280px, 0.8→0.6→0.3 ladder) with EXIF metadata stripped
   2. Record lists show lazy photo thumbnails, detail views show the source image, and clicking a photo opens an enlarge lightbox — across resident, visitor, vehicle, and service-provider pages
-  3. Uploads retry automatically (3 attempts, 1s/2s/4s backoff) and failures show clear, actionable error states for camera-denied, file-too-large, and retries-exhausted
-**Plans**: TBD
+   3. Uploads retry automatically (3 attempts, 1s/2s/4s backoff) and failures show clear, actionable error states for camera-denied, file-too-large, and retries-exhausted
+**Plans**: 3 plans
+
+Plans:
+- [ ] 21-01-PLAN.md — fetch-lazy ce-photo + ce-photo-thumb primitive (PCAP-02 lazy thumbnail foundation)
+- [ ] 21-02-PLAN.md — wire lazy thumbnail column into residents/vehicles/visits/service-providers list tables (PCAP-02)
+- [ ] 21-03-PLAN.md — list-endpoint integration tests, list-thumbnail E2E, dead-code cleanup (PCAP-01/02/03 closeout)
 **UI hint**: yes
 
 ### Phase 22: Mockup Parity & Test Closeout
@@ -182,7 +187,12 @@ Plans:
   2. Login form behavior, toast patterns, and page interactions follow the functional-fixes spec (real error paths, submit spinner, auto-dismissing toasts)
   3. The E2E suite exercises the current gatehouse panel and ledger — no specs testing removed dashboard buttons/tiles; stale specs refreshed or removed
   4. Every v2.2 phase has a `*-VALIDATION.md` (Nyquist validation coverage complete for the milestone)
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 22-01-PLAN.md — Visits/vehicles component adoption + visual/a11y regression specs for login/dashboard/visits/vehicles (UI-01)
+- [ ] 22-02-PLAN.md — Forgot-password toast parity + login 401/busy unit tests (UI-02)
+- [ ] 22-03-PLAN.md — Rewrite gatehouse-workflow E2E against tabbed panel + fix module-pages stale labels (TEST-01)
+- [ ] 22-04-PLAN.md — Finalize 22-VALIDATION.md + cross-phase 19-22 validation coverage audit (TEST-02)
 **UI hint**: yes
 
 ### Phase 27: Resident Access Foundation
