@@ -154,7 +154,12 @@ Plans:
   3. An admin can filter the consent audit by date range, category, entry state, and porteiro, and see only matching rows
   4. Audit rows render state-appropriate evidence: `entered_with_consent` photo thumbnail with lightbox, `entered_override` highlighted with reason + porteiro, `gatehouse_only`/`denied` badges
   5. An admin can export the consent audit as CSV with millisecond-precision `recorded_at` timestamps
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 20-01-PLAN.md — Security backend: lift porteiro-only reset restriction, add SMTP dispatch + delivery-state, tenant-scoped staff list (ACCNT-01/02)
+- [ ] 20-02-PLAN.md — TenantAdmin reset surface + staff list on administration page (ACCNT-01/02)
+- [ ] 20-03-PLAN.md — Entry-log porteiro filter (backend) + audit-filters porteiro dropdown (CONSU-01)
+- [ ] 20-04-PLAN.md — Audit-row porteiro name resolution + badge mapping + CSV ms-precision verify (CONSU-02/03)
 **UI hint**: yes
 
 ### Phase 21: Photo Capture & Display UI
