@@ -136,7 +136,12 @@ Full details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
   3. Ledger search returns what its placeholder promises (PackageDescription/SubjectName/Purpose) — placeholder wording and backend `q` scope agree
   4. From the package-drop UI, an admin can register a condominium-level drop (destination apartment omitted) and see it in the ledger alongside apartment-bound drops
   5. Non-same-origin consumers receive the `X-Total-Count` header (exposed via `WithExposedHeaders`) so ledger pagination totals work beyond the SPA origin
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 19-01-PLAN.md — Tenant-day bucketing in the daily visit-count summary (LEDGER-01)
+- [ ] 19-02-PLAN.md — Honest status-filter vocabulary + search placeholder alignment (LEDGER-02, LEDGER-03)
+- [ ] 19-03-PLAN.md — Condominium-level package-drop trigger (LEDGER-04)
+- [ ] 19-04-PLAN.md — X-Total-Count header exposure via WithExposedHeaders (LEDGER-05)
 **UI hint**: yes
 
 ### Phase 20: Account Operations & Consent Audit UI
