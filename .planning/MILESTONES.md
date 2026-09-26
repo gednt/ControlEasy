@@ -45,7 +45,7 @@
 
 - Simulator-first re-scope (2026-09-22): the original Phases 14–15 reservations assumed real hardware that does not exist; reservations retired, phase numbering continues from 23
 - Remote unlock is security-sensitive — full constitutional security bar applies (rate limiting, HMAC-SHA256, replay protection, tamper-evident audit, encrypted connection params, porteiro-role authorization)
-- Ledger integration (Phase 25) builds on the post-cleanup entry-log contract (`feat/unified-visits-flow-cleanup`)
+- Ledger integration (Phase 25) builds on the post-cleanup entry-log contract (`feat/unified-visits-flow-cleanup` — PR #11 merged to `main` 2026-09-26, `7a5eb35`)
 - Milestone v2.2 (Phases 19–22) is planned and unexecuted; lineage unified with v2.3/v2.4 on `feat/planning-lineage-unification` (2026-09-23); no phase overlap
 
 **Specs:** `.specs/door-integration/` (original spec — re-scoped by this milestone)

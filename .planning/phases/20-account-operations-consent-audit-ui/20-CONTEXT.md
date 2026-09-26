@@ -11,7 +11,7 @@ Tenant administrators can run credential operations and review consent-audit evi
 1. **Account operations** — TenantAdmin password-reset surface (ACCNT-01/02). Backend already shipped in v2.1 Phase 18; this phase adds the TenantAdmin-reachable UI caller and delivery feedback.
 2. **Consent audit review UI** — filter/evidence/export for the consent audit log (CONSU-01/02/03). Backend `GET /api/v1/entry-log` + export shipped in v2.0 Phase 13; audit-review UI surface was pending.
 
-**Sequencing note:** cleanup branches land first so audit state vocabulary matches the post-cleanup contract.
+**Sequencing note (SATISFIED 2026-09-26):** cleanup branches (`feat/unified-visits-flow-cleanup` PR #11 `7a5eb35`, `fix/gatehouse-direction-persistence` PR #10 `0d8f96a`) have landed on `main` — the audit state vocabulary this phase touches matches the post-cleanup contract, which is now the shipped `main` state.
 </domain>
 
 <decisions>

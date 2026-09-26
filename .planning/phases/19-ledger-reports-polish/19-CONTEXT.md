@@ -9,7 +9,7 @@
 
 The reports surface tells one honest story — the daily summary, status filters, search, pagination, and package-drop entry all match what the unified ledger backend actually serves. This phase closes five v2.1 tech-debt/partial gaps carried into v2.2, all in the Reports module (backend + reports/audit UI). No new data model. No door/hardware work.
 
-Phase 19 is backend + UI. It builds directly on the post-cleanup entry-log/ledger contract. **Sequencing note:** `feat/unified-visits-flow-cleanup` and `fix/gatehouse-direction-persistence` must land on `main` before this phase executes — the ledger/entry-log area vocabulary this phase touches matches the post-cleanup contract.
+Phase 19 is backend + UI. It builds directly on the post-cleanup entry-log/ledger contract. **Sequencing note (SATISFIED 2026-09-26):** `feat/unified-visits-flow-cleanup` (PR #11, `7a5eb35`) and `fix/gatehouse-direction-persistence` (PR #10, `0d8f96a`) have landed on `main` — the ledger/entry-log area vocabulary this phase touches matches the post-cleanup contract, which is now the shipped `main` state.
 </domain>
 
 <decisions>

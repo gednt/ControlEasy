@@ -110,7 +110,7 @@ Full details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 
 **Scope principle:** Resident authentication is the second-biggest credential-surface addition after door unlock — the constitutional security bar applies throughout (BCrypt ≥ 11, enumeration-safe uniform responses, apartment-scoped isolation integration tests mandatory, all tenant-scoped reads/writes via `ITenantAwareLinqFactory`, `ProblemDetails` RFC 7807 everywhere). Self check-in MUST reuse the unified `VisitorArrivalHandler` write path — no second door into the Visits data model. Portal-only notifications (no push/mobile-native), data matching (no ID-scanner hardware), browser print (no badge-printer hardware).
 
-**Sequencing note (worktrees in flight):** `feat/unified-visits-flow-cleanup` and `fix/gatehouse-direction-persistence` must land on `main` first — Phase 29 self check-in builds on the unified write path's post-cleanup contract and does NOT re-scope items fixed on those branches. Milestones v2.2 (Phases 19–22) and v2.3 (Phases 23–26) are planned/executed in parallel — no phase overlap with v2.4 (Phases 27–30).
+**Sequencing note (satisfied 2026-09-26):** `feat/unified-visits-flow-cleanup` (PR #11, `7a5eb35`) and `fix/gatehouse-direction-persistence` (PR #10, `0d8f96a`) have landed on `origin/main` — Phase 29 self check-in builds on the unified write path's post-cleanup contract and does NOT re-scope items fixed on those branches. Milestones v2.2 (Phases 19–22) and v2.3 (Phases 23–26) are planned/executed in parallel — no phase overlap with v2.4 (Phases 27–30).
 
 - [ ] **Phase 27: Resident Access Foundation** - TenantAdmin resident-credential provisioning (create/activate, suspend/revoke), new resident role + login with BCrypt ≥ 11 and enumeration-safe uniform responses, apartment-scoped data isolation with cross-apartment integration tests
 - [ ] **Phase 28: Visitor Pre-Registration & Purpose Codes** - Resident pre-registration CRUD (full name, document, optional plate, purpose code, validity window), edit/cancel lifecycle with read-only cancelled/consumed history, per-tenant configurable purpose codes stamped on the resulting visit
@@ -129,7 +129,7 @@ Full details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 ### Phase 19: Ledger & Reports Polish
 
 **Goal**: The reports surface tells one honest story — the daily summary, status filters, search, pagination, and package-drop entry all match what the unified ledger backend actually serves.
-**Depends on**: Nothing within v2.2. External: `feat/unified-visits-flow-cleanup` and `fix/gatehouse-direction-persistence` land on `main` first (entry-log area contract).
+**Depends on**: Nothing within v2.2. External prerequisite SATISFIED (2026-09-26): `feat/unified-visits-flow-cleanup` (PR #11, `7a5eb35`) and `fix/gatehouse-direction-persistence` (PR #10, `0d8f96a`) landed on `main` (entry-log area contract).
 **Requirements**: LEDGER-01, LEDGER-02, LEDGER-03, LEDGER-04, LEDGER-05
 **Success Criteria** (what must be TRUE):
 
@@ -156,7 +156,7 @@ Plans:
 ### Phase 20: Account Operations & Consent Audit UI
 
 **Goal**: Tenant administrators can run credential operations and review consent-audit evidence from their own tenant-reachable screens, without needing a platform-admin login.
-**Depends on**: Nothing within v2.2 (backends shipped in v2.0 Phase 11/13 and v2.1 Phase 18). External: cleanup branches land first so audit state vocabulary matches the post-cleanup contract.
+**Depends on**: Nothing within v2.2 (backends shipped in v2.0 Phase 11/13 and v2.1 Phase 18). External prerequisite SATISFIED (2026-09-26): cleanup branches merged (`feat/unified-visits-flow-cleanup` PR #11 `7a5eb35`, `fix/gatehouse-direction-persistence` PR #10 `0d8f96a`) so the audit state vocabulary matches the post-cleanup contract now shipped on `main`.
 **Requirements**: ACCNT-01, ACCNT-02, CONSU-01, CONSU-02, CONSU-03
 **Success Criteria** (what must be TRUE):
 
@@ -240,7 +240,7 @@ Plans:
 ### Phase 27: Resident Access Foundation
 
 **Goal**: A resident is a first-class authenticated portal user — provisioned by their condominium's administrator, logged in with their own credential, and isolated to their own apartment by integration tests, not by convention.
-**Depends on**: Nothing within v2.4 (new Residents-module surface). External: unified write-path contract — `feat/unified-visits-flow-cleanup` and `fix/gatehouse-direction-persistence` must land on `main` first.
+**Depends on**: Nothing within v2.4 (new Residents-module surface). External prerequisite SATISFIED (2026-09-26): unified write-path contract — `feat/unified-visits-flow-cleanup` (PR #11, `7a5eb35`) and `fix/gatehouse-direction-persistence` (PR #10, `0d8f96a`) landed on `main`.
 **Requirements**: RES-01, RES-02, RES-03
 **Success Criteria** (what must be TRUE):
 
@@ -301,7 +301,7 @@ Plans:
 ### Phase 23: Device Foundation & Simulator Harness
 
 **Goal**: A gatehouse attendant can trigger a verified, fully-audited, cryptographically protected unlock through the same abstraction a real vendor device will implement — proven end-to-end against a simulated device adapter.
-**Depends on**: Nothing within v2.3 (new Devices surface in the modular monolith). External: `feat/unified-visits-flow-cleanup` lands first (entry-log area contract referenced by Phase 25).
+**Depends on**: Nothing within v2.3 (new Devices surface in the modular monolith). External prerequisite SATISFIED (2026-09-26): `feat/unified-visits-flow-cleanup` landed on `main` (PR #11, `7a5eb35`; entry-log area contract referenced by Phase 25).
 **Requirements**: DOOR-01, DOOR-02, DOOR-03, DOOR-04, DOOR-07, DOOR-15
 **Success Criteria** (what must be TRUE):
 
@@ -332,7 +332,7 @@ Plans:
 ### Phase 25: Reader Events & Ledger Integration
 
 **Goal**: Reader activity flows into the platform's honest ledger without manual entry — simulated reader events are normalized vendor-agnostically, persisted, turned into ledger entries when credentials match, and survive disconnects via idempotent replay.
-**Depends on**: Phase 23 (device abstractions, `devices` table, simulator harness). External: post-cleanup entry-log contract (`feat/unified-visits-flow-cleanup`).
+**Depends on**: Phase 23 (device abstractions, `devices` table, simulator harness). External prerequisite SATISFIED (2026-09-26): post-cleanup entry-log contract (`feat/unified-visits-flow-cleanup`, PR #11, `7a5eb35` landed on `main`).
 **Requirements**: DOOR-08, DOOR-09, DOOR-10, DOOR-11
 **Success Criteria** (what must be TRUE):
 

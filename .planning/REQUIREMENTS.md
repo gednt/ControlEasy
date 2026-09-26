@@ -58,7 +58,7 @@
 | WhatsApp/SMS visitor arrival notifications | Meta approval + per-tenant numbers; parked since v2.1 |
 | v2.2 milestone scope (LEDGER/ACCNT/CONSU/PCAP/UI/TEST) | Tracked in the parallel planned v2.2 milestone (Phases 19–22) |
 | v2.3 milestone scope (DOOR-01..15) | Tracked in the parallel planned v2.3 milestone (Phases 23–26) |
-| Items fixed in unmerged worktrees (`feat/unified-visits-flow-cleanup`, `fix/gatehouse-direction-persistence`) | Already carried by those branches; v2.4 self check-in builds on the unified write path (post-cleanup contract) |
+| Items fixed in merged worktrees (`feat/unified-visits-flow-cleanup` PR #11, `fix/gatehouse-direction-persistence` PR #10) | Merged to `main` 2026-09-26 (`7a5eb35`/`0d8f96a`) — already carried on main; v2.4 self check-in builds on the unified write path (post-cleanup contract) |
 
 ## Traceability
 

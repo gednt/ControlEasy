@@ -299,7 +299,7 @@ try {
 ### Pitfall 4: State-vocabulary drift (`gatehouse_only`/`denied` vs `entered_without_consent`/`exited`)
 **What goes wrong:** The spec (`CONSENT-02`) names `gatehouse_only` and `denied`, but the Photos domain `EntryStates` constants are `entered_with_consent`, `entered_without_consent`, `entered_override`, `exited` (no `gatehouse_only`, no `denied`). The frontend `EntryState` type has `gatehouse_only` and `entered_without_consent` ("Refused" badge).
 **Why it happens:** The consent-gatehouse spec's state model and the shipped `ConsentAuditLog`/Reports read-model diverged during v2.1 visits-unification.
-**How to avoid:** Confirm the post-cleanup contract first (the `20-CONTEXT.md` sequencing note: "cleanup branches land first so audit state vocabulary matches the post-cleanup contract"). Map: `denied` ↔ `entered_without_consent` ("Refused"), `gatehouse_only` ↔ "No entry" badge. Do not invent new stored states.
+**How to avoid:** Confirm the post-cleanup contract first (SATISFIED 2026-09-26 — both cleanup branches merged to `main`, PRs #10/#11; the `20-CONTEXT.md` sequencing note is satisfied). Map: `denied` ↔ `entered_without_consent` ("Refused"), `gatehouse_only` ↔ "No entry" badge. Do not invent new stored states.
 **Warning signs:** A task that adds a `gatehouse_only` value to the domain constants without reconciling the Reports read model (`ReportReadRepository` already CASE-maps `gatehouse_only` and `entered_without_consent`).
 
 ### Pitfall 5: Reset returns temp password inline but CONTEXT says "dispatched via SMTP"
@@ -378,7 +378,7 @@ exited: { tone: 'neutral', icon: 'log-out', label: 'Exit' },
 | A1 | ACCNT-02's "temp password dispatched via SMTP" means the **administrative reset** handler should send email (not just the self-service forgot-password path). The shipped `ResetUserPasswordHandler` does not send email. | Standard Stack / Pitfall 5 / ACCNT-02 | If the user actually wants on-screen copy (as shipped), adding SMTP is scope creep and changes the delivery contract. This is the single biggest contract fork — must be confirmed before locking tasks. |
 | A2 | The porteiro filter should key on `PerformedByProfileId` (a GUID), not a display name, at the DB/endpoint layer. | CONSU-01 | If porteiro filtering is meant by name (fuzzy match), the WHERE clause differs (requires a join to AttendantProfiles/Users). |
 | A3 | CONFIRMED: Porteiro name resolution reuses the `AttendantProfile` seam (`GET /api/v1/security/attendant-profiles` returns `Id`/`UserId`/`DisplayName`, tenant-scoped); the Plan 20-01 staff list joins `AttendantProfiles` so `StaffMemberResponse.ProfileId` carries the `AttendantProfile.Id` used by both the CONSU-01 filter and the CONSU-02 name map. | CONSU-02 | If that seam were wrong (e.g. profiles porteiro-only while admins also appear in audit rows), the name join would need a `Users`-join — the staff-list join covers admins with profiles too (ProfileId null when absent, UI falls back to '—'). |
-| A4 | The post-cleanup audit-state vocabulary will make `gatehouse_only`/`denied` vs `entered_without_consent`/`exited` consistent; Phase 20 does not itself add new stored states. | CONSU-02 / Pitfall 4 | If cleanup branches do NOT land first (or rename states differently), the badge mapping could mismatch. Sequencing must be honored. |
+| A4 | The post-cleanup audit-state vocabulary will make `gatehouse_only`/`denied` vs `entered_without_consent`/`exited` consistent; Phase 20 does not itself add new stored states. | CONSU-02 / Pitfall 4 | RESOLVED 2026-09-26 — cleanup branches merged to `main` (PRs #10/#11) with no changes to Photos-module state constants (`git diff HEAD...origin/main` clean on the seam paths); badge mapping can proceed against the shipped contract. |
 | A5 | No new NuGet/npm packages are required (MailKit already present). | Standard Stack / Package Audit | If a porteiro-name join needs a new helper package, none should be added — use existing DBTools/endpoints. |
 
 ## Open Questions (RESOLVED — resolved by Phase 20 plans 2026-09-26)
@@ -527,4 +527,4 @@ exited: { tone: 'neutral', icon: 'log-out', label: 'Exit' },
 - Assumptions (delivery contract, porteiro name source, vocabulary): LOW/MEDIUM — flagged in Assumptions Log for user confirmation
 
 **Research date:** 2026-09-24
-**Valid until:** 2026-10-24 (30 days — stable domain, closeout phase; revisit if the cleanup branches land with a different audit-state vocabulary)
+**Valid until:** 2026-10-24 (30 days — stable domain, closeout phase; the cleanup branches have landed with no change to the audit-state vocabulary — verified 2026-09-26)

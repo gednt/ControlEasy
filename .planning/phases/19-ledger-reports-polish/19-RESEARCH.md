@@ -56,7 +56,7 @@ These directives bind the planner — research must not recommend approaches tha
 - **C#:** file-scoped namespaces, `sealed` by default, nullable enabled, `TreatWarningsAsErrors=true`, central package versioning, kebab-case plural REST routes.
 - **Angular:** standalone components, `OnPush`, signals, `ce-` prefix, ESLint `@angular-eslint/recommended`, Prettier single quotes + 120 cols, strict TS, DTOs generated via `ng-openapi-gen`.
 - **Mandatory Local CI Verification Gate:** `scripts/verify-ci-local.sh --fast` per turn; full `scripts/verify-ci-local.sh` at task completion (format, Release build, unit+arch tests, Testcontainers MySQL integration, Angular Docker prod build, OpenAPI drift check).
-- **Sequencing note:** `feat/unified-visits-flow-cleanup` and `fix/gatehouse-direction-persistence` must land on `main` before Phase 19 executes — the ledger/entry-log vocabulary this phase touches matches the post-cleanup contract.
+- **Sequencing note (SATISFIED 2026-09-26):** `feat/unified-visits-flow-cleanup` (PR #11, `7a5eb35`) and `fix/gatehouse-direction-persistence` (PR #10, `0d8f96a`) have landed on `main` — the ledger/entry-log vocabulary this phase touches matches the post-cleanup contract. Verified: the merge touched NO files under `src/Modules/Reports` or `src/Modules/AccessControl` (`git diff HEAD...origin/main` on those paths is empty), so assumption A4 below is confirmed — the seams referenced here are unchanged.
 
 ## Phase Requirements
 
@@ -323,7 +323,7 @@ return Results.Ok(rows);
 | A1 | The tenant-local day for São Paulo is UTC-3 in September (no DST), so `GetDayBoundsUtc` yields `03:00Z → next 03:00Z`. Verified by `TenantDayBoundaryTests` for 2026-09-19/06-15. | Standard Stack / LEDGER-01 | LOW — test already asserts these exact bounds |
 | A2 | `gatehouse_only` is a valid legacy `EntryState` value even though it is absent from `EntryStates` constants (which list `entered_with_consent`/`entered_without_consent`/`entered_override`/`exited`); the SQL (ReportReadRepository.cs:324) and integration test (ReportEndpointTests.cs:243,258) reference it. | LEDGER-02 vocabulary | MEDIUM — the full honest option list for legacy states should be confirmed against the post-cleanup contract on `main` before finalizing the filter |
 | A3 | No new package is needed for any of the five fixes. | Package Legitimacy Audit | LOW — all five fixes are code/UI/wiring changes on existing seams |
-| A4 | The post-cleanup entry-log contract (from `feat/unified-visits-flow-cleanup` + `fix/gatehouse-direction-persistence`) does not change the `NativeState`/`q`/package-drop seams referenced here. | Phase Requirements | MEDIUM — those branches must land on `main` first; if they alter `NativeState` values or `q` scope, the LEDGER-02/03 option/placeholder work must be re-anchored |
+| A4 | The post-cleanup entry-log contract (from `feat/unified-visits-flow-cleanup` + `fix/gatehouse-direction-persistence`) does not change the `NativeState`/`q`/package-drop seams referenced here. | Phase Requirements | RESOLVED 2026-09-26 — both branches merged to `main` (PRs #10/#11); `git diff HEAD...origin/main` shows zero changes under `src/Modules/Reports` and `src/Modules/AccessControl`, so the seams are unchanged |
 
 **If this table is empty:** n/a — see A1-A4 above.
 
@@ -456,4 +456,4 @@ return Results.Ok(rows);
 - Pitfalls: HIGH — each pitfall is anchored to a specific line in the read source
 
 **Research date:** 2026-09-24
-**Valid until:** 2026-10-24 (30 days — stable closeout phase on a fixed stack; re-validate if the `feat/unified-visits-flow-cleanup` / `fix/gatehouse-direction-persistence` branches alter `NativeState`/`q`/package-drop seams before they land on `main`)
+**Valid until:** 2026-10-24 (30 days — stable closeout phase on a fixed stack; the external contract branches have landed on `main` (2026-09-26, PRs #10/#11) without altering `NativeState`/`q`/package-drop seams — verified by diff)
