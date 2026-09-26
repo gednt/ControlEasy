@@ -43,7 +43,7 @@ import type { EntryLogResponse } from '../../../features/entry-log/entry-log.ser
         }
       </td>
       <td>{{ entry().overrideReason || '—' }}</td>
-      <td class="cell-porteiro">{{ entry().performedByProfileId || '—' }}</td>
+      <td class="cell-porteiro">{{ porteiroName() || '—' }}</td>
     </tr>
   `,
   styles: [
@@ -74,16 +74,16 @@ import type { EntryLogResponse } from '../../../features/entry-log/entry-log.ser
         opacity: 0.6;
       }
       .cell-porteiro {
-        font-family: var(--font-family-mono, monospace);
-        font-size: var(--font-size-xs, 12px);
+        font-size: var(--font-size-sm, 14px);
         color: var(--color-text-secondary, #4b5563);
-        word-break: break-all;
+        word-break: break-word;
       }
     `,
   ],
 })
 export class CeAuditRowComponent {
   entry = input.required<EntryLogResponse>();
+  porteiroName = input<string | undefined>(undefined);
   photoClicked = output<string>();
 
   subjectTypeLabel = computed(() => {

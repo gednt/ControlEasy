@@ -108,4 +108,41 @@ describe('CeAuditRowComponent', () => {
     fixture.detectChanges();
     expect(component.subjectTypeLabel()).toBe('Service provider');
   });
+
+  it('renders the resolved porteiro name when supplied, never the raw GUID', () => {
+    fixture.componentRef.setInput('entry', { ...baseEntry, performedByProfileId: '11111111-1111-1111-1111-111111111111' });
+    fixture.componentRef.setInput('porteiroName', 'Synthetic Porteiro One');
+    fixture.detectChanges();
+
+    const porteiroCell = fixture.nativeElement.querySelector('.cell-porteiro') as HTMLElement;
+    expect(porteiroCell.textContent).toContain('Synthetic Porteiro One');
+    expect(porteiroCell.textContent).not.toContain('11111111-1111-1111-1111-111111111111');
+  });
+
+  it('falls back to em-dash when porteiroName is not supplied', () => {
+    fixture.componentRef.setInput('entry', { ...baseEntry, performedByProfileId: '22222222-2222-2222-2222-222222222222' });
+    fixture.componentRef.setInput('porteiroName', undefined);
+    fixture.detectChanges();
+
+    const porteiroCell = fixture.nativeElement.querySelector('.cell-porteiro') as HTMLElement;
+    expect(porteiroCell.textContent?.trim()).toBe('—');
+    expect(porteiroCell.textContent).not.toContain('22222222-2222-2222-2222-222222222222');
+  });
+
+  it('still applies the override-row highlight when entryState is entered_override and porteiroName is set', () => {
+    fixture.componentRef.setInput('entry', {
+      ...baseEntry,
+      entryState: 'entered_override',
+      overrideReason: 'emergency',
+    });
+    fixture.componentRef.setInput('porteiroName', 'Synthetic Porteiro Two');
+    fixture.detectChanges();
+
+    const row = fixture.nativeElement.querySelector('tr');
+    expect(row.classList.contains('override-row')).toBe(true);
+    const reasonCell = fixture.nativeElement.querySelectorAll('td')[5] as HTMLElement;
+    expect(reasonCell.textContent).toContain('emergency');
+    const porteiroCell = fixture.nativeElement.querySelector('.cell-porteiro') as HTMLElement;
+    expect(porteiroCell.textContent).toContain('Synthetic Porteiro Two');
+  });
 });

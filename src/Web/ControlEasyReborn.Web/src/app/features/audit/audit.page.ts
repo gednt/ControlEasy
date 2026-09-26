@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { CeAuditFiltersComponent } from '../../design-system/components/audit-filters/audit-filters.component';
+import { CeAuditFiltersComponent, type PorteiroOption } from '../../design-system/components/audit-filters/audit-filters.component';
 import { CeAuditRowComponent } from '../../design-system/components/audit-row/audit-row.component';
 import { CeTableComponent } from '../../design-system/components/table/table.component';
 import { CePaginationComponent } from '../../design-system/components/pagination/pagination.component';
@@ -23,6 +23,7 @@ import {
   type EntryLogResponse,
 } from '../../features/entry-log/entry-log.service';
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
+import { AuthService, type StaffMemberResponse } from '../../core/services/auth.service';
 
 /**
  * Audit review page — append-only log of every entry created via the
@@ -71,6 +72,7 @@ import { getApiErrorMessage } from '../../core/utils/api-error.util';
 
       <ce-audit-filters
         [filters]="filters()"
+        [porteiros]="porteiroOptions()"
         (filtersChanged)="onFiltersChanged($event)"
       />
 
@@ -102,6 +104,7 @@ import { getApiErrorMessage } from '../../core/utils/api-error.util';
             @for (entry of entries(); track entry.id) {
               <ce-audit-row
                 [entry]="entry"
+                [porteiroName]="porteiroNameById().get(entry.performedByProfileId ?? '')"
                 (photoClicked)="openLightbox($event)"
               />
             }
@@ -182,6 +185,7 @@ import { getApiErrorMessage } from '../../core/utils/api-error.util';
 })
 export class AuditPage implements OnInit {
   private readonly entryLogService = inject(EntryLogService);
+  private readonly authService = inject(AuthService);
   private readonly toast = inject(ToastService);
 
   filters = signal<AuditFilters>({ skip: 0, take: 50 });
@@ -191,6 +195,24 @@ export class AuditPage implements OnInit {
   exporting = signal(false);
   lightboxOpen = signal(false);
   lightboxIndex = signal(0);
+
+  private readonly porteiros = signal<StaffMemberResponse[]>([]);
+
+  readonly porteiroOptions = computed<PorteiroOption[]>(() =>
+    this.porteiros()
+      .filter((p) => p.profileId !== null && p.profileId !== undefined)
+      .map((p) => ({ profileId: p.profileId as string, displayName: p.displayName }))
+  );
+
+  readonly porteiroNameById = computed<Map<string, string>>(() => {
+    const map = new Map<string, string>();
+    for (const member of this.porteiros()) {
+      if (member.profileId) {
+        map.set(member.profileId, member.displayName);
+      }
+    }
+    return map;
+  });
 
   /** Phase 13 lightbox input requires PhotoResponse shape — synthesize from entry. */
   lightboxPhotos = computed(() =>
@@ -215,6 +237,16 @@ export class AuditPage implements OnInit {
 
   ngOnInit(): void {
     void this.loadEntries();
+    void this.loadPorteiros();
+  }
+
+  private async loadPorteiros(): Promise<void> {
+    try {
+      const staff = await firstValueFrom(this.authService.listStaff());
+      this.porteiros.set(staff);
+    } catch {
+      this.porteiros.set([]);
+    }
   }
 
   private async loadEntries(): Promise<void> {
