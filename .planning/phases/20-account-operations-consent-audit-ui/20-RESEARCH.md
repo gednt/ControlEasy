@@ -377,26 +377,23 @@ exited: { tone: 'neutral', icon: 'log-out', label: 'Exit' },
 |---|-------|---------|---------------|
 | A1 | ACCNT-02's "temp password dispatched via SMTP" means the **administrative reset** handler should send email (not just the self-service forgot-password path). The shipped `ResetUserPasswordHandler` does not send email. | Standard Stack / Pitfall 5 / ACCNT-02 | If the user actually wants on-screen copy (as shipped), adding SMTP is scope creep and changes the delivery contract. This is the single biggest contract fork — must be confirmed before locking tasks. |
 | A2 | The porteiro filter should key on `PerformedByProfileId` (a GUID), not a display name, at the DB/endpoint layer. | CONSU-01 | If porteiro filtering is meant by name (fuzzy match), the WHERE clause differs (requires a join to AttendantProfiles/Users). |
-| A3 | Porteiro name resolution can reuse `GET /api/v1/security/attendant-profiles` (`ListAttendantProfilesHandler`, tenant-scoped, returns `DisplayName`). | CONSU-02 | If that endpoint is not the right source (e.g. admins also reset, or profiles are porteiro-only), the name join must be sourced differently (a `Users`-join or a new list endpoint). |
+| A3 | CONFIRMED: Porteiro name resolution reuses the `AttendantProfile` seam (`GET /api/v1/security/attendant-profiles` returns `Id`/`UserId`/`DisplayName`, tenant-scoped); the Plan 20-01 staff list joins `AttendantProfiles` so `StaffMemberResponse.ProfileId` carries the `AttendantProfile.Id` used by both the CONSU-01 filter and the CONSU-02 name map. | CONSU-02 | If that seam were wrong (e.g. profiles porteiro-only while admins also appear in audit rows), the name join would need a `Users`-join — the staff-list join covers admins with profiles too (ProfileId null when absent, UI falls back to '—'). |
 | A4 | The post-cleanup audit-state vocabulary will make `gatehouse_only`/`denied` vs `entered_without_consent`/`exited` consistent; Phase 20 does not itself add new stored states. | CONSU-02 / Pitfall 4 | If cleanup branches do NOT land first (or rename states differently), the badge mapping could mismatch. Sequencing must be honored. |
 | A5 | No new NuGet/npm packages are required (MailKit already present). | Standard Stack / Package Audit | If a porteiro-name join needs a new helper package, none should be added — use existing DBTools/endpoints. |
 
-## Open Questions
+## Open Questions (RESOLVED — resolved by Phase 20 plans 2026-09-26)
 
-1. **ACCNT-02 delivery contract: SMTP dispatch vs on-screen copy?**
+1. **ACCNT-02 delivery contract: SMTP dispatch vs on-screen copy?** — RESOLVED: SMTP dispatch (Plan 20-01).
    - What we know: `ResetUserPasswordHandler` returns the temp password inline (no email); `ForgotPasswordHandler` sends SMTP. `20-CONTEXT.md` says "temp password dispatched via SMTP."
-   - What's unclear: whether the admin-reset flow should email the temp password (and stop returning it in the body) or keep the shipped copy-to-clipboard modal.
-   - Recommendation: Dispatch via SMTP (mirror `ForgotPasswordHandler`) and surface a delivery-state feedback, removing the plaintext temp password from the JSON response. Confirm with user; this is the main contract fork.
+   - Resolution: Dispatch via SMTP, mirroring `ForgotPasswordHandler` (create PasswordResetRequest with deliveryState "Pending", send, MarkSent/MarkFailed in try/catch), and remove the plaintext temp password from `ResetUserPasswordResponse` — the response exposes `DeliveryState` instead. Implemented in Plan 20-01 Task 1.
 
-2. **TenantAdmin staff list source for the reset surface**
+2. **TenantAdmin staff list source for the reset surface** — RESOLVED: new tenant-scoped `GET /api/v1/security/staff` (Plan 20-01).
    - What we know: `GET /api/v1/tenants/{id}/porteiros` and `/admins` are behind `PlatformAdminRequirement.PolicyName` (group-level), so a TenantAdmin cannot call them. `GET /api/v1/security/attendant-profiles` is tenant-scoped but porteiro-only.
-   - What's unclear: where a TenantAdmin lists their own admins+porteiros to pick a reset target.
-   - Recommendation: Add/relax a TenantAdmin-reachable staff list (either un-gate the tenants staff-list endpoints to TenantAdmin for their own tenant, or add a tenant-scoped `security` staff list). This is a backend prerequisite for ACCNT-01.
+   - Resolution: Add a Security-module tenant-scoped staff endpoint (`GET /api/v1/security/staff`) listing the caller tenant's TenantAdmin + Porteiro users, restricted to TenantAdmin/PlatformAdmin callers, with each member's `AttendantProfile.Id` exposed as `ProfileId` (joined via `IAttendantProfileRepository`). Implemented in Plan 20-01 Task 2; consumed by Plans 20-02 (reset UI) and 20-04 (name map).
 
-3. **Porteiro filter semantics**
+3. **Porteiro filter semantics** — RESOLVED: exact `PerformedByProfileId` equality filter, keyed on `AttendantProfile.Id` (Plans 20-03/20-04).
    - What we know: `ConsentAuditLog.PerformedByProfileId` is a GUID; no name is stored on the row.
-   - What's unclear: filter by exact profile-id vs. name search.
-   - Recommendation: exact `PerformedByProfileId = @p` filter (dropdown of the tenant's porteiros), consistent with the other equality filters.
+   - Resolution: Exact `PerformedByProfileId = @p` parameterized filter (dropdown of the tenant's staff), consistent with the other equality filters. KEY-SPACE: `PerformedByProfileId` is an `AttendantProfile.Id` (`tenantContext.ProfileId`), so the dropdown values and the name map key on `StaffMemberResponse.ProfileId` (AttendantProfile.Id), never `User.Id`. Implemented in Plan 20-03 (filter threading + dropdown) and Plan 20-04 (name map). Assumption A3 confirmed: `GET /api/v1/security/attendant-profiles` returns `Id`/`DisplayName` and was reused (via the repository) as the profile-id/name source; the staff list cross-references `ProfileId` so one call feeds filter + names.
 
 ## Environment Availability
 
