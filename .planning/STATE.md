@@ -1,19 +1,21 @@
 ---
 gsd_state_version: 1.0
 milestone: v2.2
-milestone_name: Ledger & Reports Polish (current focused milestone; pointer remains
-  here while v2.2 Phases 19–22 execute on `version/2.2`).
-current_phase: 22
-current_phase_name: (next phase per ROADMAP — execution not started)
-status: executing
-last_updated: "2026-09-26T15:30:00.000Z"
+milestone_name: Ledger & Reports Polish (current focused milestone; v2.2
+  Phases 19–22 all complete on `version/2.2`. v2.4 Resident Self-Service &
+  Visitor Experience roadmap exists; ready for `/gsd-plan-phase 27`.)
+current_phase: 23
+current_phase_name: v2.4 milestone entry (Phase 23+ planned per
+  ROADMAP.md / v2.4-REQUIREMENTS.md — execution not started)
+status: ready
+last_updated: "2026-09-26T18:30:00.000Z"
 last_activity: 2026-09-26
 progress:
   total_phases: 4
-  completed_phases: 3
-  total_plans: 7
-  completed_plans: 7
-  percent: 75
+  completed_phases: 4
+  total_plans: 15
+  completed_plans: 15
+  percent: 100
 ---
 
 # Project State
@@ -27,18 +29,19 @@ See: .planning/PROJECT.md (updated 2026-09-23)
 
 ## Current Position
 
-Phase: 21 — Photo Capture & Display UI (complete; Phase 22 next)
+Phase: 22 — Mockup Parity & Test Closeout (complete; v2.2 milestone closeout complete)
 Plan: —
-Status: Phase 21 executed 2026-09-26 on `version/2.2` — 3 plans complete (PCAP-01/02/03 closeout), full local CI gate PASSED (format, Release build, UnitTests 255/255, ArchitectureTests 20/20, Testcontainers MySQL IntegrationTests 139/139, Angular production Docker build, OpenAPI client drift). 5 atomic commits on `version/2.2`. PCAP-02's "thumbnails in record lists (lazy)" clause is fully closed via the new `ce-photo` fetch-lazy input + `ce-photo-thumb` primitive + leading column wired into residents/vehicles/visits/service-providers list tables. Wave-0 validation gaps closed: list-endpoint integration tests (matching + cross-tenant + 400), list-thumbnail Playwright E2E, dead `PhotoBindingCacheService` + `generateThumbnail` shims removed (threat T-21-07 closed). One small backend follow-on: `entityType`/`entityId` made nullable on `GET /api/v1/photos` so the in-handler `BadRequest` guard is reachable (was returning 500 via the framework's missing-required-parameter binder). See `.planning/phases/21-photo-capture-display-ui/21-VERIFICATION.md` for per-requirement verification.
+Status: Phase 22 executed 2026-09-26 on `version/2.2` — 4 plans complete (UI-01 mockup parity + UI-02 forgot-password toast + TEST-01 E2E refresh + TEST-02 Nyquist validation coverage). Full local CI gate PASSED (format, Release build, UnitTests 255/255, ArchitectureTests 20/20, Testcontainers MySQL IntegrationTests, Angular production Docker build, OpenAPI client drift). 3 atomic commits on `version/2.2` (`docs(phase-22): finalize 22-VALIDATION.md + cross-phase audit` → `feat(phase-22): UI-01 mockup parity + UI-02 forgot-password toast` → `test(e2e): rewrite gatehouse-workflow against tabbed panel + fix module-pages labels`) plus a docs commit to flip `22-VALIDATION.md` `nyquist_compliant: true` + create `22-VERIFICATION.md` + advance STATE.md to Phase 23 (v2.4 milestone entry). All four v2.2 phases (19/20/21/22) now have `*-VALIDATION.md`; the milestone's Nyquist validation coverage is complete. See `.planning/phases/22-mockup-parity-test-closeout/22-VERIFICATION.md` for per-requirement evidence and surfaced decisions.
 
-Last activity: 2026-09-26 — Phase 21 executed end-to-end via GSD execute-phase. The fast gate passed after each plan (21-01 / 21-02 / 21-03) and the full 6-stage local CI gate passed at completion. OpenAPI client drift was detected on the first full-gate pass because the nullable-param backend change invalidated the generated `apiV1PhotosGet` signature; the regenerated client (`api-v-1-photos-get.ts` + `photos.service.ts`) was committed separately and a second full-gate run passed cleanly.
+Last activity: 2026-09-26 — Phase 22 executed end-to-end via GSD execute-phase. Per-turn fast gate passed after Wave 1 (22-04 docs + 22-01 UI parity + 22-02 forgot-password toast) and after Wave 2 (22-03 E2E refresh). The full 6-stage local CI gate passed at completion on the first run (no OpenAPI drift, no format issues, no test regressions). Surfaced decisions: dashboard parity = design-system conformance (no layout redesign), no client-side 429 cooldown, gatehouse E2E refresh (not delete), v2.0/v2.1 `*-VALIDATION.md` backfill is out of scope for TEST-02 and deferred.
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed (cumulative): 20 (11 v1.0 + 1 v1.1 + 3 v2.0 + 9 v2.1 + 3 v2.2 Phases 19/20/21)
+- Total plans completed (cumulative): 32 (11 v1.0 + 1 v1.1 + 3 v2.0 + 9 v2.1 + 15 v2.2 Phases 19/20/21/22 — 19: 4 plans, 20: 4 plans, 21: 3 plans, 22: 4 plans)
 - v2.1 milestone: 9 plans, 9 summaries, 3 verifications, full local CI verification passing
+- v2.2 milestone: 15 plans across Phases 19/20/21/22 (4 + 4 + 3 + 4); all four phases have `*-VALIDATION.md` + `*-VERIFICATION.md`; full local CI verification passing on the final state
 - Average duration per plan: ~5-15 min (autonomous execution)
 
 **Per-Plan Metrics:**
@@ -57,6 +60,10 @@ Last activity: 2026-09-26 — Phase 21 executed end-to-end via GSD execute-phase
 | Phase 21 P01 | 20 min | 2 tasks | 5 files |
 | Phase 21 P02 | 12 min | 2 tasks | 5 files |
 | Phase 21 P03 | 35 min | 3 tasks | 8 files |
+| Phase 22 P01 (UI-01) | ~25 min | 3 tasks | 14 files |
+| Phase 22 P02 (UI-02) | ~10 min | 1 task | 2 files |
+| Phase 22 P03 (TEST-01) | ~15 min | 2 tasks | 3 files |
+| Phase 22 P04 (TEST-02) | ~5 min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -77,6 +84,8 @@ Last activity: 2026-09-26 — Phase 21 executed end-to-end via GSD execute-phase
 - v2.3 door integration is simulator-first (2026-09-22): `IDoorController`/`IDeviceHandler` abstractions, HMAC-SHA256 unlock security, event normalization, ledger integration, health monitoring, and admin UI are all built and verified against a simulated/loopback device adapter; real vendor drivers stay out of scope until hardware exists; Phases 14–15 reservations retired, v2.3 phases start at 23
 - v2.5 real hardware milestone defined (2026-09-23): Control iD (DOOR-R1, Phase 32) → Intelbras (DOOR-R2, Phase 33) → Hikvision (Phase 34) + edge agent (outbound-only WSS, all drivers ride it — forced by the two we-dial-them vendors) + vendor simulators (zero hardware in CI) + on-site pilot (DOOR-R3, Phase 34); second wave (Henry, Shelly relay tier, TopData) parked in the v2.5 deferred pool
 - Gatehouse access is software-only validation/audit: QR initial credential + manual lookup fallback; every visit requires a destination; biometrics require separate approved spec
+- v2.2 Phase 22 closes UI-03/UI-04 parity for the four target pages (login/dashboard/visits/vehicles); remaining parity work for `apartments`, `service-providers`, `administration`, `platform/condominiums` is deferred (mockup-visual-parity UC6 list — future continuation, not silently expanded in Phase 22).
+- v2.0/v2.1 `*-VALIDATION.md` backfill (phases 11/12/13 + 16/17/18) is **out of scope** for TEST-02 (strictly 19–22); surfaced in `22-VERIFICATION.md` and `22-VALIDATION.md` cross-phase audit as a separate human decision, default deferred.
 - Multi-arch Docker/CI is fast-cycle (no milestone)
 
 ### Blockers/Concerns
@@ -90,7 +99,7 @@ Last activity: 2026-09-26 — Phase 21 executed end-to-end via GSD execute-phase
 
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
-| v1.1 | UI Parity & Functional Fixes (Phase 9 partial) | Residents page only; login/dashboard/showcase/visits/vehicles/etc. pending | 2026-09-13 | v2.2 target (UI-03/UI-04) |
+| v1.1 | UI Parity & Functional Fixes (Phase 9 partial) | Closed in Phase 22: residents parity already done; login/dashboard/visits/vehicles parity adopted ce-* components; login forgot-password toast + 401/busy unit tests cover UI-02; design-system conformance for dashboard surfaced (no `mockup/dashboard.html` exists; Shift ledger vs stat-grid divergence deferred to human). | 2026-09-13 | v2.2 (resolved 2026-09-26) |
 | v2.0 (tech debt) | Backend /api/v1/photos/{id}/thumbnail route | Closed in Phase 21: ce-photo uses object-fit cover on the authenticated source blob; no server-side thumbnailing needed. | 2026-09-13 | v2.2 (resolved 2026-09-26) |
 | v2.0 (tech debt) | Backend /api/v1/consent-policy list endpoint | Forward-compatible shim (4× parallel calls) | 2026-09-13 | v2.2 candidate |
 | v2.0 (tech debt) | Backend X-Total-Count header on /api/v1/entry-log | Forward-compatible shim (entries.length approximation) | 2026-09-13 | v2.2 target |
