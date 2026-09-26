@@ -199,11 +199,9 @@ public sealed class EntryLogEndpointTests
         var tenantId = TenantAwareWebApplicationFactory.TenantAId;
         var porteiroA = Guid.NewGuid();
         var porteiroB = Guid.NewGuid();
-        var porteiroAName = $"Porteiro A {Guid.NewGuid()}";
-        var porteiroBName = $"Porteiro B {Guid.NewGuid()}";
 
-        await SeedEntryAsync(tenantId, "entered_with_consent", $"A-{Guid.NewGuid()}", "11111111111", null, porteiroA);
-        await SeedEntryAsync(tenantId, "entered_with_consent", $"B-{Guid.NewGuid()}", "22222222222", null, porteiroB);
+        await SeedEntryAsync(tenantId, "entered_override", $"A-{Guid.NewGuid()}", "11111111111", "emergency", porteiroA);
+        await SeedEntryAsync(tenantId, "entered_override", $"B-{Guid.NewGuid()}", "22222222222", "emergency", porteiroB);
 
         var client = _factory.AsTenantA();
 
@@ -242,8 +240,8 @@ public sealed class EntryLogEndpointTests
         var porteiroA = Guid.NewGuid();
         var porteiroAUniqueName = $"Csv Port A {Guid.NewGuid()}";
 
-        await SeedEntryAsync(tenantId, "entered_without_consent", porteiroAUniqueName, "77777777777", null, porteiroA);
-        await SeedEntryAsync(tenantId, "entered_without_consent", $"Csv Other {Guid.NewGuid()}", "88888888888", null, Guid.NewGuid());
+        await SeedEntryAsync(tenantId, "entered_override", porteiroAUniqueName, "77777777777", "emergency", porteiroA);
+        await SeedEntryAsync(tenantId, "entered_override", $"Csv Other {Guid.NewGuid()}", "88888888888", "vouched", Guid.NewGuid());
 
         var client = _factory.AsTenantA();
 

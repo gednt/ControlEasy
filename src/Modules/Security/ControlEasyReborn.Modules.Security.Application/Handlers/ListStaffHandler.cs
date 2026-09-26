@@ -51,8 +51,10 @@ public sealed class ListStaffHandler
             var isStaff = roles.Any(StaffRoles.Contains);
             if (!isStaff) continue;
 
-            profileIdByUserId.TryGetValue(user.Id, out var profileId);
-            staff.Add(new StaffMemberResponse(user.Id, profileId, user.Email, user.DisplayName, user.Roles, user.Active));
+            Guid? resolvedProfileId = profileIdByUserId.TryGetValue(user.Id, out var profileId)
+                ? profileId
+                : (Guid?)null;
+            staff.Add(new StaffMemberResponse(user.Id, resolvedProfileId, user.Email, user.DisplayName, user.Roles, user.Active));
         }
 
         return staff;
