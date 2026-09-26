@@ -57,7 +57,7 @@
 ## v2.2 UI Parity & Operational Closeout (Started: 2026-09-22 — planning lineage unified 2026-09-23)
 
 **Phases:** 19, 20, 21, 22
-**Status:** Planned (planning artifacts complete; not yet executed)
+**Status:** Planned (per-phase planning complete 2026-09-24 via GSD plan-phase: 15 PLAN.md files + per-phase CONTEXT/RESEARCH/VALIDATION; plan-checker verified, all blockers resolved; requirements coverage 17/17; not yet executed)
 
 **Scope:** Software-only closeout — finish the ledger (day-bucketing, filter vocabulary, search scope, condominium-level package drops, X-Total-Count), complete pending UI surfaces (TenantAdmin password reset, consent audit review, photo capture), advance mockup parity, and refresh the test suite. Derived from `.planning/milestones/v2.1-MILESTONE-AUDIT.md` carryovers and v2.0/v2.1 partial requirements.
 
@@ -68,7 +68,7 @@
 - Phase 21: Photo Capture & Display UI (`PCAP-01..03`)
 - Phase 22: Mockup Parity & Test Closeout (`UI-01`, `UI-02`, `TEST-01`, `TEST-02`)
 
-**Roadmap:** `.planning/milestones/v2.2-ROADMAP.md` (snapshot) · **Requirements:** `.planning/milestones/v2.2-REQUIREMENTS.md`
+**Roadmap:** `.planning/milestones/v2.2-ROADMAP.md` (snapshot; live phase detail + plan lists in `.planning/ROADMAP.md` Phase Details + `.planning/phases/19-*`…`22-*` plan files) · **Requirements:** `.planning/milestones/v2.2-REQUIREMENTS.md`
 **Origin:** Party-mode planning session (2026-09-22)
 
 ---

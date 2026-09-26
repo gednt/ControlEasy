@@ -289,22 +289,25 @@ effect((onCleanup) => {
 
 **If this table is empty:** N/A — three assumptions logged above.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Does "lazy thumbnails in lists" require true fetch-laziness, or is eager-fetch-with-decode-lazy acceptable?**
    - What we know: no list thumbnail column exists; `ce-photo` fetches eagerly (only decode is lazy via `loading="lazy"`).
    - What's unclear: the performance bar — a 50-row list × full source blob fetch is the cost of the "cheap" path.
    - Recommendation: ask the user; default to IntersectionObserver-based fetch-laziness in `ce-photo` to honor the word "lazy" and avoid bandwidth waste.
+   - **RESOLVED:** True fetch-laziness via IntersectionObserver gate in `ce-photo` (Assumption A3). Implemented by plan 21-01 (add `lazy` input to `CePhotoComponent` + `CePhotoThumbComponent`), wired into lists by plan 21-02, E2E-verified by plan 21-03 Task 2.
 
 2. **Should the now-redundant `PhotoBindingCacheService` + dead `generateThumbnail` be removed in this phase?**
    - What we know: both are v2.0 shims; the backend list endpoint makes the cache non-authoritative; `generateThumbnail` is unreferenced in production code.
    - What's unclear: whether removal is in-scope for a UI closeout, or belongs to a backend-thumbnail phase.
    - Recommendation: scope as an optional cleanup task (low risk, improves clarity); do not block the main gap on it.
+   - **RESOLVED:** Committed cleanup. Plan 21-03 Task 3 removes `PhotoBindingCacheService` and `generateThumbnail`, refactoring `ce-photo-panel` to a single authoritative `photosApi.list()` source (closes threat T-21-07).
 
 3. **Is server-side thumbnailing (a real `/api/v1/photos/{id}/thumbnail` route) wanted to make list thumbnails cheap?**
    - What we know: explicitly deferred in CONTEXT.md ("Server-side image processing" deferred) and the spec's Out of Scope.
    - What's unclear: whether the list-thumbnail feature can ship acceptably without it.
    - Recommendation: treat as out of scope; ship list thumbnails client-side with fetch-laziness, and note the bandwidth caveat for a future backend phase.
+   - **RESOLVED:** Out of scope (deferred). List thumbnails ship client-side with fetch-laziness; a server-side `/thumbnail` route remains a deferred future-backend item (CONTEXT.md Deferred Ideas).
 
 ## Environment Availability
 

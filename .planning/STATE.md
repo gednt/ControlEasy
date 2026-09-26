@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-09-23)
 Phase: Not started (roadmap defined)
 Plan: —
 Status: Roadmap complete — awaiting phase planning
-Last activity: 2026-09-23 — Milestone v2.4 requirements + roadmap created
+Last activity: 2026-09-24 — v2.2 milestone (Phases 19–22) fully planned via GSD plan-phase in party-mode session: 4 phases, 15 PLAN.md files, per-phase CONTEXT/RESEARCH/VALIDATION artifacts, plan-checker verification with revision loops (all blockers resolved: 19-04 wave bump; 20 porteiro key-space fix to AttendantProfile.Id + 20-04 dependency; 21-02/21-03 dependency chain). Requirements coverage 17/17. Planning artifacts committed on `version/2.2`. NOTE: v2.2 planned out of milestone order — STATE.md milestone pointer stays v2.4 (Phases 27–30) intentionally; do not run `state.planned-phase` for 19–22 (it would corrupt the pointer).
 
 ## Performance Metrics
 

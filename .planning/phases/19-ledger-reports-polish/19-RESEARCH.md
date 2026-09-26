@@ -327,27 +327,27 @@ return Results.Ok(rows);
 
 **If this table is empty:** n/a — see A1-A4 above.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Full status-filter option list (LEDGER-02) — which of the heterogeneous `NativeState` values should be offered?**
    - What we know: the UNION emits VisitStatus (`Pending`/`CheckedIn`/`CheckedOut`/`Cancelled`/`Unknown`), PolicyOutcome (`permit`/`requires_action`/`refused`/`unknown`), failure codes (e.g. `credential_inactive`, 11 total via `RefusalCodes.All`), and legacy EntryState (`entered_*`, `gatehouse_only`, `exited`). The current dropdown has only visit states + inert `Recorded`/`Refused`.
    - What's unclear: whether the planner should expose the full union (visit states + permit/refused + failure codes + legacy states) or a curated, user-friendly subset — the CONTEXT.md decision only says "remove inert options and offer only returnable statuses."
-   - Recommendation: The planner should treat the *minimum* fix as removing `Recorded`/`Refused` and keeping the four visit states (they're the dominant rows). Whether to add package/refusal/legacy states is a small UI decision that can be resolved in the plan without a user round-trip, but the exact option list should be stated explicitly in PLAN.md so the plan-checker can verify each `value` matches a real `NativeState` string.
+   - RESOLVED: The planner treats the *minimum* fix as removing `Recorded`/`Refused` and keeping the four visit states (they're the dominant rows). The exact option list (empty "All statuses" + `CheckedIn`/`Pending`/`CheckedOut`/`Cancelled`) is stated explicitly in 19-02-PLAN.md Task 1, which removes the two inert options and keeps the four visit-state options whose `value` equals the exact `NativeState` strings the backend emits. Implemented in Plan 19-02.
 
 2. **LEDGER-03 resolution direction (placeholder vs. backend `q` extension) — agent's discretion.**
    - What we know: placeholder currently promises document + destination; backend `q` covers PackageDescription/SubjectName/Purpose only.
    - What's unclear: which is lower-risk in this codebase.
-   - Recommendation: **Align the placeholder** to "Search by subject, package description, or purpose" — zero backend/SQL change, zero re-test of the `q` filter, and it matches the settled D-03 scope. Extending `q` to document/destination would widen the UNION filter SQL and require new integration tests for no requirement value. Recommend placeholder alignment; flag in PLAN.md.
+   - RESOLVED: **Align the placeholder** to "Search by subject, package description, or purpose" — zero backend/SQL change, zero re-test of the `q` filter, and it matches the settled D-03 scope. Extending `q` to document/destination would widen the UNION filter SQL and require new integration tests for no requirement value. Implemented in Plan 19-02 Task 1 (placeholder alignment, the lower-risk option per LEDGER-03 agent discretion).
 
 3. **LEDGER-04 exact UI wording for the condominium-level trigger — agent's discretion.**
    - What we know: backend accepts `SubjectId = Guid.Empty`; `gateway-control.service.ts.recordPackageDrop` currently requires a non-empty `destinationApartmentId` string and maps it to `subjectId`.
    - What's unclear: exact label/placement (e.g. a "Condominium / reception drop" button or a "No specific apartment" checkbox in the modal).
-   - Recommendation: Add a secondary trigger (e.g. "Record reception/condominium drop") that bypasses the recipient search and sends `subjectId: '00000000-0000-0000-0000-000000000000'`. The `gateway-control.service.ts` `recordPackageDrop` signature should be adjusted to accept a nullable apartment (mapping `null` → Guid.Empty string) or a dedicated `recordCondominiumPackageDrop` method. Exact wording left to the plan, constrained by "surfaces the trigger."
+   - RESOLVED: Add a secondary trigger ("Record reception / condominium drop") that bypasses the recipient search and sends `subjectId: '00000000-0000-0000-0000-000000000000'`. The `gateway-control.service.ts` `recordPackageDrop` signature is adjusted to accept a nullable apartment (mapping `null` → Guid.Empty string; one method covers both paths). Implemented in Plan 19-03 Tasks 1 & 2.
 
 4. **LEDGER-05 exposure seam (endpoint vs. CORS policy).**
    - What we know: header is set on the endpoint (line 49); CORS policy `AngularDev` uses `AllowAnyHeader()` (request headers only).
    - What's unclear: whether non-same-origin consumers in scope are the dev Angular origin (`localhost:4200`) or a truly external origin.
-   - Recommendation: Add `WithExposedHeaders("X-Total-Count")` on the `/history` endpoint (most localized, applies regardless of CORS policy). Optionally also add `.WithExposedHeaders("X-Total-Count")` to the `AngularDev` policy for completeness. The endpoint-level fix is the canonical one and satisfies the success criterion "non-same-origin consumers receive the header."
+   - RESOLVED: Add `WithExposedHeaders("X-Total-Count")` on the `/history` endpoint (most localized, applies regardless of CORS policy); the `AngularDev` CORS policy in `Program.cs` is left unchanged. The endpoint-level fix is canonical and satisfies the success criterion "non-same-origin consumers receive the header." Implemented in Plan 19-04 Task 1.
 
 ## Environment Availability
 
