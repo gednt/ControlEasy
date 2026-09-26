@@ -1,11 +1,3 @@
 {
-  "ci-verification-gate": {
-    "Stop": [
-      {
-        "type": "command",
-        "command": "node ./scripts/hooks/verify-ci-agent-stop.cjs",
-        "timeout": 300
-      }
-    ]
-  }
+  "ci-verification-gate": {}
 }

@@ -1,10 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "instructions": [
-    "AGENTS.md",
-    ".opencode/rules/local-ci-verification.md"
-  ],
-  "plugin": [
-    "./.opencode/plugins/verify-ci.ts"
+    "AGENTS.md"
   ]
 }

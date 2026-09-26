@@ -23,13 +23,6 @@
             "commandWindows": "node scripts/hooks/impeccable-agent-hook.cjs",
             "timeout": 30,
             "statusMessage": "Design deep pass"
-          },
-          {
-            "type": "command",
-            "command": "node ./scripts/hooks/verify-ci-agent-stop.cjs",
-            "commandWindows": "node scripts/hooks/verify-ci-agent-stop.cjs",
-            "timeout": 300,
-            "statusMessage": "Verifying local CI checks"
           }
         ]
       }

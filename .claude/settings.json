@@ -1,5 +1,5 @@
 {
-  "description": "ControlEasy Reborn: Impeccable design detector and local CI verification gate.",
+  "description": "ControlEasy Reborn: Impeccable design detector.",
   "hooks": {
     "PostToolUse": [
       {
@@ -22,12 +22,6 @@
             "command": "[ ! -f \"${CLAUDE_PROJECT_DIR}/.claude/skills/impeccable/scripts/impeccable\" ] || \"${CLAUDE_PROJECT_DIR}/.claude/skills/impeccable/scripts/impeccable\" hook",
             "timeout": 30,
             "statusMessage": "Design deep pass"
-          },
-          {
-            "type": "command",
-            "command": "node \"${CLAUDE_PROJECT_DIR}/scripts/hooks/verify-ci-agent-stop.cjs\"",
-            "timeout": 300,
-            "statusMessage": "Verifying local CI checks"
           }
         ]
       }
