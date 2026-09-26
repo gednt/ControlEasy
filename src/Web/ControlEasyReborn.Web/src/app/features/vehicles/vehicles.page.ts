@@ -9,7 +9,7 @@ import {
 } from '../apartments/apartments-api.service';
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
 import { AuthService } from '../../core/services/auth.service';
-import { CeButtonComponent, CeModalComponent, CePhotoPanelComponent } from '../../design-system';
+import { CeButtonComponent, CeModalComponent, CePhotoPanelComponent, CePhotoThumbComponent } from '../../design-system';
 import type { VehicleType } from '../../api/models/vehicle-type';
 
 const VEHICLE_TYPES = [
@@ -22,7 +22,7 @@ const VEHICLE_TYPES = [
 @Component({
   selector: 'ce-vehicles-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, ApartmentPickerComponent, CeButtonComponent, CeModalComponent, CePhotoPanelComponent],
+  imports: [CommonModule, ReactiveFormsModule, ApartmentPickerComponent, CeButtonComponent, CeModalComponent, CePhotoPanelComponent, CePhotoThumbComponent],
   template: `
     <div class="page-header">
       <div class="page-title-block">
@@ -63,6 +63,7 @@ const VEHICLE_TYPES = [
           <table class="ce-table" aria-label="Vehicles table">
             <thead>
               <tr>
+                <th scope="col">Photo</th>
                 <th scope="col">Plate</th>
                 <th scope="col">Owner</th>
                 <th scope="col">Apartment</th>
@@ -75,6 +76,7 @@ const VEHICLE_TYPES = [
             <tbody>
               @for (vehicle of vehicles(); track vehicle.id) {
                 <tr>
+                  <td><ce-photo-thumb entityType="vehicle" [entityId]="vehicle.id" /></td>
                   <td>{{ vehicle.plate }}</td>
                   <td>{{ vehicle.ownerName ?? '\u2014' }}</td>
                   <td>{{ getApartmentLabel(vehicle.apartmentId) }}</td>
@@ -94,7 +96,7 @@ const VEHICLE_TYPES = [
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="7">
+                  <td colspan="8">
                     <div class="ce-empty-state" style="padding: var(--space-8) var(--space-4);">
                       <div class="ce-empty-state-icon">&#128663;</div>
                       <div class="ce-empty-state-title">No vehicles found</div>

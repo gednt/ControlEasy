@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { VisitsApiService, VisitResponse } from './visits-api.service';
 import { ApartmentsApiService, formatApartmentLabel } from '../apartments/apartments-api.service';
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
-import { CeButtonComponent, CeModalComponent, CePhotoPanelComponent } from '../../design-system';
+import { CeButtonComponent, CeModalComponent, CePhotoPanelComponent, CePhotoThumbComponent } from '../../design-system';
 import { VisitCreateModalComponent } from './visit-create-modal.component';
 import { GatewayControlService } from '../access-control/gateway-control.service';
 import { QrPassModalComponent } from '../access-control/components/qr-pass-modal.component';
@@ -21,6 +21,7 @@ type StatusFilter = 'all' | 'Pending' | 'CheckedIn';
     CeButtonComponent,
     CeModalComponent,
     CePhotoPanelComponent,
+    CePhotoThumbComponent,
     VisitCreateModalComponent,
     QrPassModalComponent,
   ],
@@ -60,6 +61,7 @@ type StatusFilter = 'all' | 'Pending' | 'CheckedIn';
         <table class="ce-table">
           <thead>
             <tr>
+              <th>Photo</th>
               <th>Visitor</th>
               <th>Document</th>
               <th>Apartment</th>
@@ -72,6 +74,7 @@ type StatusFilter = 'all' | 'Pending' | 'CheckedIn';
           <tbody>
             @for (visit of visits(); track visit.id) {
               <tr>
+                <td><ce-photo-thumb entityType="visitor" [entityId]="visit.id" /></td>
                 <td>{{ visit.visitorName }}</td>
                 <td>{{ visit.visitorDocument }}</td>
                 <td>{{ getApartmentLabel(visit.apartmentId) }}</td>
@@ -121,7 +124,7 @@ type StatusFilter = 'all' | 'Pending' | 'CheckedIn';
               </tr>
             } @empty {
               <tr>
-                <td colspan="7" class="text-secondary">No visits yet.</td>
+                <td colspan="8" class="text-secondary">No visits yet.</td>
               </tr>
             }
           </tbody>

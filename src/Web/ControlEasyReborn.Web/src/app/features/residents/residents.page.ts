@@ -13,6 +13,7 @@ import {
   CeModalComponent,
   CePaginationComponent,
   CePhotoPanelComponent,
+  CePhotoThumbComponent,
   CeSpinnerComponent,
   CeStatTileComponent,
   CeTableComponent,
@@ -46,6 +47,7 @@ type SortKey = 'nameAsc' | 'newest';
     CeModalComponent,
     CePaginationComponent,
     CePhotoPanelComponent,
+    CePhotoThumbComponent,
     CeSpinnerComponent,
     CeStatTileComponent,
     CeTableComponent,
@@ -135,6 +137,7 @@ type SortKey = 'nameAsc' | 'newest';
         <ce-table>
           <thead>
             <tr>
+              <th scope="col">Photo</th>
               <th scope="col">Resident</th>
               <th scope="col">Apartment</th>
               <th scope="col">CPF</th>
@@ -146,6 +149,7 @@ type SortKey = 'nameAsc' | 'newest';
           <tbody>
             @for (resident of paginatedResidents(); track resident.id) {
               <tr>
+                <td><ce-photo-thumb entityType="resident" [entityId]="resident.id" /></td>
                 <td>
                   <div class="resident-name-cell">
                     <ce-avatar [name]="resident.name" size="sm" />
@@ -193,7 +197,7 @@ type SortKey = 'nameAsc' | 'newest';
               </tr>
             } @empty {
               <tr>
-                <td colspan="6">
+                <td colspan="7">
                   <ce-empty-state
                     icon="&#128269;"
                     title="No residents match your filters"

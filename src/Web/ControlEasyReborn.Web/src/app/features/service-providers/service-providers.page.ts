@@ -9,14 +9,14 @@ import {
 } from './service-providers-api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
-import { CeButtonComponent, CeModalComponent, CePhotoPanelComponent } from '../../design-system';
+import { CeButtonComponent, CeModalComponent, CePhotoPanelComponent, CePhotoThumbComponent } from '../../design-system';
 
 type ProviderStatusFilter = 'all' | 'active' | 'inactive';
 
 @Component({
   selector: 'ce-service-providers-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, CeButtonComponent, CeModalComponent, CePhotoPanelComponent],
+  imports: [CommonModule, ReactiveFormsModule, CeButtonComponent, CeModalComponent, CePhotoPanelComponent, CePhotoThumbComponent],
   template: `
     <header class="page-header">
       <div class="page-title-block">
@@ -101,6 +101,7 @@ type ProviderStatusFilter = 'all' | 'active' | 'inactive';
             </caption>
             <thead>
               <tr>
+                <th scope="col"><span class="sr-only">Photo</span></th>
                 <th scope="col">Provider</th>
                 <th scope="col">Contact</th>
                 <th scope="col">Service</th>
@@ -111,6 +112,7 @@ type ProviderStatusFilter = 'all' | 'active' | 'inactive';
             <tbody>
               @for (provider of filteredProviders(); track provider.id) {
                 <tr [class.is-inactive]="!provider.active">
+                  <td><ce-photo-thumb entityType="service-provider" [entityId]="provider.id" /></td>
                   <td>
                     <strong class="provider-name">{{ provider.name }}</strong>
                     <span class="provider-detail">{{ provider.document }}</span>

@@ -97,18 +97,22 @@ export class CePhotoThumbComponent implements OnDestroy {
       };
 
       const target = this.elementRef.nativeElement;
-      this.observer = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            if (!entry.isIntersecting) continue;
-            this.disconnectObserver();
-            runResolve();
-            break;
-          }
-        },
-        { rootMargin: '200px' },
-      );
-      this.observer.observe(target);
+      if (typeof IntersectionObserver === 'undefined') {
+        runResolve();
+      } else {
+        this.observer = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (!entry.isIntersecting) continue;
+              this.disconnectObserver();
+              runResolve();
+              break;
+            }
+          },
+          { rootMargin: '200px' },
+        );
+        this.observer.observe(target);
+      }
 
       onCleanup(() => {
         this.disconnectObserver();
