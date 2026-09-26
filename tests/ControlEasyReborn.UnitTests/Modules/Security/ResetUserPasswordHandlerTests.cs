@@ -2,10 +2,12 @@ using ControlEasyReborn.Modules.Security.Application.Abstractions;
 using ControlEasyReborn.Modules.Security.Application.Errors;
 using ControlEasyReborn.Modules.Security.Application.Handlers;
 using ControlEasyReborn.Modules.Security.Domain.Entities;
+using ControlEasyReborn.SharedKernel.Email;
 using ControlEasyReborn.SharedKernel.MultiTenancy;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using Xunit;
 
 namespace ControlEasyReborn.UnitTests.Modules.Security;
@@ -17,6 +19,7 @@ public sealed class ResetUserPasswordHandlerTests
     private readonly IRefreshTokenRepository _refreshTokenRepository = Substitute.For<IRefreshTokenRepository>();
     private readonly IPasswordHasher _passwordHasher = Substitute.For<IPasswordHasher>();
     private readonly ITempPasswordGenerator _tempPasswordGenerator = Substitute.For<ITempPasswordGenerator>();
+    private readonly IEmailSender _emailSender = Substitute.For<IEmailSender>();
     private readonly ITenantContext _tenantContext = Substitute.For<ITenantContext>();
 
     private ResetUserPasswordHandler CreateSut()
@@ -27,6 +30,7 @@ public sealed class ResetUserPasswordHandlerTests
             _refreshTokenRepository,
             _passwordHasher,
             _tempPasswordGenerator,
+            _emailSender,
             _tenantContext,
             NullLogger<ResetUserPasswordHandler>.Instance);
     }
@@ -81,23 +85,95 @@ public sealed class ResetUserPasswordHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenTenantAdminResetsNonPorteiroInSameTenant_ThrowsForbiddenException()
+    public async Task HandleAsync_WhenTenantAdminResetsSameTenantAdmin_SucceedsAndDispatchesEmail()
     {
         var tenantId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
+        var callerProfileId = Guid.NewGuid();
 
         _tenantContext.IsPlatformAdmin.Returns(false);
         _tenantContext.Roles.Returns(new[] { "TenantAdmin" });
         _tenantContext.TenantId.Returns(tenantId);
+        _tenantContext.ProfileId.Returns(callerProfileId);
 
         var targetUser = new User(targetUserId, tenantId, "admin2@tenant.com", "hash", "Admin Two", true, false, "TenantAdmin", DateTime.UtcNow);
         _users.FindAsync(targetUserId, Arg.Any<CancellationToken>()).Returns(targetUser);
+        _tempPasswordGenerator.Generate(12).Returns("TempPass1234!");
+        _passwordHasher.Hash(Arg.Any<string>()).Returns("newHashedPassword11");
+
         var sut = CreateSut();
+        var result = await sut.HandleAsync(targetUserId, CancellationToken.None);
 
-        var act = () => sut.HandleAsync(targetUserId, CancellationToken.None);
+        result.UserId.Should().Be(targetUserId);
+        result.MustChangePassword.Should().BeTrue();
+        result.DeliveryState.Should().Be("Sent");
 
-        await act.Should().ThrowAsync<ForbiddenException>()
-            .WithMessage("*only reset gatekeeper passwords*");
+        targetUser.MustChangePassword.Should().BeTrue();
+        targetUser.PasswordHash.Should().Be("newHashedPassword11");
+
+        await _users.Received(1).UpdateAsync(targetUser, Arg.Any<CancellationToken>());
+        await _emailSender.Received(1).SendEmailAsync(
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<CancellationToken>());
+        await _passwordResetRequests.Received(1).AddAsync(
+            Arg.Is<PasswordResetRequest>(r => r.UserId == targetUserId && r.TenantId == tenantId),
+            Arg.Any<CancellationToken>());
+        await _passwordResetRequests.Received(1).UpdateAsync(Arg.Any<PasswordResetRequest>(), Arg.Any<CancellationToken>());
+        await _refreshTokenRepository.Received(1).RevokeAllForUserAsync(targetUserId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenResponseIsReturned_NeverContainsPlaintextPassword()
+    {
+        var tenantId = Guid.NewGuid();
+        var targetUserId = Guid.NewGuid();
+
+        _tenantContext.IsPlatformAdmin.Returns(true);
+        _tenantContext.Roles.Returns(new[] { "PlatformAdmin" });
+        _tenantContext.TenantId.Returns(tenantId);
+        _tenantContext.ProfileId.Returns(Guid.NewGuid());
+
+        var targetUser = new User(targetUserId, tenantId, "user@tenant.test", "hash", "User One", true, false, "TenantAdmin", DateTime.UtcNow);
+        _users.FindAsync(targetUserId, Arg.Any<CancellationToken>()).Returns(targetUser);
+        _tempPasswordGenerator.Generate(12).Returns("PlaintextTempSecret!");
+        _passwordHasher.Hash(Arg.Any<string>()).Returns("hashedValue");
+
+        var sut = CreateSut();
+        var result = await sut.HandleAsync(targetUserId, CancellationToken.None);
+
+        var serialized = System.Text.Json.JsonSerializer.Serialize(result);
+        serialized.Should().NotContain("PlaintextTempSecret!");
+        serialized.Should().NotContain("tempPassword");
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenEmailSenderThrows_ReturnsFailedDeliveryState()
+    {
+        var tenantId = Guid.NewGuid();
+        var targetUserId = Guid.NewGuid();
+
+        _tenantContext.IsPlatformAdmin.Returns(true);
+        _tenantContext.Roles.Returns(new[] { "PlatformAdmin" });
+        _tenantContext.TenantId.Returns(tenantId);
+        _tenantContext.ProfileId.Returns(Guid.NewGuid());
+
+        var targetUser = new User(targetUserId, tenantId, "user@tenant.test", "hash", "User One", true, false, "TenantAdmin", DateTime.UtcNow);
+        _users.FindAsync(targetUserId, Arg.Any<CancellationToken>()).Returns(targetUser);
+        _tempPasswordGenerator.Generate(12).Returns("PlaintextTempSecret!");
+        _passwordHasher.Hash(Arg.Any<string>()).Returns("hashedValue");
+        _emailSender.SendEmailAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Throws(new InvalidOperationException("SMTP unavailable"));
+
+        var sut = CreateSut();
+        var result = await sut.HandleAsync(targetUserId, CancellationToken.None);
+
+        result.DeliveryState.Should().Be("Failed");
+        result.MustChangePassword.Should().BeTrue();
+        await _passwordResetRequests.Received(1).UpdateAsync(Arg.Is<PasswordResetRequest>(r => r.DeliveryState == "Failed"), Arg.Any<CancellationToken>());
+        await _refreshTokenRepository.Received(1).RevokeAllForUserAsync(targetUserId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -115,25 +191,44 @@ public sealed class ResetUserPasswordHandlerTests
         var targetUser = new User(targetUserId, tenantId, "porteiro@tenant.com", "oldhash", "Porteiro One", true, false, "Porteiro", DateTime.UtcNow);
         _users.FindAsync(targetUserId, Arg.Any<CancellationToken>()).Returns(targetUser);
         _tempPasswordGenerator.Generate(12).Returns("TempPass1234!");
-        _passwordHasher.Hash("TempPass1234!").Returns("newHashedPassword11");
+        _passwordHasher.Hash(Arg.Any<string>()).Returns("newHashedPassword11");
 
         var sut = CreateSut();
         var result = await sut.HandleAsync(targetUserId, CancellationToken.None);
 
         result.UserId.Should().Be(targetUserId);
-        result.TempPassword.Should().Be("TempPass1234!");
         result.MustChangePassword.Should().BeTrue();
+        result.DeliveryState.Should().Be("Sent");
 
         targetUser.MustChangePassword.Should().BeTrue();
         targetUser.PasswordHash.Should().Be("newHashedPassword11");
 
         await _users.Received(1).UpdateAsync(targetUser, Arg.Any<CancellationToken>());
-        await _passwordResetRequests.Received(1).AddAsync(Arg.Is<PasswordResetRequest>(r =>
-            r.UserId == targetUserId &&
-            r.TenantId == tenantId &&
-            r.HashedTempPassword == "newHashedPassword11" &&
-            r.DeliveryState == "Sent"), Arg.Any<CancellationToken>());
+        await _emailSender.Received(1).SendEmailAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        await _passwordResetRequests.Received(1).AddAsync(
+            Arg.Is<PasswordResetRequest>(r => r.UserId == targetUserId && r.TenantId == tenantId),
+            Arg.Any<CancellationToken>());
         await _refreshTokenRepository.Received(1).RevokeAllForUserAsync(targetUserId, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenTenantAdminResetsResidentInSameTenant_ThrowsForbiddenException()
+    {
+        var tenantId = Guid.NewGuid();
+        var targetUserId = Guid.NewGuid();
+
+        _tenantContext.IsPlatformAdmin.Returns(false);
+        _tenantContext.Roles.Returns(new[] { "TenantAdmin" });
+        _tenantContext.TenantId.Returns(tenantId);
+
+        var targetUser = new User(targetUserId, tenantId, "resident@tenant.com", "hash", "Resident User", true, false, "Resident", DateTime.UtcNow);
+        _users.FindAsync(targetUserId, Arg.Any<CancellationToken>()).Returns(targetUser);
+        var sut = CreateSut();
+
+        var act = () => sut.HandleAsync(targetUserId, CancellationToken.None);
+
+        await act.Should().ThrowAsync<ForbiddenException>()
+            .WithMessage("*other staff*");
     }
 
     [Fact]
@@ -156,8 +251,8 @@ public sealed class ResetUserPasswordHandlerTests
         var result = await sut.HandleAsync(targetUserId, CancellationToken.None);
 
         result.UserId.Should().Be(targetUserId);
-        result.TempPassword.Should().Be("PlatformReset12!");
         result.MustChangePassword.Should().BeTrue();
+        result.DeliveryState.Should().Be("Sent");
 
         targetUser.MustChangePassword.Should().BeTrue();
         targetUser.PasswordHash.Should().Be("hashedPlatformReset");

@@ -41,6 +41,17 @@ public sealed class UserRepository : IUserRepository
         return MapFirstOrDefault(rows);
     }
 
+    public async Task<IReadOnlyList<User>> ListByTenantAsync(Guid tenantId, CancellationToken ct)
+    {
+        var rows = await _db.SelectAsync(
+            fields: SelectFields,
+            table: TableName,
+            whereClause: "TenantId = @param0",
+            parameters: new object[] { tenantId },
+            ct: ct);
+        return MapList(rows);
+    }
+
     public async Task AddAsync(User user, CancellationToken ct)
     {
         await _db.InsertAsync(
@@ -81,6 +92,18 @@ public sealed class UserRepository : IUserRepository
     {
         if (rows is null || rows.Rows.Count == 0) return null;
         return MapRow(rows.Rows[0]);
+    }
+
+    private static IReadOnlyList<User> MapList(DataTable rows)
+    {
+        if (rows is null || rows.Rows.Count == 0) return Array.Empty<User>();
+        var list = new List<User>(rows.Rows.Count);
+        foreach (DataRow r in rows.Rows)
+        {
+            var mapped = MapRow(r);
+            if (mapped is not null) list.Add(mapped);
+        }
+        return list;
     }
 
     private static User? MapRow(DataRow r)

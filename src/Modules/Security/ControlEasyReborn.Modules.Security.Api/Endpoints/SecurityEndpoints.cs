@@ -82,6 +82,17 @@ public static class SecurityEndpoints
             return Results.Ok(response);
         }).RequireAuthorization();
 
+        group.MapGet("/staff", async (
+            ITenantContext tenantContext,
+            ListStaffHandler handler,
+            CancellationToken ct) =>
+        {
+            var tenantId = tenantContext.TenantId
+                ?? throw new InvalidOperationException("Tenant context is not resolved.");
+            var response = await handler.HandleAsync(tenantId, ct);
+            return Results.Ok(response);
+        }).RequireAuthorization();
+
         var attendantGroup = group.MapGroup("/attendant-profiles")
             .RequireAuthorization();
 

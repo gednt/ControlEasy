@@ -45,21 +45,17 @@ public sealed class PasswordResetTests
         var result = await response.Content.ReadFromJsonAsync<ResetUserPasswordResponse>();
         result.Should().NotBeNull();
         result!.UserId.Should().Be(targetUserId);
-        result.TempPassword.Should().NotBeNullOrWhiteSpace();
-        result.TempPassword.Length.Should().BeGreaterThanOrEqualTo(12);
         result.MustChangePassword.Should().BeTrue();
+        result.DeliveryState.Should().Be("Sent");
+
+        // ResetUserPasswordResponse must NOT include a plaintext password field
+        var raw = await response.Content.ReadAsStringAsync();
+        raw.Should().NotContain("tempPassword");
+        raw.Should().NotContain("TempPassword");
 
         // Verify old refresh token was revoked
         var isRevoked = await CheckRefreshTokenRevokedAsync(targetUserId, "active-refresh-token-1");
         isRevoked.Should().BeTrue();
-
-        // Verify login with temp password succeeds and reports MustChangePassword == true
-        var anonClient = _factory.CreateClient();
-        var loginResponse = await anonClient.PostAsJsonAsync("/api/v1/security/auth/login", new LoginRequest(email, result.TempPassword));
-        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var loginResult = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
-        loginResult.Should().NotBeNull();
-        loginResult!.MustChangePassword.Should().BeTrue();
     }
 
     [Fact]
@@ -86,11 +82,41 @@ public sealed class PasswordResetTests
         result.Should().NotBeNull();
         result!.UserId.Should().Be(targetUserId);
         result.MustChangePassword.Should().BeTrue();
+        result.DeliveryState.Should().Be("Sent");
 
-        // Verify login with temp password
-        var anonClient = _factory.CreateClient();
-        var loginResponse = await anonClient.PostAsJsonAsync("/api/v1/security/auth/login", new LoginRequest(email, result.TempPassword));
-        loginResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var raw = await response.Content.ReadAsStringAsync();
+        raw.Should().NotContain("tempPassword");
+        raw.Should().NotContain("TempPassword");
+    }
+
+    [Fact]
+    public async Task TenantAdmin_CanResetOwnAdmin_Successfully()
+    {
+        var targetUserId = Guid.NewGuid();
+        var tenantId = TenantAwareWebApplicationFactory.TenantAId;
+        var email = $"coadmin-{targetUserId}@tenanta.test";
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+            var initialHash = passwordHasher.Hash("AdminPass123!");
+            await SeedUserAsync(targetUserId, tenantId, email, initialHash, "TenantAdmin");
+        }
+
+        var client = CreateTenantAdminClient(tenantId, "admin@tenanta.test");
+
+        var response = await client.PostAsync($"/api/v1/security/users/{targetUserId}/reset-password", null);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var result = await response.Content.ReadFromJsonAsync<ResetUserPasswordResponse>();
+        result.Should().NotBeNull();
+        result!.UserId.Should().Be(targetUserId);
+        result.MustChangePassword.Should().BeTrue();
+        result.DeliveryState.Should().Be("Sent");
+
+        var raw = await response.Content.ReadAsStringAsync();
+        raw.Should().NotContain("tempPassword");
+        raw.Should().NotContain("TempPassword");
     }
 
     [Fact]
@@ -117,24 +143,24 @@ public sealed class PasswordResetTests
     }
 
     [Fact]
-    public async Task TenantAdmin_AttemptingToResetNonPorteiroInSameTenant_Receives403Forbidden()
+    public async Task TenantAdmin_AttemptingToResetResidentInSameTenant_Receives403Forbidden()
     {
         var targetUserId = Guid.NewGuid();
         var tenantId = TenantAwareWebApplicationFactory.TenantAId;
-        var email = $"coadmin-{targetUserId}@tenanta.test";
+        var email = $"resident-{targetUserId}@tenanta.test";
 
         using (var scope = _factory.Services.CreateScope())
         {
             var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
-            var initialHash = passwordHasher.Hash("AdminPass123!");
-            await SeedUserAsync(targetUserId, tenantId, email, initialHash, "TenantAdmin");
+            var initialHash = passwordHasher.Hash("ResidentPass123!");
+            await SeedUserAsync(targetUserId, tenantId, email, initialHash, "Resident");
         }
 
         var client = CreateTenantAdminClient(tenantId, "admin@tenanta.test");
 
         var response = await client.PostAsync($"/api/v1/security/users/{targetUserId}/reset-password", null);
 
-        // PASS-03: Tenant admin can reset only their own gatekeepers' passwords
+        // Resident is not staff — TenantAdmin cannot reset a Resident's password
         response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 

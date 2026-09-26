@@ -32,6 +32,7 @@ public static class SecurityModuleServiceCollectionExtensions
         services.AddMemoryCache();
         services.AddScoped<LoginHandler>();
         services.AddScoped<ResetUserPasswordHandler>();
+        services.AddScoped<ListStaffHandler>();
         services.AddScoped<ForgotPasswordHandler>();
         services.AddScoped<RefreshHandler>();
         services.AddScoped<ChangePasswordHandler>();

@@ -52,7 +52,9 @@ public sealed record SessionResponse(
     bool IsDemoPersona,
     IReadOnlyList<SessionTenantResponse> SwitchableTenants);
 
-public sealed record ResetUserPasswordResponse(Guid UserId, string TempPassword, bool MustChangePassword);
+public sealed record ResetUserPasswordResponse(Guid UserId, bool MustChangePassword, string DeliveryState);
+
+public sealed record StaffMemberResponse(Guid UserId, Guid? ProfileId, string Email, string DisplayName, string Roles, bool Active);
 
 public sealed record ForgotPasswordRequest(string Email);
 

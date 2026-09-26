@@ -2,6 +2,7 @@ using ControlEasyReborn.Modules.Security.Application.Abstractions;
 using ControlEasyReborn.Modules.Security.Application.Contracts;
 using ControlEasyReborn.Modules.Security.Application.Errors;
 using ControlEasyReborn.Modules.Security.Domain.Entities;
+using ControlEasyReborn.SharedKernel.Email;
 using ControlEasyReborn.SharedKernel.MultiTenancy;
 using Microsoft.Extensions.Logging;
 
@@ -14,6 +15,7 @@ public sealed class ResetUserPasswordHandler
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IPasswordHasher _passwordHasher;
     private readonly ITempPasswordGenerator _tempPasswordGenerator;
+    private readonly IEmailSender _emailSender;
     private readonly ITenantContext _tenantContext;
     private readonly ILogger<ResetUserPasswordHandler> _logger;
 
@@ -23,6 +25,7 @@ public sealed class ResetUserPasswordHandler
         IRefreshTokenRepository refreshTokenRepository,
         IPasswordHasher passwordHasher,
         ITempPasswordGenerator tempPasswordGenerator,
+        IEmailSender emailSender,
         ITenantContext tenantContext,
         ILogger<ResetUserPasswordHandler> logger)
     {
@@ -31,6 +34,7 @@ public sealed class ResetUserPasswordHandler
         _refreshTokenRepository = refreshTokenRepository;
         _passwordHasher = passwordHasher;
         _tempPasswordGenerator = tempPasswordGenerator;
+        _emailSender = emailSender;
         _tenantContext = tenantContext;
         _logger = logger;
     }
@@ -59,10 +63,11 @@ public sealed class ResetUserPasswordHandler
             }
 
             var roles = targetUser.Roles.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-            var isPorteiro = roles.Contains("Porteiro", StringComparer.OrdinalIgnoreCase);
-            if (!isPorteiro)
+            var isTargetStaff = roles.Contains("TenantAdmin", StringComparer.OrdinalIgnoreCase)
+                                || roles.Contains("Porteiro", StringComparer.OrdinalIgnoreCase);
+            if (!isTargetStaff)
             {
-                throw new ForbiddenException("Tenant admins can only reset gatekeeper passwords.");
+                throw new ForbiddenException("Tenant admins can only reset other staff passwords.");
             }
         }
 
@@ -78,23 +83,43 @@ public sealed class ResetUserPasswordHandler
             userId: targetUser.Id,
             normalizedEmail: targetUser.Email.ToUpperInvariant(),
             hashedTempPassword: hashedTempPassword,
-            deliveryState: "Sent",
+            deliveryState: "Pending",
             failureReason: null,
             requestedByUserId: _tenantContext.ProfileId,
             createdAtUtc: DateTime.UtcNow,
-            deliveredAtUtc: DateTime.UtcNow,
+            deliveredAtUtc: null,
             expiresAtUtc: DateTime.UtcNow.AddHours(24));
 
         await _passwordResetRequests.AddAsync(resetRequest, ct);
 
+        try
+        {
+            await _emailSender.SendEmailAsync(
+                toEmail: targetUser.Email,
+                toName: targetUser.DisplayName ?? targetUser.Email,
+                subject: "ControlEasy - Recuperação de Senha",
+                bodyHtml: $"<p>Olá, {targetUser.DisplayName ?? targetUser.Email}.</p><p>Sua senha temporária de acesso é: <strong>{tempPassword}</strong></p><p>Ela expira em 24 horas. Ao acessar, você será solicitado a definir uma nova senha.</p>",
+                ct: ct);
+
+            resetRequest.MarkSent();
+            await _passwordResetRequests.UpdateAsync(resetRequest, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to deliver temporary password email to {Email}", targetUser.Email);
+            resetRequest.MarkFailed(ex.Message);
+            await _passwordResetRequests.UpdateAsync(resetRequest, ct);
+        }
+
         await _refreshTokenRepository.RevokeAllForUserAsync(targetUser.Id, ct);
 
         _logger.LogInformation(
-            "Administrative password reset completed for user {UserId} in tenant {TenantId} by actor profile {ActorProfileId}",
+            "Administrative password reset completed for user {UserId} in tenant {TenantId} by actor profile {ActorProfileId}; delivery state {DeliveryState}",
             targetUser.Id,
             targetUser.TenantId,
-            _tenantContext.ProfileId);
+            _tenantContext.ProfileId,
+            resetRequest.DeliveryState);
 
-        return new ResetUserPasswordResponse(targetUser.Id, tempPassword, true);
+        return new ResetUserPasswordResponse(targetUser.Id, true, resetRequest.DeliveryState);
     }
 }
