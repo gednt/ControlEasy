@@ -34,7 +34,7 @@ export class PhotosService extends BaseService {
    *
    * This method doesn't expect any request body.
    */
-  apiV1PhotosGet$Response(params: ApiV1PhotosGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+  apiV1PhotosGet$Response(params?: ApiV1PhotosGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
     const obs = apiV1PhotosGet(this.http, this.rootUrl, params, context);
     return obs;
   }
@@ -45,7 +45,7 @@ export class PhotosService extends BaseService {
    *
    * This method doesn't expect any request body.
    */
-  apiV1PhotosGet(params: ApiV1PhotosGet$Params, context?: HttpContext): Observable<void> {
+  apiV1PhotosGet(params?: ApiV1PhotosGet$Params, context?: HttpContext): Observable<void> {
     const resp = this.apiV1PhotosGet$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<void>): void => r.body)

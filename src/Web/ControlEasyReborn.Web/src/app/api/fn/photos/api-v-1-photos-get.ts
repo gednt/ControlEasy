@@ -9,11 +9,11 @@ import { RequestBuilder } from '../../request-builder';
 
 
 export interface ApiV1PhotosGet$Params {
-  entityType: string;
-  entityId: string;
+  entityType?: string;
+  entityId?: string;
 }
 
-export function apiV1PhotosGet(http: HttpClient, rootUrl: string, params: ApiV1PhotosGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+export function apiV1PhotosGet(http: HttpClient, rootUrl: string, params?: ApiV1PhotosGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1PhotosGet.PATH, 'get');
   if (params) {
     rb.query('entityType', params.entityType, {});
