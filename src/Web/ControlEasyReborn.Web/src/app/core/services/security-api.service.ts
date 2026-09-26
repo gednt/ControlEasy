@@ -76,8 +76,17 @@ export interface ForgotPasswordResponse {
 
 export interface ResetUserPasswordResponse {
   userId: string;
-  tempPassword: string;
   mustChangePassword: boolean;
+  deliveryState: string;
+}
+
+export interface StaffMemberResponse {
+  userId: string;
+  profileId: string | null;
+  email: string;
+  displayName: string;
+  roles: string;
+  active: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -95,6 +104,10 @@ export class SecurityApiService {
 
   resetUserPassword(userId: string): Observable<ResetUserPasswordResponse> {
     return this.http.post<ResetUserPasswordResponse>(`${this.baseUrl}/users/${userId}/reset-password`, {});
+  }
+
+  listStaff(): Observable<StaffMemberResponse[]> {
+    return this.http.get<StaffMemberResponse[]>(`${this.baseUrl}/staff`);
   }
 
   refresh(refreshToken: string): Observable<RefreshResponse> {

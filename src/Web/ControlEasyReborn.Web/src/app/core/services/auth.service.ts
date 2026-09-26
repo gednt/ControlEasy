@@ -1,10 +1,10 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, of, throwError, switchMap, tap, catchError } from 'rxjs';
-import { SecurityApiService, LoginResponse, TenantLookupResponse, ForgotPasswordResponse, ResetUserPasswordResponse } from './security-api.service';
+import { SecurityApiService, LoginResponse, TenantLookupResponse, ForgotPasswordResponse, ResetUserPasswordResponse, StaffMemberResponse } from './security-api.service';
 import { TenantSessionService } from './tenant-session.service';
 
-export type { LoginResponse, TenantLookupResponse, ForgotPasswordResponse, ResetUserPasswordResponse } from './security-api.service';
+export type { LoginResponse, TenantLookupResponse, ForgotPasswordResponse, ResetUserPasswordResponse, StaffMemberResponse } from './security-api.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -118,6 +118,10 @@ export class AuthService {
 
   resetUserPassword(userId: string): Observable<ResetUserPasswordResponse> {
     return this.api.resetUserPassword(userId);
+  }
+
+  listStaff(): Observable<StaffMemberResponse[]> {
+    return this.api.listStaff();
   }
 
   refreshAuth(): Observable<string | null> {

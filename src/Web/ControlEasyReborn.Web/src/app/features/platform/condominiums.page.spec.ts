@@ -38,15 +38,15 @@ describe('CondominiumsPage', () => {
 
   it('should initialize with reset modal closed', () => {
     expect(component.resetResultModalOpen()).toBeFalse();
-    expect(component.resetResultPassword()).toBe('');
+    expect(component.resetResultMessage()).toBe('');
   });
 
   it('onResetUserPassword should call authService.resetUserPassword when confirmed', () => {
     spyOn(window, 'confirm').and.returnValue(true);
     authServiceSpy.resetUserPassword.and.returnValue(of({
       userId: 'user-123',
-      tempPassword: 'TempPassword42!',
       mustChangePassword: true,
+      deliveryState: 'Sent',
     }));
 
     component.onResetUserPassword('user-123', 'John Doe');
@@ -54,7 +54,23 @@ describe('CondominiumsPage', () => {
     expect(authServiceSpy.resetUserPassword).toHaveBeenCalledWith('user-123');
     expect(component.resetResultModalOpen()).toBeTrue();
     expect(component.resetResultUser()).toBe('John Doe');
-    expect(component.resetResultPassword()).toBe('TempPassword42!');
+    expect(component.resetResultDeliveryState()).toBe('Sent');
+    expect(component.resetResultMessage()).toContain('dispatched by email');
+  });
+
+  it('onResetUserPassword surfaces Failed delivery state without a temp password', () => {
+    spyOn(window, 'confirm').and.returnValue(true);
+    authServiceSpy.resetUserPassword.and.returnValue(of({
+      userId: 'user-123',
+      mustChangePassword: true,
+      deliveryState: 'Failed',
+    }));
+
+    component.onResetUserPassword('user-123', 'John Doe');
+
+    expect(component.resetResultDeliveryState()).toBe('Failed');
+    expect(component.resetResultMessage()).toContain('Email delivery failed');
+    expect(component.resetResultMessage()).not.toContain('TempPassword');
   });
 
   it('onResetUserPassword should not call authService when cancelled', () => {
@@ -69,12 +85,12 @@ describe('CondominiumsPage', () => {
   it('closeResetResultModal should close modal and clear state', () => {
     component.resetResultModalOpen.set(true);
     component.resetResultUser.set('John Doe');
-    component.resetResultPassword.set('TempPassword42!');
+    component.resetResultMessage.set('Email delivery failed for John Doe.');
 
     component.closeResetResultModal();
 
     expect(component.resetResultModalOpen()).toBeFalse();
     expect(component.resetResultUser()).toBe('');
-    expect(component.resetResultPassword()).toBe('');
+    expect(component.resetResultMessage()).toBe('');
   });
 });

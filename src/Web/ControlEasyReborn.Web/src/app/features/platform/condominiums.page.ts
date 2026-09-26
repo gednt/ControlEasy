@@ -437,16 +437,10 @@ const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?$/;
           </div>
           <div class="ce-modal-body">
             <p class="reset-modal-desc">
-              Temporary password for <strong>{{ resetResultUser() }}</strong>:
+              {{ resetResultMessage() }}
             </p>
-            <div class="temp-password-box">
-              <code class="temp-password-text">{{ resetResultPassword() }}</code>
-              <button type="button" class="ce-button variant-ghost size-sm copy-btn" (click)="copyTempPassword()">
-                {{ passwordCopied() ? 'Copied!' : 'Copy' }}
-              </button>
-            </div>
             <p class="reset-modal-notice text-secondary">
-              The user will be required to choose a new password upon sign-in. This password will not be shown again.
+              The user will be required to choose a new password upon sign-in. No temporary password is shown in this dialog — delivery happens by email only.
             </p>
           </div>
           <div class="ce-modal-footer">
@@ -593,8 +587,8 @@ export class CondominiumsPage {
   resettingUserId = signal<string | null>(null);
   resetResultModalOpen = signal(false);
   resetResultUser = signal('');
-  resetResultPassword = signal('');
-  passwordCopied = signal(false);
+  resetResultMessage = signal('');
+  resetResultDeliveryState = signal('');
 
   tenants = signal<TenantResponse[]>([]);
   loading = signal(true);
@@ -1086,8 +1080,8 @@ export class CondominiumsPage {
       next: (res) => {
         this.resettingUserId.set(null);
         this.resetResultUser.set(userName);
-        this.resetResultPassword.set(res.tempPassword);
-        this.passwordCopied.set(false);
+        this.resetResultDeliveryState.set(res.deliveryState);
+        this.resetResultMessage.set(this.formatResetResultMessage(userName, res.deliveryState));
         this.resetResultModalOpen.set(true);
       },
       error: (err) => {
@@ -1097,20 +1091,20 @@ export class CondominiumsPage {
     });
   }
 
-  copyTempPassword(): void {
-    const pwd = this.resetResultPassword();
-    if (pwd) {
-      navigator.clipboard.writeText(pwd).then(() => {
-        this.passwordCopied.set(true);
-        setTimeout(() => this.passwordCopied.set(false), 2000);
-      });
+  private formatResetResultMessage(userName: string, deliveryState: string): string {
+    if (deliveryState === 'Failed') {
+      return `Email delivery failed for ${userName}. The temporary password was not dispatched; the user's existing password still works.`;
     }
+    if (deliveryState === 'Pending') {
+      return `Temporary password scheduled for delivery to ${userName}.`;
+    }
+    return `Temporary password dispatched by email to ${userName}.`;
   }
 
   closeResetResultModal(): void {
     this.resetResultModalOpen.set(false);
     this.resetResultUser.set('');
-    this.resetResultPassword.set('');
-    this.passwordCopied.set(false);
+    this.resetResultMessage.set('');
+    this.resetResultDeliveryState.set('');
   }
 }

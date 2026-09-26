@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import {
   AdministrationApiService,
   AuditLogResponse,
@@ -8,6 +9,9 @@ import {
   AuditLogQueryParams,
 } from './administration-api.service';
 import { CeToggleComponent } from '../../design-system/components/toggle/toggle.component';
+import { AuthService } from '../../core/services/auth.service';
+import { type StaffMemberResponse } from '../../core/services/security-api.service';
+import { getApiErrorMessage } from '../../core/utils/api-error.util';
 
 @Component({
   selector: 'ce-administration-page',
@@ -71,6 +75,17 @@ import { CeToggleComponent } from '../../design-system/components/toggle/toggle.
       >
         System-Wide Security Audit
       </button>
+      @if (isTenantAdmin()) {
+        <button
+          role="tab"
+          class="tab"
+          [class.active]="activeTab() === 'staff'"
+          [attr.aria-selected]="activeTab() === 'staff'"
+          (click)="setTab('staff')"
+        >
+          Staff & Passwords
+        </button>
+      }
     </div>
 
     @if (loading()) {
@@ -300,7 +315,7 @@ import { CeToggleComponent } from '../../design-system/components/toggle/toggle.
           </div>
         </div>
       </form>
-    } @else {
+    } @else if (activeTab() === 'audit') {
       <!-- Tab 2: System-Wide Audit Ledger -->
       <div class="audit-section">
         <div class="audit-toolbar">
@@ -418,6 +433,80 @@ import { CeToggleComponent } from '../../design-system/components/toggle/toggle.
           </section>
         }
       </div>
+    } @else if (activeTab() === 'staff' && isTenantAdmin()) {
+      <div class="staff-section">
+        @if (staffLoading()) {
+          <section class="empty-record" aria-live="polite">
+            <p class="eyebrow">Staff / loading</p>
+            <h2>Loading staff</h2>
+            <p>Retrieving the tenant's administrators and gatekeepers.</p>
+          </section>
+        } @else if (staffLoadError()) {
+          <section class="empty-record audit-load-error" aria-labelledby="staff-load-error-title" role="alert">
+            <p class="eyebrow">Staff / unavailable</p>
+            <h2 id="staff-load-error-title">Unable to load staff</h2>
+            <p>{{ staffLoadError() }}</p>
+            <button class="ce-button variant-primary" type="button" (click)="loadStaff()">
+              Retry loading staff
+            </button>
+          </section>
+        } @else if (staff().length === 0) {
+          <section class="empty-record" aria-labelledby="staff-empty-title">
+            <p class="eyebrow">Staff / no entries</p>
+            <h2 id="staff-empty-title">No staff found</h2>
+            <p>This condominium does not have any administrators or gatekeepers to manage.</p>
+          </section>
+        } @else {
+          <section class="ce-card table-card" aria-labelledby="staff-table-title">
+            <header class="card-header">
+              <h2 id="staff-table-title" class="card-title">Staff & Passwords</h2>
+              <p class="card-subtitle">Reset a password to dispatch a temporary one by email. The recipient is forced to choose a new password at next login.</p>
+            </header>
+            <div class="card-body">
+              <table class="ce-table" aria-label="Staff table">
+                <thead>
+                  <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Role</th>
+                    <th scope="col" class="th-actions">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (member of staff(); track member.userId) {
+                    <tr>
+                      <td>{{ member.displayName }}</td>
+                      <td>{{ member.email }}</td>
+                      <td><code class="action-code">{{ member.roles }}</code></td>
+                      <td class="cell-action">
+                        <button
+                          type="button"
+                          class="ce-button variant-secondary"
+                          [disabled]="resettingUserId() === member.userId"
+                          (click)="onResetPassword(member)"
+                        >
+                          @if (resettingUserId() === member.userId) {
+                            Resetting…
+                          } @else {
+                            Reset password
+                          }
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          @if (resetFeedback(); as feedback) {
+            <div class="status-banner" [class.error]="feedback.state === 'Failed'">
+              <span>{{ feedback.message }}</span>
+              <button class="dismiss-btn" (click)="resetFeedback.set(null)">&times;</button>
+            </div>
+          }
+        }
+      </div>
     }
 
     <!-- Inspection Modal -->
@@ -515,6 +604,7 @@ import { CeToggleComponent } from '../../design-system/components/toggle/toggle.
     .bar-buttons { display: flex; gap: var(--space-3, 12px); }
 
     .audit-toolbar { display: flex; flex-wrap: wrap; gap: var(--space-3, 12px); margin-bottom: var(--space-4, 16px); background: var(--color-surface, #fff); padding: var(--space-3, 12px); border: 1px solid var(--color-border, #e5e7eb); border-radius: 8px; align-items: center; }
+    .staff-section { display: flex; flex-direction: column; gap: var(--space-4, 16px); }
     .search-wrap { flex: 1 1 18rem; }
     .search-input { width: 100%; }
     .filter-group { display: flex; flex-wrap: wrap; gap: var(--space-3, 12px); align-items: center; }
@@ -577,9 +667,12 @@ import { CeToggleComponent } from '../../design-system/components/toggle/toggle.
 })
 export class AdministrationPage {
   private readonly api = inject(AdministrationApiService);
+  private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
 
-  activeTab = signal<'settings' | 'audit'>('settings');
+  readonly isTenantAdmin = computed(() => this.authService.isTenantAdmin());
+
+  activeTab = signal<'settings' | 'audit' | 'staff'>('settings');
   loading = signal(true);
   saving = signal(false);
   statusMessage = signal<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -613,14 +706,27 @@ export class AdministrationPage {
   selectedTimeframe = signal<'all' | 'today' | '7d' | '30d'>('all');
   private auditRequestId = 0;
 
+  // Staff & Passwords State
+  staff = signal<StaffMemberResponse[]>([]);
+  staffLoading = signal(false);
+  staffLoadError = signal<string | null>(null);
+  resettingUserId = signal<string | null>(null);
+  resetFeedback = signal<{ userId: string; message: string; state: string } | null>(null);
+
   constructor() {
     this.loadAll();
   }
 
-  setTab(tab: 'settings' | 'audit'): void {
+  setTab(tab: 'settings' | 'audit' | 'staff'): void {
+    if (tab === 'staff' && !this.isTenantAdmin()) {
+      tab = 'settings';
+    }
     this.activeTab.set(tab);
     if (tab === 'audit' && this.auditLogs().length === 0) {
       this.loadAuditLogs();
+    }
+    if (tab === 'staff' && this.staff().length === 0 && !this.staffLoading()) {
+      void this.loadStaff();
     }
   }
 
@@ -819,5 +925,51 @@ export class AdministrationPage {
     } catch {
       return raw;
     }
+  }
+
+  async loadStaff(): Promise<void> {
+    this.staffLoading.set(true);
+    this.staffLoadError.set(null);
+    try {
+      const staff = await firstValueFrom(this.authService.listStaff());
+      this.staff.set(staff);
+    } catch (err) {
+      this.staff.set([]);
+      this.staffLoadError.set(getApiErrorMessage(err, 'Failed to load staff.'));
+    } finally {
+      this.staffLoading.set(false);
+    }
+  }
+
+  onResetPassword(member: StaffMemberResponse): void {
+    const displayName = member.displayName || member.email;
+    const confirmed = typeof window !== 'undefined' && typeof window.confirm === 'function'
+      ? window.confirm(`Reset the password for ${displayName}? A temporary password will be emailed to them.`)
+      : true;
+    if (!confirmed) return;
+
+    this.resettingUserId.set(member.userId);
+    this.resetFeedback.set(null);
+    this.authService.resetUserPassword(member.userId).subscribe({
+      next: (res) => {
+        this.resettingUserId.set(null);
+        const state = res.deliveryState;
+        let message = `Temporary password dispatched by email to ${displayName}.`;
+        if (state === 'Failed') {
+          message = `Email delivery failed for ${displayName}. The temporary password was not dispatched; the user's existing password still works.`;
+        } else if (state === 'Pending') {
+          message = `Temporary password scheduled for delivery to ${displayName}.`;
+        }
+        this.resetFeedback.set({ userId: member.userId, message, state });
+      },
+      error: (err) => {
+        this.resettingUserId.set(null);
+        this.resetFeedback.set({
+          userId: member.userId,
+          message: getApiErrorMessage(err, `Failed to reset password for ${displayName}.`),
+          state: 'Failed',
+        });
+      },
+    });
   }
 }
