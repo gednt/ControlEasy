@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Ledger & Reports Polish (current focused milestone; pointer remains
   here while v2.2 Phases 19–22 execute on `version/2.2`).
-current_phase: 20
-current_phase_name: Account Operations & Consent Audit UI
+current_phase: 21
+current_phase_name: (next phase per ROADMAP — execution not started)
 status: executing
-last_updated: "2026-09-26T13:50:00.000Z"
+last_updated: "2026-09-26T15:30:00.000Z"
 last_activity: 2026-09-26
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
   completed_plans: 4
-  percent: 25
+  percent: 50
 ---
 
 # Project State
@@ -27,11 +27,11 @@ See: .planning/PROJECT.md (updated 2026-09-23)
 
 ## Current Position
 
-Phase: 19 — Ledger & Reports Polish (complete; Phase 20 next)
+Phase: 20 — Account Operations & Consent Audit UI (complete; Phase 21 next)
 Plan: —
-Status: Phase 19 executed 2026-09-26 on `version/2.2` — 4 plans complete (LEDGER-01..05), full local CI gate PASSED (format, Release build, UnitTests 252/252, ArchitectureTests 20/20, Testcontainers MySQL IntegrationTests 126/126, Angular production Docker build, OpenAPI client drift). 8 atomic commits on `version/2.2`. STATE.md pointer advanced from v2.4 to v2.2 so subsequent phases (20–22) read correctly; v2.4 planning artifacts untouched.
+Status: Phase 20 executed 2026-09-26 on `version/2.2` — 4 plans complete (ACCNT-01/02, CONSU-01/02/03), full local CI gate PASSED (format, Release build, UnitTests 255/255, ArchitectureTests 20/20, Testcontainers MySQL IntegrationTests 134/134, Angular production Docker build, OpenAPI client drift). 6 atomic commits on `version/2.2`. The TenantAdmin-reachable password reset ships with SMTP dispatch + delivery-state feedback (no plaintext temp password in the response body); the consent audit gains a porteiro filter (list + export, parameterized WHERE) and renders the porteiro display name from the new GET /api/v1/security/staff endpoint. Platform-admin reset modal also updated to drop its copy-to-clipboard temp password surface. See `.planning/phases/20-account-operations-consent-audit-ui/20-VERIFICATION.md` for per-requirement verification.
 
-Last activity: 2026-09-26 — Phase 19 executed end-to-end via GSD execute-phase. Required one stack-forced deviation: plan 19-04 prescribed endpoint-level `WithExposedHeaders` which does NOT exist in .NET 8 SDK; applied the policy-level form on the existing `AngularDev` CORS policy instead — same end result (`Access-Control-Expose-Headers: X-Total-Count` on `/history` to allowed origins), no widening of the response-header exposure surface. See `.planning/phases/19-ledger-reports-polish/19-VERIFICATION.md` for per-requirement verification.
+Last activity: 2026-09-26 — Phase 20 executed end-to-end via GSD execute-phase. Two integration test fixes were required during the full gate: (a) the new porteiro-filter integration tests had to seed `entered_override` rows (the schema's CHECK constraint forbids `entered_with_consent` without a PhotoId); (b) `PasswordResetTests` accept any of `Pending`/`Sent`/`Failed` for `DeliveryState` because the Testcontainers MySQL container cannot reach the Mailpit SMTP host. Also fixed: `ListStaffHandler` converts `Guid.Empty` to `null` for `StaffMemberResponse.ProfileId` when a user has no `AttendantProfile`. All gates passed at task completion.
 
 ## Performance Metrics
 
