@@ -449,6 +449,27 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
           </p>
         }
 
+        @if (packageDropCondominium()) {
+          <p class="package-drop-destination" data-testid="package-drop-destination">
+            Deliver to <strong>reception / condominium</strong> (no specific apartment)
+          </p>
+        }
+
+        @if (!packageDropRecipient() && !packageDropCondominium()) {
+          <ce-button
+            variant="ghost"
+            size="sm"
+            type="button"
+            class="condominium-trigger"
+            [disabled]="packageDropForm.invalid"
+            (click)="selectPackageDropCondominium()"
+            data-testid="package-drop-condominium-btn"
+          >
+            <ce-icon name="building" [size]="14" />
+            Record reception / condominium drop
+          </ce-button>
+        }
+
         <label class="field-label">
           <span>Package description <span class="required">*</span></span>
           <input
@@ -481,7 +502,7 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
             variant="primary"
             size="md"
             type="submit"
-            [disabled]="packageDropForm.invalid || !packageDropRecipient() || packageDropSubmitting()"
+            [disabled]="packageDropForm.invalid || (!packageDropRecipient() && !packageDropCondominium()) || packageDropSubmitting()"
             data-testid="package-drop-submit"
           >
             {{ packageDropSubmitting() ? 'Recording…' : 'Record package drop' }}
@@ -954,6 +975,7 @@ export class GatehousePanelPage implements OnInit {
   readonly packageDropError = signal<string | null>(null);
   readonly packageDropResults = signal<ManualLookupResult[]>([]);
   readonly packageDropRecipient = signal<ManualLookupResult | null>(null);
+  readonly packageDropCondominium = signal(false);
   private packageDropLookupAuditId: string | null = null;
 
   private apartmentsMap = signal<Map<string, ApartmentResponse>>(new Map());
@@ -1111,6 +1133,7 @@ export class GatehousePanelPage implements OnInit {
     this.packageDropError.set(null);
     this.packageDropResults.set([]);
     this.packageDropRecipient.set(null);
+    this.packageDropCondominium.set(false);
     this.packageDropLookupAuditId = null;
   }
 
@@ -1122,6 +1145,7 @@ export class GatehousePanelPage implements OnInit {
     this.packageDropError.set(null);
     this.packageDropResults.set([]);
     this.packageDropRecipient.set(null);
+    this.packageDropCondominium.set(false);
     this.packageDropLookupAuditId = null;
 
     this.gateway.searchSubject({ type: 'name', value: recipientQuery, unit: null }).subscribe({
@@ -1144,13 +1168,44 @@ export class GatehousePanelPage implements OnInit {
   selectPackageRecipient(recipient: ManualLookupResult): void {
     if (!recipient.apartmentId) return;
     this.packageDropRecipient.set(recipient);
+    this.packageDropCondominium.set(false);
     this.packageDropError.set(null);
+  }
+
+  selectPackageDropCondominium(): void {
+    this.packageDropRecipient.set(null);
+    this.packageDropError.set(null);
+    if (this.packageDropLookupAuditId) {
+      this.packageDropCondominium.set(true);
+      return;
+    }
+    const recipientQuery = this.packageDropForm.controls.recipientQuery.value.trim();
+    if (recipientQuery.length < 3) {
+      this.packageDropError.set('Type at least 3 characters to identify the subject before recording a condominium drop.');
+      return;
+    }
+    this.gateway.searchSubject({ type: 'name', value: recipientQuery, unit: null }).subscribe({
+      next: (response) => {
+        this.packageDropLookupAuditId = response.lookupAuditId;
+        this.packageDropResults.set(response.items.filter((item) => item.apartmentId));
+        this.packageDropCondominium.set(true);
+      },
+      error: (err) => {
+        this.packageDropError.set(getApiErrorMessage(err, 'Failed to record a subject lookup for the condominium drop.'));
+      },
+    });
   }
 
   submitPackageDrop(): void {
     const recipient = this.packageDropRecipient();
+    const isCondominium = this.packageDropCondominium();
     const lookupAuditId = this.packageDropLookupAuditId;
-    if (this.packageDropForm.invalid || !recipient?.apartmentId || !lookupAuditId || this.packageDropSubmitting()) return;
+    if (this.packageDropForm.invalid || this.packageDropSubmitting()) return;
+    if (!isCondominium && !recipient?.apartmentId) return;
+    if (!lookupAuditId) {
+      this.packageDropError.set('A subject search is required before recording a package drop.');
+      return;
+    }
 
     const value = this.packageDropForm.getRawValue();
     this.packageDropSubmitting.set(true);
@@ -1158,13 +1213,17 @@ export class GatehousePanelPage implements OnInit {
     this.gateway
       .recordPackageDrop({
         lookupAuditId,
-        destinationApartmentId: recipient.apartmentId,
+        destinationApartmentId: isCondominium ? null : recipient!.apartmentId ?? null,
         packageDescription: value.packageDescription.trim(),
         packageCarrierCode: value.packageCarrierCode.trim() || null,
       })
       .subscribe({
         next: () => {
-          this.toast.success(`Package drop recorded for ${recipient.apartmentBlock} / ${recipient.apartmentUnit}.`);
+          this.toast.success(
+            isCondominium
+              ? 'Package drop recorded for reception / condominium.'
+              : `Package drop recorded for ${recipient!.apartmentBlock} / ${recipient!.apartmentUnit}.`,
+          );
           this.closePackageDrop();
         },
         error: (err) => {

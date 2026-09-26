@@ -279,4 +279,60 @@ describe('GatehousePanelPage', () => {
     fixture.detectChanges();
     expect(component.actionInFlight()).toBeNull();
   }));
+
+  it('records a condominium-level package drop with an empty subjectId', fakeAsync(() => {
+    fixture.detectChanges();
+    flushInitialRequests();
+    tick();
+
+    component.openPackageDrop();
+    component.packageDropForm.setValue({
+      recipientQuery: 'Condo Mailroom',
+      packageDescription: 'Mailroom envelope',
+      packageCarrierCode: 'Correios',
+    });
+
+    component.selectPackageDropCondominium();
+    const searchRequest = httpMock.expectOne('/api/v1/access-subjects/search');
+    expect(searchRequest.request.body).toEqual({ criterion: 'name', value: 'Condo Mailroom', unit: null });
+    searchRequest.flush({
+      lookupAuditId: '00000000-0000-0000-0000-000000000040',
+      criterion: 'name',
+      resultCountBand: 'none',
+      items: [],
+    });
+    tick();
+    fixture.detectChanges();
+
+    expect(component.packageDropCondominium()).toBeTrue();
+
+    component.submitPackageDrop();
+
+    const packageDropRequest = httpMock.expectOne('/api/v1/access-events/manual');
+    expect(packageDropRequest.request.body).toEqual({
+      lookupAuditId: '00000000-0000-0000-0000-000000000040',
+      subjectType: 'visitor',
+      subjectId: '00000000-0000-0000-0000-000000000000',
+      direction: 'entrance',
+      gatehouseId: null,
+      kind: 'package-drop',
+      packageDescription: 'Mailroom envelope',
+      packageCarrierCode: 'Correios',
+    });
+    packageDropRequest.flush({
+      accessEventId: '00000000-0000-0000-0000-000000000041',
+      lookupAuditId: '00000000-0000-0000-0000-000000000040',
+      subjectType: 'visitor',
+      subjectId: '00000000-0000-0000-0000-000000000000',
+      accessMethod: 'manual_lookup',
+      direction: 'entrance',
+      destinationApartmentId: null,
+      destinationBlock: 'Gatehouse',
+      destinationUnit: 'Reception',
+    });
+    tick();
+    flush();
+
+    expect(component.packageDropOpen()).toBeFalse();
+  }));
 });

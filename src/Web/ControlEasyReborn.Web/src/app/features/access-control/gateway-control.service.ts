@@ -69,14 +69,14 @@ export class GatewayControlService {
 
   recordPackageDrop(payload: {
     lookupAuditId: string;
-    destinationApartmentId: string;
+    destinationApartmentId: string | null;
     packageDescription: string;
     packageCarrierCode?: string | null;
   }): Observable<ManualAccessResponse> {
     return this.http.post<ManualAccessResponse>('/api/v1/access-events/manual', {
       lookupAuditId: payload.lookupAuditId,
       subjectType: 'visitor',
-      subjectId: payload.destinationApartmentId,
+      subjectId: payload.destinationApartmentId ?? '00000000-0000-0000-0000-000000000000',
       direction: 'entrance',
       gatehouseId: null,
       kind: 'package-drop',
