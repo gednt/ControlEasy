@@ -69,9 +69,10 @@ export interface PhotoPanelEntity {
       <ce-photo-capture
         [entityType]="entityType()"
         [entityId]="entity()!.id"
-        mode="camera"
+        [mode]="captureMode()"
         [open]="showCapture()"
         (closed)="showCapture.set(false)"
+        (modeChange)="onCaptureModeChange($event)"
         (photoUploaded)="onPhotoUploaded($event)"
       />
     }
@@ -98,6 +99,7 @@ export class CePhotoPanelComponent {
   photosChanged = output<PhotoResponse[]>();
 
   showCapture = signal(false);
+  captureMode = signal<'camera' | 'upload'>('camera');
 
   photos = signal<PhotoResponse[]>([]);
 
@@ -130,7 +132,12 @@ export class CePhotoPanelComponent {
 
   openCapture(): void {
     if (!this.canAdd() || !this.entity()) return;
+    this.captureMode.set('camera');
     this.showCapture.set(true);
+  }
+
+  onCaptureModeChange(mode: 'camera' | 'upload'): void {
+    this.captureMode.set(mode);
   }
 
   onPhotoUploaded(photo: PhotoResponse): void {

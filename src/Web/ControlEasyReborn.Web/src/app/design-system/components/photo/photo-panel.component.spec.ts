@@ -102,4 +102,27 @@ describe('CePhotoPanelComponent', () => {
     expect(photosApiSpy.delete).toHaveBeenCalledWith('p-1');
     expect(component.photos().find((p) => p.id === 'p-1')).toBeUndefined();
   });
+
+  it('opens capture in camera mode by default and propagates upload-mode change', () => {
+    fixture.componentRef.setInput('entity', { id: 'res-1', displayName: 'Resident One' });
+    fixture.detectChanges();
+
+    component.openCapture();
+    expect(component.captureMode()).toBe('camera');
+
+    component.onCaptureModeChange('upload');
+    expect(component.captureMode()).toBe('upload');
+  });
+
+  it('resets capture mode to camera when reopening the capture modal', () => {
+    fixture.componentRef.setInput('entity', { id: 'res-1', displayName: 'Resident One' });
+    fixture.detectChanges();
+
+    component.openCapture();
+    component.onCaptureModeChange('upload');
+    expect(component.captureMode()).toBe('upload');
+
+    component.openCapture();
+    expect(component.captureMode()).toBe('camera');
+  });
 });

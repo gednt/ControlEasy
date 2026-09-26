@@ -191,4 +191,15 @@ describe('CePhotoCaptureComponent', () => {
     expect(toast.warning).toHaveBeenCalled();
     expect(capture.modeChange).toBeDefined();
   });
+
+  it('switchMode flips effectiveMode locally even when the parent does not bind [mode]', () => {
+    host.mode = 'camera';
+    hostFixture.detectChanges();
+    expect(capture.effectiveMode()).toBe('camera');
+
+    capture.switchMode('upload');
+    hostFixture.detectChanges();
+    expect(capture.effectiveMode()).toBe('upload');
+    expect(host.mode).toBe('camera');
+  });
 });

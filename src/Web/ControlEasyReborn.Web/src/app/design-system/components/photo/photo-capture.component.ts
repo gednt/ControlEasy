@@ -60,8 +60,8 @@ const STATUS_LABEL: Record<Status, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ce-modal [open]="open()" [title]="title()" size="md" (closed)="close()">
-      <div class="capture-modal" [class.camera-mode]="mode() === 'camera'">
-        @if (mode() === 'camera') {
+      <div class="capture-modal" [class.camera-mode]="effectiveMode() === 'camera'">
+        @if (effectiveMode() === 'camera') {
           <div class="video-container">
             <video #video autoplay playsinline muted aria-label="Camera preview"></video>
             @if (status() === 'capturing') {
@@ -119,7 +119,7 @@ const STATUS_LABEL: Record<Status, string> = {
       </div>
 
       <div ce-modal-footer class="footer">
-        @if (mode() === 'camera') {
+        @if (effectiveMode() === 'camera') {
           <ce-button variant="ghost" size="sm" (click)="close()">Cancel</ce-button>
           <button
             type="button"
@@ -280,6 +280,14 @@ export class CePhotoCaptureComponent implements AfterViewInit, OnDestroy {
   mode = input<Mode>('camera');
   open = input<boolean>(false);
 
+  /**
+   * Local override for `mode` so a click on "Or upload from device" flips the
+   * visible UI immediately, even if the parent does not bind `[mode]` from
+   * `(modeChange)`. The parent may still opt into a controlled flow.
+   */
+  private readonly modeOverride = signal<Mode | null>(null);
+  readonly effectiveMode = computed<Mode>(() => this.modeOverride() ?? this.mode());
+
   photoUploaded = output<PhotoResponse>();
   closed = output<void>();
   modeChange = output<Mode>();
@@ -290,7 +298,7 @@ export class CePhotoCaptureComponent implements AfterViewInit, OnDestroy {
   private readonly previewObjectUrl = signal<string | null>(null);
 
   previewUrl = computed(() => this.previewObjectUrl() ?? '');
-  title = computed(() => (this.mode() === 'camera' ? 'Take photo' : 'Upload photo'));
+  title = computed(() => (this.effectiveMode() === 'camera' ? 'Take photo' : 'Upload photo'));
   cameraStatusLabel = computed(() => STATUS_LABEL[this.status()]);
   isWorking = computed(
     () => this.status() === 'uploading' || this.status() === 'compressing',
@@ -461,6 +469,7 @@ export class CePhotoCaptureComponent implements AfterViewInit, OnDestroy {
 
   switchMode(mode: Mode): void {
     if (mode === 'upload') this.stopCamera();
+    this.modeOverride.set(mode);
     this.modeChange.emit(mode);
   }
 
