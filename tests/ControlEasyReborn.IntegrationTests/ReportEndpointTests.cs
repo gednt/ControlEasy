@@ -48,6 +48,56 @@ public sealed class ReportEndpointTests
     }
 
     [Fact]
+    public async Task GetVisitCountsByDay_BucketsOffMidnightUtcVisitToTenantLocalDay()
+    {
+        var tenantId = Guid.NewGuid();
+        var block = "H" + Guid.NewGuid().ToString("N")[..6];
+        var unit = Guid.NewGuid().ToString("N")[..6];
+        var apt = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, block, unit);
+
+        var client = ForTenant(_factory, tenantId);
+        var createResponse = await client.PostAsJsonAsync("/api/v1/visits",
+            new CreateVisitRequest("Off Midnight Visitor", "55544433322", null, apt, "Midnight probe"));
+        createResponse.EnsureSuccessStatusCode();
+        var created = await createResponse.Content.ReadFromJsonAsync<VisitResponse>();
+        created.Should().NotBeNull();
+
+        // 02:00 UTC on 2026-09-19 = 23:00 America/Sao_Paulo on 2026-09-18 (UTC-3, no DST in Sept).
+        var offMidnightUtc = new DateTime(2026, 9, 19, 2, 0, 0, DateTimeKind.Utc);
+        await using (var conn = new MySqlConnection(_mySql.ConnectionString))
+        {
+            await conn.OpenAsync();
+            await using var cmd = new MySqlCommand(
+                "UPDATE Visits SET CreatedAtUtc = @past WHERE Id = @id", conn);
+            cmd.Parameters.AddWithValue("@past", offMidnightUtc);
+            cmd.Parameters.AddWithValue("@id", created!.Id.ToString());
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        // Tenant-local day is 2026-09-18 (the previous calendar day from the UTC date).
+        var tenantLocalDate = new DateOnly(2026, 9, 18);
+        var fromQuery = tenantLocalDate.ToString("yyyy-MM-dd");
+        var toQuery = tenantLocalDate.ToString("yyyy-MM-dd");
+
+        var response = await client.GetAsync(
+            $"/api/v1/reports/visit-counts-by-day?from={fromQuery}&to={toQuery}");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var body = await response.Content.ReadFromJsonAsync<List<VisitCountByDayResponse>>();
+        body.Should().NotBeNull();
+        body!.Should().Contain(d => d.Date == tenantLocalDate && d.Count >= 1);
+
+        // The UTC date (2026-09-19) must NOT contain this off-midnight visit.
+        var utcDate = new DateOnly(2026, 9, 19);
+        var wrongDayResponse = await client.GetAsync(
+            $"/api/v1/reports/visit-counts-by-day?from={utcDate:yyyy-MM-dd}&to={utcDate:yyyy-MM-dd}");
+        wrongDayResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var wrongDayBody = await wrongDayResponse.Content.ReadFromJsonAsync<List<VisitCountByDayResponse>>();
+        wrongDayBody.Should().NotBeNull();
+        wrongDayBody!.Should().NotContain(d => d.Date == utcDate && d.Count >= 1);
+    }
+
+    [Fact]
     public async Task CrossTenant_GetResidentsPerApartment_AsDifferentTenant_ReturnsEmptyForForeignData()
     {
         var clientA = _factory.AsTenantA();

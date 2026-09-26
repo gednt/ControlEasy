@@ -30,6 +30,24 @@ public static class TenantDayBoundary
         return (startUtc, endUtc);
     }
 
+    /// <summary>
+    /// Converts a UTC timestamp to the tenant-local calendar date. Buckets visits
+    /// and ledger rows by tenant-local day instead of raw UTC date so near-midnight
+    /// events line up with the day-boundary-aware ledger path.
+    /// </summary>
+    public static DateOnly ToTenantDate(DateTime utc)
+    {
+        var tz = ResolveTimeZone();
+        var normalized = utc.Kind switch
+        {
+            DateTimeKind.Utc => utc,
+            DateTimeKind.Local => utc.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(utc, DateTimeKind.Utc),
+        };
+        var local = TimeZoneInfo.ConvertTimeFromUtc(normalized, tz);
+        return DateOnly.FromDateTime(local);
+    }
+
     private static TimeZoneInfo ResolveTimeZone()
     {
         var configuredTimeZoneId = Environment.GetEnvironmentVariable("TimeZone__Id");

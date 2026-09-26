@@ -1,6 +1,7 @@
 using ControlEasyReborn.Infrastructure.MultiTenancy;
 using ControlEasyReborn.Modules.Reports.Application.Abstractions;
 using ControlEasyReborn.Modules.Reports.Application.Contracts;
+using ControlEasyReborn.Modules.Reports.Application.Time;
 using ControlEasyReborn.SharedKernel.MultiTenancy;
 using System.Data;
 
@@ -168,13 +169,13 @@ public sealed class ReportReadRepository : IReportReadRepository
         if (from.HasValue)
         {
             clauses.Add($"CreatedAtUtc >= @param{paramList.Count}");
-            paramList.Add(from.Value.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
+            paramList.Add(TenantDayBoundary.GetDayBoundsUtc(from.Value).StartUtc);
         }
 
         if (to.HasValue)
         {
             clauses.Add($"CreatedAtUtc < @param{paramList.Count}");
-            paramList.Add(to.Value.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc));
+            paramList.Add(TenantDayBoundary.GetDayBoundsUtc(to.Value.AddDays(1)).StartUtc);
         }
 
         parameters = paramList.ToArray();
@@ -184,7 +185,7 @@ public sealed class ReportReadRepository : IReportReadRepository
     private static DateOnly MapVisitDate(DataRow row)
     {
         var value = Convert.ToDateTime(row["CreatedAtUtc"]);
-        return DateOnly.FromDateTime(value.ToUniversalTime());
+        return TenantDayBoundary.ToTenantDate(value);
     }
 
     private static Guid? MapApartmentId(DataRow row)
