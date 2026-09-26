@@ -26,12 +26,13 @@ public static class EntryLogEndpoints
             string? subjectType,
             DateTime? fromUtc,
             DateTime? toUtc,
+            Guid? porteiro,
             int? skip,
             int? take,
             ListEntryLogsHandler handler,
             CancellationToken ct) =>
         {
-            var entries = await handler.HandleAsync(entryState, subjectType, fromUtc, toUtc, skip ?? 0, take ?? 50, ct);
+            var entries = await handler.HandleAsync(entryState, subjectType, fromUtc, toUtc, porteiro, skip ?? 0, take ?? 50, ct);
             return Results.Ok(entries);
         })
         .RequireAuthorization("Permission_Photos.Read");
@@ -41,10 +42,11 @@ public static class EntryLogEndpoints
             string? subjectType,
             DateTime? fromUtc,
             DateTime? toUtc,
+            Guid? porteiro,
             ExportEntryLogCsvHandler handler,
             CancellationToken ct) =>
         {
-            var csv = await handler.HandleAsync(entryState, subjectType, fromUtc, toUtc, ct);
+            var csv = await handler.HandleAsync(entryState, subjectType, fromUtc, toUtc, porteiro, ct);
             return Results.Text(csv, "text/csv", System.Text.Encoding.UTF8);
         })
         .RequireAuthorization("Permission_Photos.Read");

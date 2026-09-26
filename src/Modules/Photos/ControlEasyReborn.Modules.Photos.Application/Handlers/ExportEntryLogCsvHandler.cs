@@ -15,9 +15,9 @@ public sealed class ExportEntryLogCsvHandler
         _auditLog = auditLog;
     }
 
-    public async Task<string> HandleAsync(string? entryState, string? subjectType, DateTime? fromUtc, DateTime? toUtc, CancellationToken ct)
+    public async Task<string> HandleAsync(string? entryState, string? subjectType, DateTime? fromUtc, DateTime? toUtc, Guid? porteiro, CancellationToken ct)
     {
-        var entries = await _auditLog.ListAsync(entryState, subjectType, fromUtc, toUtc, 0, int.MaxValue, ct);
+        var entries = await _auditLog.ListAsync(entryState, subjectType, fromUtc, toUtc, porteiro, 0, int.MaxValue, ct);
 
         var sb = new StringBuilder();
         sb.AppendLine("id,entry_state,override_reason,photo_id,subject_type,subject_name,subject_document,performed_by_profile_id,recorded_at");

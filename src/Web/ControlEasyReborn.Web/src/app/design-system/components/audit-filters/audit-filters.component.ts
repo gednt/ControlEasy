@@ -9,6 +9,11 @@ interface DropdownOption {
   label: string;
 }
 
+export interface PorteiroOption {
+  profileId: string;
+  displayName: string;
+}
+
 const CATEGORY_OPTIONS: DropdownOption[] = [
   { value: '', label: 'All categories' },
   { value: 'dweller', label: 'Dwellers' },
@@ -66,6 +71,15 @@ const STATE_OPTIONS: DropdownOption[] = [
           }
         </select>
       </label>
+      <label class="field">
+        <span class="field-label">Porteiro</span>
+        <select class="ce-input" [value]="porteiro() || ''" (change)="onPorteiroChange($event)">
+          <option value="">All porteiros</option>
+          @for (opt of porteirosList(); track opt.profileId) {
+            <option [value]="opt.profileId">{{ opt.displayName }}</option>
+          }
+        </select>
+      </label>
       <div class="reset-wrap">
         <ce-button variant="ghost" size="sm" (click)="reset()"> Reset filters </ce-button>
       </div>
@@ -118,15 +132,18 @@ const STATE_OPTIONS: DropdownOption[] = [
 })
 export class CeAuditFiltersComponent {
   filters = input.required<AuditFilters>();
+  porteiros = input<PorteiroOption[]>([]);
   filtersChanged = output<AuditFilters>();
 
   readonly categoryOptions = CATEGORY_OPTIONS;
   readonly stateOptions = STATE_OPTIONS;
+  readonly porteirosList = computed(() => this.porteiros());
 
   fromDate = computed(() => this.filters().fromUtc?.split('T')[0] ?? '');
   toDate = computed(() => this.filters().toUtc?.split('T')[0] ?? '');
   category = computed(() => this.filters().subjectType);
   state = computed(() => this.filters().entryState);
+  porteiro = computed(() => this.filters().porteiro);
 
   emit(partial: Partial<AuditFilters>): void {
     this.filtersChanged.emit({ ...this.filters(), ...partial });
@@ -160,6 +177,14 @@ export class CeAuditFiltersComponent {
     const value = (event.target as HTMLSelectElement).value;
     this.emit({
       entryState: (value || undefined) as EntryState | undefined,
+      skip: 0,
+    });
+  }
+
+  onPorteiroChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.emit({
+      porteiro: value || undefined,
       skip: 0,
     });
   }

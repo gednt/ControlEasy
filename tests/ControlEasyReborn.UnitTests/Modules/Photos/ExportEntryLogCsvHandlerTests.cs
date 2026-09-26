@@ -38,10 +38,10 @@ public sealed class ExportEntryLogCsvHandlerTests
             performedByProfileId: profileId,
             recordedAt: recordedAt);
 
-        _auditLogRepo.ListAsync(null, null, null, null, 0, int.MaxValue, Arg.Any<CancellationToken>())
+        _auditLogRepo.ListAsync(null, null, null, null, null, 0, int.MaxValue, Arg.Any<CancellationToken>())
             .Returns(new[] { entry });
 
-        var csv = await _sut.HandleAsync(null, null, null, null, CancellationToken.None);
+        var csv = await _sut.HandleAsync(null, null, null, null, null, CancellationToken.None);
 
         csv.Should().NotBeNullOrEmpty();
         var lines = csv.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
@@ -60,10 +60,10 @@ public sealed class ExportEntryLogCsvHandlerTests
     [Fact]
     public async Task HandleAsync_WhenNoEntriesExist_ReturnsHeaderOnlyCsv()
     {
-        _auditLogRepo.ListAsync(null, null, null, null, 0, int.MaxValue, Arg.Any<CancellationToken>())
+        _auditLogRepo.ListAsync(null, null, null, null, null, 0, int.MaxValue, Arg.Any<CancellationToken>())
             .Returns(Array.Empty<ConsentAuditLogEntry>());
 
-        var csv = await _sut.HandleAsync(null, null, null, null, CancellationToken.None);
+        var csv = await _sut.HandleAsync(null, null, null, null, null, CancellationToken.None);
 
         var lines = csv.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
         lines.Should().HaveCount(1);

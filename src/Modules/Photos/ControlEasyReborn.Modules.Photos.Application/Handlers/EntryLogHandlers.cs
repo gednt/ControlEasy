@@ -27,9 +27,9 @@ public sealed class ListEntryLogsHandler
         _auditLog = auditLog;
     }
 
-    public async Task<IReadOnlyList<EntryLogResponse>> HandleAsync(string? entryState, string? subjectType, DateTime? fromUtc, DateTime? toUtc, int skip, int take, CancellationToken ct)
+    public async Task<IReadOnlyList<EntryLogResponse>> HandleAsync(string? entryState, string? subjectType, DateTime? fromUtc, DateTime? toUtc, Guid? porteiro, int skip, int take, CancellationToken ct)
     {
-        var entries = await _auditLog.ListAsync(entryState, subjectType, fromUtc, toUtc, skip, take, ct);
+        var entries = await _auditLog.ListAsync(entryState, subjectType, fromUtc, toUtc, porteiro, skip, take, ct);
         return entries.Select(EntryLogMapping.ToResponse).ToList();
     }
 }

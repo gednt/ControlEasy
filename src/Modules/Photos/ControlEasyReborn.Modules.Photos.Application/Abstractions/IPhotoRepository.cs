@@ -13,7 +13,7 @@ public interface IPhotoRepository
 public interface IConsentAuditLogRepository
 {
     Task AddAsync(ConsentAuditLogEntry entry, CancellationToken ct);
-    Task<IReadOnlyList<ConsentAuditLogEntry>> ListAsync(string? entryState, string? subjectType, DateTime? fromUtc, DateTime? toUtc, int skip, int take, CancellationToken ct);
+    Task<IReadOnlyList<ConsentAuditLogEntry>> ListAsync(string? entryState, string? subjectType, DateTime? fromUtc, DateTime? toUtc, Guid? porteiro, int skip, int take, CancellationToken ct);
 }
 
 public interface ITenantConsentPolicyRepository

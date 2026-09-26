@@ -35,10 +35,10 @@ public sealed class EntryLogHandlersTests
             performedByProfileId: _profileId,
             recordedAt: DateTime.UtcNow);
 
-        _auditLogRepo.ListAsync(EntryStates.EnteredWithoutConsent, null, null, null, 0, 10, Arg.Any<CancellationToken>())
+        _auditLogRepo.ListAsync(EntryStates.EnteredWithoutConsent, null, null, null, null, 0, 10, Arg.Any<CancellationToken>())
             .Returns(new[] { entry });
 
-        var results = await _listHandler.HandleAsync(EntryStates.EnteredWithoutConsent, null, null, null, 0, 10, CancellationToken.None);
+        var results = await _listHandler.HandleAsync(EntryStates.EnteredWithoutConsent, null, null, null, null, 0, 10, CancellationToken.None);
 
         results.Should().ContainSingle();
         results[0].Id.Should().Be(entry.Id);

@@ -38,7 +38,7 @@ public sealed class ConsentAuditLogRepository : IConsentAuditLogRepository
         // events created incomplete dashboard visit records.
     }
 
-    public async Task<IReadOnlyList<ConsentAuditLogEntry>> ListAsync(string? entryState, string? subjectType, DateTime? fromUtc, DateTime? toUtc, int skip, int take, CancellationToken ct)
+    public async Task<IReadOnlyList<ConsentAuditLogEntry>> ListAsync(string? entryState, string? subjectType, DateTime? fromUtc, DateTime? toUtc, Guid? porteiro, int skip, int take, CancellationToken ct)
     {
         var db = _factory.Create(_ctx);
         var whereParts = new List<string>();
@@ -66,6 +66,12 @@ public sealed class ConsentAuditLogRepository : IConsentAuditLogRepository
         {
             whereParts.Add($"RecordedAt <= @param{parameters.Count}");
             parameters.Add(toUtc.Value.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+        }
+
+        if (porteiro.HasValue)
+        {
+            whereParts.Add($"PerformedByProfileId = @param{parameters.Count}");
+            parameters.Add(porteiro.Value);
         }
 
         var whereClause = whereParts.Count == 0 ? "1=1" : string.Join(" AND ", whereParts);

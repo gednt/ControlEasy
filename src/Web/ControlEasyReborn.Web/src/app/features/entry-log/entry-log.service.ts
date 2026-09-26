@@ -42,6 +42,7 @@ export interface AuditFilters {
   subjectType?: SubjectType | undefined;
   fromUtc?: string | undefined;
   toUtc?: string | undefined;
+  porteiro?: string | undefined;
   skip: number;
   take: number;
 }
@@ -81,6 +82,9 @@ export class EntryLogService {
     if (filters.toUtc) {
       params = params.set('toUtc', filters.toUtc);
     }
+    if (filters.porteiro) {
+      params = params.set('porteiro', filters.porteiro);
+    }
     return this.http.get<EntryLogResponse[]>(this.baseUrl, { params });
   }
 
@@ -97,6 +101,9 @@ export class EntryLogService {
     }
     if (filters.toUtc) {
       params = params.set('toUtc', filters.toUtc);
+    }
+    if (filters.porteiro) {
+      params = params.set('porteiro', filters.porteiro);
     }
     return this.http.get(`${this.baseUrl}/export`, {
       params,

@@ -26,14 +26,14 @@ public sealed class EntryLogEndpointTests
         _factory = new TestcontainersWebApplicationFactory(mySql);
     }
 
-    private async Task SeedEntryAsync(Guid tenantId, string entryState, string subjectName, string subjectDocument, string? overrideReason = null)
+    private async Task SeedEntryAsync(Guid tenantId, string entryState, string subjectName, string subjectDocument, string? overrideReason = null, Guid? performedByProfileId = null)
     {
         await using var conn = new MySqlConnection(_mySql.ConnectionString);
         await conn.OpenAsync();
 
         var sql = @"
             INSERT INTO ConsentAuditLog (Id, TenantId, EntryState, OverrideReason, PhotoId, SubjectType, SubjectName, SubjectDocument, PerformedByProfileId, RecordedAt, tenant_id)
-            VALUES (@Id, @TenantId, @EntryState, @OverrideReason, NULL, 'visitor', @SubjectName, @SubjectDocument, NULL, UTC_TIMESTAMP(3), @TenantId);";
+            VALUES (@Id, @TenantId, @EntryState, @OverrideReason, NULL, 'visitor', @SubjectName, @SubjectDocument, @PerformedByProfileId, UTC_TIMESTAMP(3), @TenantId);";
 
         await using var cmd = new MySqlCommand(sql, conn);
         cmd.Parameters.AddWithValue("@Id", Guid.NewGuid().ToString());
@@ -42,6 +42,7 @@ public sealed class EntryLogEndpointTests
         cmd.Parameters.AddWithValue("@OverrideReason", (object?)overrideReason ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@SubjectName", subjectName);
         cmd.Parameters.AddWithValue("@SubjectDocument", subjectDocument);
+        cmd.Parameters.AddWithValue("@PerformedByProfileId", (object?)performedByProfileId ?? DBNull.Value);
         await cmd.ExecuteNonQueryAsync();
     }
 
@@ -190,5 +191,68 @@ public sealed class EntryLogEndpointTests
 
         var response = await client.PostAsJsonAsync("/api/v1/entry-log", new { entryState = "entered_without_consent", subjectType = "visitor" });
         response.StatusCode.Should().BeOneOf(HttpStatusCode.NotFound, HttpStatusCode.MethodNotAllowed);
+    }
+
+    [Fact]
+    public async Task List_WithPorteiroFilter_ReturnsOnlyMatchingProfileRows()
+    {
+        var tenantId = TenantAwareWebApplicationFactory.TenantAId;
+        var porteiroA = Guid.NewGuid();
+        var porteiroB = Guid.NewGuid();
+        var porteiroAName = $"Porteiro A {Guid.NewGuid()}";
+        var porteiroBName = $"Porteiro B {Guid.NewGuid()}";
+
+        await SeedEntryAsync(tenantId, "entered_with_consent", $"A-{Guid.NewGuid()}", "11111111111", null, porteiroA);
+        await SeedEntryAsync(tenantId, "entered_with_consent", $"B-{Guid.NewGuid()}", "22222222222", null, porteiroB);
+
+        var client = _factory.AsTenantA();
+
+        var porteiroAFilterResp = await client.GetAsync($"/api/v1/entry-log?porteiro={porteiroA}");
+        porteiroAFilterResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var porteiroAList = await porteiroAFilterResp.Content.ReadFromJsonAsync<List<EntryLogResponse>>();
+        porteiroAList.Should().NotBeNull();
+        porteiroAList!.Should().OnlyContain(r => r.PerformedByProfileId == porteiroA);
+        porteiroAList.Should().NotBeEmpty();
+
+        var porteiroBFilterResp = await client.GetAsync($"/api/v1/entry-log?porteiro={porteiroB}");
+        porteiroBFilterResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        var porteiroBList = await porteiroBFilterResp.Content.ReadFromJsonAsync<List<EntryLogResponse>>();
+        porteiroBList.Should().NotBeNull();
+        porteiroBList!.Should().OnlyContain(r => r.PerformedByProfileId == porteiroB);
+        porteiroBList.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task List_WithPorteiroFilterMatchingNothing_ReturnsEmpty()
+    {
+        var client = _factory.AsTenantA();
+        var orphan = Guid.NewGuid();
+
+        var response = await client.GetAsync($"/api/v1/entry-log?porteiro={orphan}");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var list = await response.Content.ReadFromJsonAsync<List<EntryLogResponse>>();
+        list.Should().NotBeNull();
+        list!.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ExportCsv_WithPorteiroFilter_ReturnsOnlyMatchingProfileRows()
+    {
+        var tenantId = TenantAwareWebApplicationFactory.TenantAId;
+        var porteiroA = Guid.NewGuid();
+        var porteiroAUniqueName = $"Csv Port A {Guid.NewGuid()}";
+
+        await SeedEntryAsync(tenantId, "entered_without_consent", porteiroAUniqueName, "77777777777", null, porteiroA);
+        await SeedEntryAsync(tenantId, "entered_without_consent", $"Csv Other {Guid.NewGuid()}", "88888888888", null, Guid.NewGuid());
+
+        var client = _factory.AsTenantA();
+
+        var filteredResp = await client.GetAsync($"/api/v1/entry-log/export?porteiro={porteiroA}");
+        filteredResp.StatusCode.Should().Be(HttpStatusCode.OK);
+        filteredResp.Content.Headers.ContentType?.MediaType.Should().Be("text/csv");
+
+        var filteredCsv = await filteredResp.Content.ReadAsStringAsync();
+        filteredCsv.Should().Contain(porteiroAUniqueName);
+        Regex.IsMatch(filteredCsv, @"\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}\.\d{3}").Should().BeTrue();
     }
 }
