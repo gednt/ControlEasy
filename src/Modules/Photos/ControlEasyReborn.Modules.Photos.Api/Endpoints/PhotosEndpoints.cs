@@ -109,8 +109,8 @@ public static class PhotosEndpoints
         .RequireAuthorization("Permission_Photos.Write");
 
         group.MapGet("/", async (
-            [FromQuery] string entityType,
-            [FromQuery] string entityId,
+            [FromQuery] string? entityType,
+            [FromQuery] string? entityId,
             ListPhotosHandler handler,
             CancellationToken ct) =>
         {

@@ -53,32 +53,6 @@ export async function compressImage(
   return blob;
 }
 
-/**
- * Generate a cover-fitted square thumbnail at the requested size (default 128).
- * Used by the upload modal to send a small preview alongside the source blob;
- * in Phase 12 the backend does not yet persist a thumbnail, so this is wired
- * but currently only kept in the local binding cache.
- */
-export async function generateThumbnail(source: Blob, size = 128): Promise<Blob> {
-  const img = await loadImage(source);
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('CANVAS_CONTEXT_UNAVAILABLE');
-
-  // Cover-fit: scale so the image fills the square, then center-crop.
-  const scale = Math.max(size / img.naturalWidth, size / img.naturalHeight);
-  const w = img.naturalWidth * scale;
-  const h = img.naturalHeight * scale;
-  const x = (size - w) / 2;
-  const y = (size - h) / 2;
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0, 0, size, size);
-  ctx.drawImage(img, x, y, w, h);
-  return canvasToBlob(canvas, 0.8, 'image/jpeg');
-}
-
 async function loadImage(blob: Blob): Promise<HTMLImageElement> {
   const url = URL.createObjectURL(blob);
   try {

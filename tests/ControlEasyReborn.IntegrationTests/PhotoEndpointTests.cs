@@ -183,4 +183,86 @@ public sealed class PhotoEndpointTests
             new AuthenticationHeaderValue("Bearer", token);
         return client;
     }
+
+    [Fact]
+    public async Task List_ByEntity_ReturnsOnlyMatchingPhotos()
+    {
+        var client = _factory.AsTenantA();
+
+        var matchingEntityId = "res-" + Guid.NewGuid().ToString("N");
+        var otherEntityId = "res-" + Guid.NewGuid().ToString("N");
+
+        var firstUpload = await UploadSyntheticJpeg(client, matchingEntityId, "matched-1.jpg");
+        var secondUpload = await UploadSyntheticJpeg(client, matchingEntityId, "matched-2.jpg");
+        var unrelatedUpload = await UploadSyntheticJpeg(client, otherEntityId, "unrelated.jpg");
+
+        var response = await client.GetAsync(
+            $"/api/v1/photos?entityType=resident&entityId={matchingEntityId}");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var photos = await response.Content.ReadFromJsonAsync<List<PhotoResponse>>();
+        photos.Should().NotBeNull();
+        photos!.Should().HaveCount(2);
+        photos.Should().AllSatisfy(p =>
+        {
+            p.EntityType.Should().Be("resident");
+            p.EntityId.Should().Be(matchingEntityId);
+        });
+        photos.Should().NotContain(p => p.Id == unrelatedUpload!.Id);
+        photos.Should().Contain(p => p.Id == firstUpload!.Id);
+        photos.Should().Contain(p => p.Id == secondUpload!.Id);
+
+        var orderedByCreatedAtDesc = photos
+            .OrderByDescending(p => p.CreatedAtUtc)
+            .Select(p => p.Id)
+            .ToList();
+        orderedByCreatedAtDesc.Should().Equal(photos.Select(p => p.Id).ToList());
+        photos[0]!.CreatedAtUtc.Should().BeOnOrAfter(photos[1]!.CreatedAtUtc);
+    }
+
+    [Fact]
+    public async Task List_ByEntity_ReturnsEmptyForDifferentTenant()
+    {
+        var clientA = _factory.AsTenantA();
+        var clientB = _factory.AsTenantB();
+
+        var sharedEntityId = "shared-" + Guid.NewGuid().ToString("N");
+        await UploadSyntheticJpeg(clientA, sharedEntityId, "tenant-a-only.jpg");
+
+        var response = await clientB.GetAsync(
+            $"/api/v1/photos?entityType=resident&entityId={sharedEntityId}");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var photos = await response.Content.ReadFromJsonAsync<List<PhotoResponse>>();
+        photos.Should().NotBeNull();
+        photos!.Should().BeEmpty();
+    }
+
+    [Theory]
+    [InlineData("entityType=resident")]
+    [InlineData("entityId=res-foo")]
+    [InlineData("")]
+    public async Task List_WithoutEntityTypeOrEntityId_Returns400(string query)
+    {
+        var client = _factory.AsTenantA();
+        var url = string.IsNullOrEmpty(query) ? "/api/v1/photos" : $"/api/v1/photos?{query}";
+        var response = await client.GetAsync(url);
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    private static async Task<PhotoResponse?> UploadSyntheticJpeg(
+        HttpClient client, string entityId, string fileName)
+    {
+        var fakeJpegBytes = new byte[] { 0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01 };
+        var content = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(fakeJpegBytes);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+        content.Add(fileContent, "file", fileName);
+        content.Add(new StringContent("resident"), "entityType");
+        content.Add(new StringContent(entityId), "entityId");
+
+        var response = await client.PostAsync("/api/v1/photos", content);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        return await response.Content.ReadFromJsonAsync<PhotoResponse>();
+    }
 }

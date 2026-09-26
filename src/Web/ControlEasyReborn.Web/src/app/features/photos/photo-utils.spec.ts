@@ -1,4 +1,4 @@
-import { compressImage, DEFAULT_COMPRESSION, generateThumbnail, uploadWithRetry } from './photo-utils';
+import { compressImage, DEFAULT_COMPRESSION, uploadWithRetry } from './photo-utils';
 import { of, throwError } from 'rxjs';
 
 function fakeContext(): unknown {
@@ -38,7 +38,6 @@ describe('compressImage', () => {
     );
     const blob = new Blob([new Uint8Array(10)], { type: 'image/jpeg' });
     await compressImage(blob);
-    // First call uses initial quality
     expect(toBlobSpy.calls.mostRecent().args[2]).toBe(DEFAULT_COMPRESSION.initialQuality);
   });
 
@@ -66,24 +65,6 @@ describe('compressImage', () => {
     expect(calls).toContain(DEFAULT_COMPRESSION.initialQuality);
     expect(calls).toContain(DEFAULT_COMPRESSION.fallbackQuality);
     expect(result.size).toBe(1024);
-  });
-});
-
-describe('generateThumbnail', () => {
-  it('produces a JPEG blob via canvas.toBlob', async () => {
-    const decodeSpy = spyOn(HTMLImageElement.prototype, 'decode').and.callFake(async () => undefined);
-    const getContextSpy = spyOn(HTMLCanvasElement.prototype, 'getContext').and.callFake(
-      (() => fakeContext()) as never,
-    );
-    const toBlobSpy = spyOn(HTMLCanvasElement.prototype, 'toBlob').and.callFake(
-      ((cb: (b: Blob | null) => void) => cb(new Blob([new Uint8Array(100)], { type: 'image/jpeg' }))) as any,
-    );
-    const blob = new Blob([new Uint8Array(10)], { type: 'image/jpeg' });
-    const thumb = await generateThumbnail(blob);
-    expect(thumb.type).toBe('image/jpeg');
-    decodeSpy.calls.reset();
-    getContextSpy.calls.reset();
-    toBlobSpy.calls.reset();
   });
 });
 

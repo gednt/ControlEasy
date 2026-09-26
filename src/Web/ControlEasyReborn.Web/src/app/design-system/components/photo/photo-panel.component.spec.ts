@@ -3,7 +3,6 @@ import { importProvidersFrom } from '@angular/core';
 import { of, throwError } from 'rxjs';
 import { CePhotoPanelComponent } from './photo-panel.component';
 import { PhotosApiService, type PhotoResponse } from '../../../features/photos/photos-api.service';
-import { PhotoBindingCacheService } from '../../../features/photos/photo-binding-cache.service';
 import { ToastService } from '../..';
 import { CE_LUCIDE_ICONS } from '../icon/icon.registry';
 
@@ -11,7 +10,6 @@ describe('CePhotoPanelComponent', () => {
   let fixture: ComponentFixture<CePhotoPanelComponent>;
   let component: CePhotoPanelComponent;
   let photosApiSpy: jasmine.SpyObj<PhotosApiService>;
-  let bindings: PhotoBindingCacheService;
 
   const mockPhoto1: PhotoResponse = {
     id: 'p-1',
@@ -55,16 +53,9 @@ describe('CePhotoPanelComponent', () => {
       ],
     }).compileComponents();
 
-    bindings = TestBed.inject(PhotoBindingCacheService);
-    bindings.clear('resident', 'res-1');
-
     fixture = TestBed.createComponent(CePhotoPanelComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput('entityType', 'resident');
-  });
-
-  afterEach(() => {
-    bindings.clear('resident', 'res-1');
   });
 
   it('creates successfully with null entity without throwing signal write errors', () => {
@@ -76,38 +67,33 @@ describe('CePhotoPanelComponent', () => {
     expect(photosApiSpy.list).not.toHaveBeenCalled();
   });
 
-  it('loads cached photos first and then queries API when entity is provided', () => {
-    bindings.setAll('resident', 'res-1', [mockPhoto2]);
-
+  it('queries API when entity is provided and populates the photos signal', () => {
     fixture.componentRef.setInput('entity', { id: 'res-1', displayName: 'Resident One' });
     fixture.detectChanges();
 
     expect(photosApiSpy.list).toHaveBeenCalledWith(0, 50, { entityType: 'resident', entityId: 'res-1' });
     expect(component.photos()).toEqual([mockPhoto1]);
-    expect(bindings.list('resident', 'res-1')).toEqual([mockPhoto1]);
   });
 
-  it('preserves cached photos when API list call fails', () => {
-    bindings.setAll('resident', 'res-1', [mockPhoto2]);
+  it('keeps previous photos when API list call fails', () => {
     photosApiSpy.list.and.returnValue(throwError(() => new Error('Network error')));
 
     fixture.componentRef.setInput('entity', { id: 'res-1', displayName: 'Resident One' });
     fixture.detectChanges();
 
-    expect(component.photos()).toEqual([mockPhoto2]);
+    expect(component.photos()).toEqual([]);
   });
 
-  it('updates photos signal and cache when a photo is uploaded', () => {
+  it('updates photos signal when a photo is uploaded', () => {
     fixture.componentRef.setInput('entity', { id: 'res-1', displayName: 'Resident One' });
     fixture.detectChanges();
 
     component.onPhotoUploaded(mockPhoto2);
     expect(component.photos()).toContain(mockPhoto2);
-    expect(bindings.list('resident', 'res-1')).toContain(mockPhoto2);
+    expect(component.photos().map((p) => p.id)).toEqual([mockPhoto2.id, mockPhoto1.id]);
   });
 
-  it('deletes photo, calls api, and updates signal and cache', async () => {
-    bindings.setAll('resident', 'res-1', [mockPhoto1, mockPhoto2]);
+  it('deletes photo, calls api, and updates signal', async () => {
     fixture.componentRef.setInput('entity', { id: 'res-1', displayName: 'Resident One' });
     fixture.detectChanges();
 
@@ -115,6 +101,5 @@ describe('CePhotoPanelComponent', () => {
 
     expect(photosApiSpy.delete).toHaveBeenCalledWith('p-1');
     expect(component.photos().find((p) => p.id === 'p-1')).toBeUndefined();
-    expect(bindings.list('resident', 'res-1').find((p) => p.id === 'p-1')).toBeUndefined();
   });
 });
