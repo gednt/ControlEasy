@@ -168,7 +168,8 @@ try
             policy.WithOrigins("http://localhost:4200", "https://localhost:8443")
                 .AllowAnyHeader()
                 .AllowAnyMethod()
-                .AllowCredentials();
+                .AllowCredentials()
+                .WithExposedHeaders("X-Total-Count");
         });
     });
 

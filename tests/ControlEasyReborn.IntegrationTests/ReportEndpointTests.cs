@@ -98,6 +98,36 @@ public sealed class ReportEndpointTests
     }
 
     [Fact]
+    public async Task History_exposes_XTotalCount_via_AccessControlExposeHeaders()
+    {
+        var tenantId = Guid.NewGuid();
+        var block = "H" + Guid.NewGuid().ToString("N")[..6];
+        var unit = Guid.NewGuid().ToString("N")[..6];
+        var apartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, block, unit);
+
+        var client = ForTenant(_factory, tenantId);
+        await client.PostAsJsonAsync("/api/v1/visits",
+            new CreateVisitRequest("Cross Origin Visitor", "66677788899", null, apartmentId, "CORS probe", CheckInNow: true));
+
+        var request = new HttpRequestMessage(HttpMethod.Get, "/api/v1/reports/history");
+        request.Headers.Add("Origin", "http://localhost:4200");
+
+        var response = await client.SendAsync(request);
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        response.Headers.Contains("X-Total-Count").Should().BeTrue();
+        var total = int.Parse(response.Headers.GetValues("X-Total-Count").First());
+        total.Should().BeGreaterThanOrEqualTo(1);
+
+        // The browser-read header must surface X-Total-Count via the CORS
+        // expose-headers metadata header. Join first in case the host split it
+        // into multiple header values (some clients emit one value per item).
+        response.Headers.Contains("Access-Control-Expose-Headers").Should().BeTrue();
+        var exposed = string.Join(",", response.Headers.GetValues("Access-Control-Expose-Headers"));
+        exposed.Should().Contain("X-Total-Count");
+    }
+
+    [Fact]
     public async Task CrossTenant_GetResidentsPerApartment_AsDifferentTenant_ReturnsEmptyForForeignData()
     {
         var clientA = _factory.AsTenantA();
