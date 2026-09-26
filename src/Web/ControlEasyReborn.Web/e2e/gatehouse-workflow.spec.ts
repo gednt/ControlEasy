@@ -1,136 +1,70 @@
+// Phase 22 (TEST-01) — Stale E2E refresh.
+//
+// The Phase-13 "Gatehouse Workflow" describe block exercised a removed FAB/tile
+// dashboard ("New entry" / "Register entry" / "Entry denied" / "Gatehouse only" /
+// "Override"). Phase 17 replaced those tiles with a tabbed operator panel at
+// /gatehouse; the previous tests now assert UI that no longer exists.
+//
+// This file retains the still-valuable audit-review and consent-policy flows
+// (they target /audit and /admin/consent-policy, both still present) and
+// rewrites the gatehouse portion against the current tabbed panel.
+//
+// Note: Playwright E2E runs via `npm run e2e` against the Docker stack, NOT
+// inside `verify-ci-local.sh`. See 22-RESEARCH.md Pitfall 3.
+
 import { test, expect } from '@playwright/test';
 import {
   demoAdminEmail,
   demoAdminPassword,
   loginAsDemoUser,
+  selectFirstApartmentOption,
 } from './helpers/demo-auth';
 
-/**
- * Phase 13 E2E: Gatehouse workflow, audit review, and consent policy editor.
- *
- * The role model in the demo seed:
- *   - admin@controleasy.app        → TenantAdmin (can use gatehouse + audit + policy)
- *   - porteiro@controleasy.app     → AttendantProfile (can use gatehouse only)
- *
- * Phase 13 deviation in effect: backend has no X-Total-Count header, so
- * pagination is approximated from entries.length. CSV export is verified
- * for content (millisecond timestamps), not for byte-for-byte shape.
- */
-
-test.describe('Gatehouse Workflow', () => {
+test.describe('Gatehouse Operator Panel', () => {
   test.beforeEach(async ({ page, context }) => {
     await context.grantPermissions(['camera']);
     await loginAsDemoUser(page, demoAdminEmail, demoAdminPassword);
   });
 
-  test('shows 4 tiles when opened from FAB', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible();
-    await page.getByRole('button', { name: 'New entry' }).click();
-    await expect(page.getByText('New entry', { exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Register entry/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Entry denied/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Gatehouse only/i })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Override/i })).toBeVisible();
-  });
-
-  test('modal can be dismissed via close button', async ({ page }) => {
-    await page.goto('/');
-    await page.getByRole('button', { name: /Record entry/i }).click();
-    await expect(page.getByText('New entry', { exact: true })).toBeVisible();
-    await page.getByRole('button', { name: 'Close' }).click();
-    await expect(page.getByText('New entry', { exact: true })).not.toBeVisible();
-  });
-
-  test('entry denied flow: tile → subject info (no camera) → continue → success toast', async ({ page }) => {
+  test('panel loads with the tablist and defaults to the QR scan tab', async ({ page }) => {
     await page.goto('/gatehouse');
-    await page.getByRole('button', { name: /Entry denied/i }).click();
-    await expect(page.getByText('Name (optional)')).toBeVisible({ timeout: 5_000 });
-    await page.getByPlaceholder('Visitor name').fill('Refused Person');
-    await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.getByText('Entry logged')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('tablist', { name: 'Gatehouse operator tabs' })).toBeVisible();
+    await expect(page.getByTestId('tab-qr')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByTestId('panel-qr')).toBeVisible();
   });
 
-  test('gatehouse only flow: tile → subject info → continue → success toast', async ({ page }) => {
+  test('tab switching renders the matching panel', async ({ page }) => {
     await page.goto('/gatehouse');
-    await page.getByRole('button', { name: /Gatehouse only/i }).click();
-    await expect(page.getByText('Name (optional)')).toBeVisible({ timeout: 5_000 });
-    await page.getByPlaceholder('Visitor name').fill('FedEx Driver');
-    await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.getByText('Entry logged')).toBeVisible({ timeout: 10_000 });
+
+    await page.getByTestId('tab-manual').click();
+    await expect(page.getByTestId('panel-manual')).toBeVisible();
+    await expect(page.getByTestId('tab-manual')).toHaveAttribute('aria-selected', 'true');
+
+    await page.getByTestId('tab-walkin').click();
+    await expect(page.getByTestId('panel-walkin')).toBeVisible();
+    await expect(page.getByTestId('walkin-name')).toBeVisible();
+    await expect(page.getByTestId('tab-walkin')).toHaveAttribute('aria-selected', 'true');
+
+    await page.getByTestId('tab-visits').click();
+    await expect(page.getByTestId('panel-visits')).toBeVisible();
+    await expect(page.getByTestId('open-visits-search')).toBeVisible();
+    await expect(page.getByTestId('tab-visits')).toHaveAttribute('aria-selected', 'true');
   });
 
-  test('override flow with emergency reason', async ({ page }) => {
+  test('walk-in registration submits and surfaces a success card', async ({ page }) => {
     await page.goto('/gatehouse');
-    await page.getByRole('button', { name: /Override/i }).click();
-    await expect(page.getByRole('heading', { name: 'Why?' })).toBeVisible({
-      timeout: 5_000,
-    });
-    await page.getByRole('button', { name: 'Emergency' }).click();
-    await expect(page.getByText('Name (optional)')).toBeVisible({ timeout: 5_000 });
-    await page.getByPlaceholder('Visitor name').fill('Emergency Resident');
-    await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.getByText('Entry logged')).toBeVisible({ timeout: 10_000 });
-  });
+    await page.getByTestId('tab-walkin').click();
 
-  test('override flow with vouched reason', async ({ page }) => {
-    await page.goto('/gatehouse');
-    await page.getByRole('button', { name: /Override/i }).click();
-    await expect(page.getByRole('heading', { name: 'Why?' })).toBeVisible({
-      timeout: 5_000,
-    });
-    await page.getByRole('button', { name: 'Vouched' }).click();
-    await expect(page.getByText('Name (optional)')).toBeVisible({ timeout: 5_000 });
-    await page.getByPlaceholder('Visitor name').fill('Vouched Person');
-    await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.getByText('Entry logged')).toBeVisible({ timeout: 10_000 });
-  });
+    await page.getByTestId('walkin-name').fill('FedEx Driver');
+    await page.getByTestId('walkin-document').fill('11222333000181');
+    await page.getByTestId('walkin-phone').fill('11988887777');
+    await page.getByTestId('walkin-purpose').fill('Delivery');
 
-  test('register visitor with photo: camera mock + capture + subject info + logged under 3s', async ({ page }) => {
-    // Mock getUserMedia to feed a synthetic red-frame stream into ce-photo-capture.
-    await page.addInitScript(() => {
-      Object.defineProperty(navigator, 'mediaDevices', {
-        configurable: true,
-        value: {
-          getUserMedia: async () => {
-            const canvas = document.createElement('canvas');
-            canvas.width = 640;
-            canvas.height = 480;
-            const ctx = canvas.getContext('2d')!;
-            ctx.fillStyle = 'red';
-            ctx.fillRect(0, 0, 640, 480);
-            return (canvas as unknown as { captureStream: (fps: number) => MediaStream }).captureStream(30);
-          },
-        },
-      });
-    });
+    await selectFirstApartmentOption(page, 'walkin-apartment');
 
-    const start = Date.now();
-    await page.goto('/gatehouse');
-    await page.getByRole('button', { name: /Register entry/i }).click();
+    await page.getByTestId('walkin-submit-btn').click();
 
-    // If visitors policy is photo-required, camera opens. Otherwise the
-    // workflow skips the camera and goes to subject info. Both paths must
-    // land on a successful entry log.
-    const captureBtn = page.getByRole('button', { name: 'Capture photo' });
-    const subjectInfo = page.getByText('Name (optional)');
-    const path = await Promise.race([
-      captureBtn.waitFor({ state: 'visible', timeout: 5_000 }).then(() => 'camera' as const).catch(() => 'subject' as const),
-      subjectInfo.waitFor({ state: 'visible', timeout: 5_000 }).then(() => 'subject' as const).catch(() => 'camera' as const),
-    ]);
-
-    if (path === 'camera') {
-      await captureBtn.click();
-      // Either success toast (camera path) or we land on subject info.
-      await subjectInfo.waitFor({ state: 'visible', timeout: 10_000 });
-    }
-
-    await page.getByPlaceholder('Visitor name').fill('Jane Doe');
-    await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.getByText('Entry logged')).toBeVisible({ timeout: 10_000 });
-    const elapsed = Date.now() - start;
-    // 3-second gatehouse budget per ROADMAP, but allow generous slack for CI.
-    expect(elapsed).toBeLessThan(30_000);
+    await expect(page.getByText(/checked in successfully/i)).toBeVisible({ timeout: 10_000 });
   });
 });
 
@@ -148,18 +82,14 @@ test.describe('Audit Review', () => {
 
   test('filter by override state narrows visible rows', async ({ page }) => {
     await page.goto('/audit');
-    // Wait for first response from /api/v1/entry-log
     await page.waitForResponse(
       (res) => res.url().includes('/api/v1/entry-log') && res.request().method() === 'GET',
       { timeout: 10_000 },
     );
 
-    // Apply Override state filter
     await page.locator('select').nth(1).selectOption('entered_override');
-    // Wait for next load
     await page.waitForTimeout(500);
 
-    // Each visible row's badge must read "Override"
     const badges = page.locator('ce-entry-state-badge .label');
     const count = await badges.count();
     if (count > 0) {
@@ -181,8 +111,6 @@ test.describe('Audit Review', () => {
     expect(path).toBeTruthy();
     const fs = await import('fs');
     const content = fs.readFileSync(path!, 'utf8');
-    // Backend serializes DateTime via ISO-8601; the recorded_at_ms column
-    // should contain at least one entry with millisecond precision.
     expect(content).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}/);
   });
 
@@ -192,7 +120,6 @@ test.describe('Audit Review', () => {
       (res) => res.url().includes('/api/v1/entry-log') && res.request().method() === 'GET',
       { timeout: 10_000 },
     );
-    // At least one ce-audit-row must exist OR an empty state must be visible
     const rowCount = await page.locator('ce-audit-row').count();
     if (rowCount === 0) {
       await expect(page.getByText(/No entries match/i)).toBeVisible();
@@ -210,7 +137,6 @@ test.describe('Consent Policy Editor', () => {
   test('editor page renders with 4 toggle rows and Save button disabled when clean', async ({ page }) => {
     await page.goto('/admin/consent-policy');
     await expect(page.getByRole('heading', { name: 'Consent Policy' })).toBeVisible();
-    // 4 toggle switches (one per category)
     await expect(page.locator('button[role="switch"]')).toHaveCount(4);
     const saveBtn = page.getByRole('button', { name: 'Save policy' });
     await expect(saveBtn).toBeVisible();
@@ -221,7 +147,6 @@ test.describe('Consent Policy Editor', () => {
     await page.goto('/admin/consent-policy');
     await expect(page.getByRole('heading', { name: 'Consent Policy' })).toBeVisible();
 
-    // Capture any PUT calls to consent-policy
     const putPromise = page.waitForResponse(
       (res) =>
         res.url().includes('/api/v1/consent-policy') &&
@@ -229,7 +154,6 @@ test.describe('Consent Policy Editor', () => {
       { timeout: 10_000 },
     );
 
-    // Click first toggle (Dwellers)
     await page.locator('button[role="switch"]').first().click();
     const saveBtn = page.getByRole('button', { name: 'Save policy' });
     await expect(saveBtn).toBeEnabled();
