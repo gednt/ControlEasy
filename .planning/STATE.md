@@ -1,18 +1,19 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.4
-milestone_name: Resident Self-Service & Visitor Experience
-current_phase: 27
-current_phase_name: Resident Access Foundation
-status: planning
-last_updated: "2026-09-23T10:43:00.952Z"
-last_activity: 2026-09-23
+milestone: v2.2
+milestone_name: Ledger & Reports Polish (current focused milestone; pointer remains
+  here while v2.2 Phases 19–22 execute on `version/2.2`).
+current_phase: 20
+current_phase_name: Account Operations & Consent Audit UI
+status: executing
+last_updated: "2026-09-26T13:50:00.000Z"
+last_activity: 2026-09-26
 progress:
   total_phases: 4
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 4
+  completed_plans: 4
+  percent: 25
 ---
 
 # Project State
@@ -26,10 +27,11 @@ See: .planning/PROJECT.md (updated 2026-09-23)
 
 ## Current Position
 
-Phase: Not started (roadmap defined)
+Phase: 19 — Ledger & Reports Polish (complete; Phase 20 next)
 Plan: —
-Status: Roadmap complete — awaiting phase planning
-Last activity: 2026-09-24 — v2.2 milestone (Phases 19–22) fully planned via GSD plan-phase in party-mode session: 4 phases, 15 PLAN.md files, per-phase CONTEXT/RESEARCH/VALIDATION artifacts, plan-checker verification with revision loops (all blockers resolved: 19-04 wave bump; 20 porteiro key-space fix to AttendantProfile.Id + 20-04 dependency; 21-02/21-03 dependency chain). Requirements coverage 17/17. Planning artifacts committed on `version/2.2`. NOTE: v2.2 planned out of milestone order — STATE.md milestone pointer stays v2.4 (Phases 27–30) intentionally; do not run `state.planned-phase` for 19–22 (it would corrupt the pointer). External execution prerequisite SATISFIED 2026-09-26: `feat/unified-visits-flow-cleanup` (PR #11, `7a5eb35`) and `fix/gatehouse-direction-persistence` (PR #10, `0d8f96a`) merged to `main`; verified no changes to the Reports/AccessControl/Photos seams the v2.2 plans anchor to.
+Status: Phase 19 executed 2026-09-26 on `version/2.2` — 4 plans complete (LEDGER-01..05), full local CI gate PASSED (format, Release build, UnitTests 252/252, ArchitectureTests 20/20, Testcontainers MySQL IntegrationTests 126/126, Angular production Docker build, OpenAPI client drift). 8 atomic commits on `version/2.2`. STATE.md pointer advanced from v2.4 to v2.2 so subsequent phases (20–22) read correctly; v2.4 planning artifacts untouched.
+
+Last activity: 2026-09-26 — Phase 19 executed end-to-end via GSD execute-phase. Required one stack-forced deviation: plan 19-04 prescribed endpoint-level `WithExposedHeaders` which does NOT exist in .NET 8 SDK; applied the policy-level form on the existing `AngularDev` CORS policy instead — same end result (`Access-Control-Expose-Headers: X-Total-Count` on `/history` to allowed origins), no widening of the response-header exposure surface. See `.planning/phases/19-ledger-reports-polish/19-VERIFICATION.md` for per-requirement verification.
 
 ## Performance Metrics
 
