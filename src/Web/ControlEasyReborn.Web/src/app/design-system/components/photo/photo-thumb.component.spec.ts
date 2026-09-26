@@ -1,8 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { Subject, of } from 'rxjs';
 import { CePhotoThumbComponent } from './photo-thumb.component';
 import { CePhotoComponent } from './photo.component';
 import { PhotoResponse, PhotosApiService } from '../../../features/photos/photos-api.service';
+import { PhotoEventsService } from '../../../features/photos/photo-events.service';
 
 class FakeIntersectionObserver {
   static instances: FakeIntersectionObserver[] = [];
@@ -76,16 +77,23 @@ describe('CePhotoThumbComponent', () => {
   let fixture: ComponentFixture<CePhotoThumbComponent>;
   let component: CePhotoThumbComponent;
   let photosApiListSpy: jasmine.Spy;
+  let photoEvents: PhotoEventsService;
+  let changesSubject: Subject<{ entityType: 'resident' | 'visitor' | 'vehicle' | 'service-provider'; entityId: string; kind: 'upload' | 'delete' }>;
 
   beforeEach(async () => {
     photosApiListSpy = jasmine.createSpy('list').and.returnValue(of([basePhoto]));
+    changesSubject = new Subject();
+    photoEvents = { notifyChange: () => undefined, changes$: changesSubject.asObservable() } as unknown as PhotoEventsService;
 
     (globalThis as unknown as { IntersectionObserver: unknown }).IntersectionObserver =
       FakeIntersectionObserver as unknown as typeof IntersectionObserver;
 
     await TestBed.configureTestingModule({
       imports: [CePhotoThumbComponent],
-      providers: [{ provide: PhotosApiService, useValue: { list: photosApiListSpy, get: () => of(new Blob()) } }],
+      providers: [
+        { provide: PhotosApiService, useValue: { list: photosApiListSpy, get: () => of(new Blob()) } },
+        { provide: PhotoEventsService, useValue: photoEvents },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(CePhotoThumbComponent);
@@ -139,5 +147,32 @@ describe('CePhotoThumbComponent', () => {
     const placeholder: HTMLElement | null = fixture.nativeElement.querySelector('.ce-photo-thumb-placeholder');
     expect(cePhoto).toBeFalsy();
     expect(placeholder).toBeTruthy();
+  });
+
+  it('re-resolves the photo when PhotoEventsService emits after a successful initial resolve', async () => {
+    const observer = FakeIntersectionObserver.instances[FakeIntersectionObserver.instances.length - 1]!;
+    observer.triggerIntersect(observer.observed[0]!);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(component.photoId()).toBe('photo-1');
+    const initialCallCount = photosApiListSpy.calls.count();
+
+    const updated: PhotoResponse = { ...basePhoto, id: 'photo-2' };
+    photosApiListSpy.and.returnValue(of([updated]));
+    changesSubject.next({ entityType: 'resident', entityId: 'res-1', kind: 'upload' });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(photosApiListSpy.calls.count()).toBe(initialCallCount + 1);
+    expect(component.photoId()).toBe('photo-2');
+  });
+
+  it('ignores PhotoEventsService emits before the thumb has resolved once', async () => {
+    const initialCallCount = photosApiListSpy.calls.count();
+    changesSubject.next({ entityType: 'resident', entityId: 'res-1', kind: 'upload' });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(photosApiListSpy.calls.count()).toBe(initialCallCount);
   });
 });

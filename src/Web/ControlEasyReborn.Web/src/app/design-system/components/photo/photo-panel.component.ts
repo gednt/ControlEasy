@@ -30,6 +30,7 @@ import {
   ToastService,
 } from '../toast/toast.component';
 import { PhotosApiService, type PhotoEntityType, type PhotoResponse } from '../../../features/photos/photos-api.service';
+import { PhotoEventsService } from '../../../features/photos/photo-events.service';
 import { getApiErrorMessage } from '../../../core/utils/api-error.util';
 
 export interface PhotoPanelEntity {
@@ -85,6 +86,7 @@ export interface PhotoPanelEntity {
 })
 export class CePhotoPanelComponent {
   private readonly photosApi = inject(PhotosApiService);
+  private readonly photoEvents = inject(PhotoEventsService);
   private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -138,6 +140,7 @@ export class CePhotoPanelComponent {
     this.photos.set(next);
     this.toast.success('Photo uploaded');
     this.photosChanged.emit(next);
+    this.photoEvents.notifyChange({ entityType: this.entityType(), entityId: e.id, kind: 'upload' });
   }
 
   async onPhotoDeleted(photoId: string): Promise<void> {
@@ -149,6 +152,7 @@ export class CePhotoPanelComponent {
       this.photos.set(next);
       this.toast.success('Photo deleted');
       this.photosChanged.emit(next);
+      this.photoEvents.notifyChange({ entityType: this.entityType(), entityId: e.id, kind: 'delete' });
     } catch (err) {
       this.toast.error(getApiErrorMessage(err, 'Failed to delete photo'));
     }

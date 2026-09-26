@@ -13,6 +13,7 @@ import {
 import { Subscription } from 'rxjs';
 import { CePhotoComponent } from './photo.component';
 import { PhotoEntityType, PhotosApiService } from '../../../features/photos/photos-api.service';
+import { PhotoEventsService } from '../../../features/photos/photo-events.service';
 
 /**
  * Lazy list-cell wrapper that resolves an entity to its most-recent photo id
@@ -56,6 +57,7 @@ import { PhotoEntityType, PhotosApiService } from '../../../features/photos/phot
 })
 export class CePhotoThumbComponent implements OnDestroy {
   private readonly photosApi = inject(PhotosApiService);
+  private readonly photoEvents = inject(PhotoEventsService);
   private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
 
   entityType = input.required<PhotoEntityType>();
@@ -70,6 +72,7 @@ export class CePhotoThumbComponent implements OnDestroy {
 
   private observer: IntersectionObserver | null = null;
   private subscription: Subscription | null = null;
+  private changeSubscription: Subscription | null = null;
 
   constructor() {
     effect((onCleanup) => {
@@ -82,6 +85,7 @@ export class CePhotoThumbComponent implements OnDestroy {
       this.unsubscribe();
 
       const runResolve = (): void => {
+        this.unsubscribe();
         this.subscription = this.photosApi
           .list(0, 1, { entityType, entityId })
           .subscribe({
@@ -119,11 +123,32 @@ export class CePhotoThumbComponent implements OnDestroy {
         this.unsubscribe();
       });
     }, { allowSignalWrites: true });
+
+    this.changeSubscription = this.photoEvents.changes$.subscribe(() => {
+      if (!this.resolved()) return;
+      const entityType = this.entityType();
+      const entityId = this.entityId();
+      this.unsubscribe();
+      this.subscription = this.photosApi
+        .list(0, 1, { entityType, entityId })
+        .subscribe({
+          next: (photos) => {
+            this.photoId.set(photos[0]?.id ?? null);
+            this.resolved.set(true);
+          },
+          error: () => {
+            this.photoId.set(null);
+            this.resolved.set(true);
+          },
+        });
+    });
   }
 
   ngOnDestroy(): void {
     this.disconnectObserver();
     this.unsubscribe();
+    this.changeSubscription?.unsubscribe();
+    this.changeSubscription = null;
   }
 
   private disconnectObserver(): void {
