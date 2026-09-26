@@ -153,4 +153,38 @@ describe('ReportsPage', () => {
     expect(escapeCsvField('text "with quotes" and , comma')).toBe('"text ""with quotes"" and , comma"');
     expect(escapeCsvField(null)).toBe('""');
   });
+
+  it('only offers status options that map to backend NativeState values', fakeAsync(() => {
+    fixture.detectChanges();
+    flushInitialRequests();
+    tick();
+    fixture.detectChanges();
+
+    const select = (fixture.nativeElement as HTMLElement).querySelector<HTMLSelectElement>(
+      '[data-testid="status-filter-select"]',
+    );
+    expect(select).withContext('status filter select').not.toBeNull();
+
+    const optionValues = Array.from(select!.options).map((opt) => opt.value);
+    expect(optionValues).toEqual(['', 'CheckedIn', 'Pending', 'CheckedOut', 'Cancelled']);
+    expect(optionValues).not.toContain('Recorded');
+    expect(optionValues).not.toContain('Refused');
+  }));
+
+  it('search placeholder aligns to the backend q scope (subject / package description / purpose)', fakeAsync(() => {
+    fixture.detectChanges();
+    flushInitialRequests();
+    tick();
+    fixture.detectChanges();
+
+    const searchInput = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
+      '[data-testid="ledger-search-input"]',
+    );
+    expect(searchInput).withContext('search input').not.toBeNull();
+    const placeholder = searchInput!.placeholder;
+
+    expect(placeholder).toContain('package description');
+    expect(placeholder).not.toContain('document');
+    expect(placeholder).not.toContain('destination');
+  }));
 });

@@ -231,7 +231,7 @@ function toLocalDateString(d: Date): string {
               <input
                 type="text"
                 class="ce-input search-input"
-                placeholder="Search by subject, document, or destination..."
+                placeholder="Search by subject, package description, or purpose..."
                 [ngModel]="searchQuery()"
                 (ngModelChange)="onSearchChange($event)"
                 data-testid="ledger-search-input"
@@ -249,8 +249,6 @@ function toLocalDateString(d: Date): string {
               <option value="Pending">Pending arrival</option>
               <option value="CheckedOut">Checked Out</option>
               <option value="Cancelled">Cancelled</option>
-              <option value="Recorded">Recorded</option>
-              <option value="Refused">Refused</option>
             </select>
 
             <input
