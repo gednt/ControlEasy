@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Ledger & Reports Polish (current focused milestone; pointer remains
   here while v2.2 Phases 19–22 execute on `version/2.2`).
-current_phase: 21
+current_phase: 22
 current_phase_name: (next phase per ROADMAP — execution not started)
 status: executing
 last_updated: "2026-09-26T15:30:00.000Z"
 last_activity: 2026-09-26
 progress:
   total_phases: 4
-  completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
-  percent: 50
+  completed_phases: 3
+  total_plans: 7
+  completed_plans: 7
+  percent: 75
 ---
 
 # Project State
@@ -27,17 +27,17 @@ See: .planning/PROJECT.md (updated 2026-09-23)
 
 ## Current Position
 
-Phase: 20 — Account Operations & Consent Audit UI (complete; Phase 21 next)
+Phase: 21 — Photo Capture & Display UI (complete; Phase 22 next)
 Plan: —
-Status: Phase 20 executed 2026-09-26 on `version/2.2` — 4 plans complete (ACCNT-01/02, CONSU-01/02/03), full local CI gate PASSED (format, Release build, UnitTests 255/255, ArchitectureTests 20/20, Testcontainers MySQL IntegrationTests 134/134, Angular production Docker build, OpenAPI client drift). 6 atomic commits on `version/2.2`. The TenantAdmin-reachable password reset ships with SMTP dispatch + delivery-state feedback (no plaintext temp password in the response body); the consent audit gains a porteiro filter (list + export, parameterized WHERE) and renders the porteiro display name from the new GET /api/v1/security/staff endpoint. Platform-admin reset modal also updated to drop its copy-to-clipboard temp password surface. See `.planning/phases/20-account-operations-consent-audit-ui/20-VERIFICATION.md` for per-requirement verification.
+Status: Phase 21 executed 2026-09-26 on `version/2.2` — 3 plans complete (PCAP-01/02/03 closeout), full local CI gate PASSED (format, Release build, UnitTests 255/255, ArchitectureTests 20/20, Testcontainers MySQL IntegrationTests 139/139, Angular production Docker build, OpenAPI client drift). 5 atomic commits on `version/2.2`. PCAP-02's "thumbnails in record lists (lazy)" clause is fully closed via the new `ce-photo` fetch-lazy input + `ce-photo-thumb` primitive + leading column wired into residents/vehicles/visits/service-providers list tables. Wave-0 validation gaps closed: list-endpoint integration tests (matching + cross-tenant + 400), list-thumbnail Playwright E2E, dead `PhotoBindingCacheService` + `generateThumbnail` shims removed (threat T-21-07 closed). One small backend follow-on: `entityType`/`entityId` made nullable on `GET /api/v1/photos` so the in-handler `BadRequest` guard is reachable (was returning 500 via the framework's missing-required-parameter binder). See `.planning/phases/21-photo-capture-display-ui/21-VERIFICATION.md` for per-requirement verification.
 
-Last activity: 2026-09-26 — Phase 20 executed end-to-end via GSD execute-phase. Two integration test fixes were required during the full gate: (a) the new porteiro-filter integration tests had to seed `entered_override` rows (the schema's CHECK constraint forbids `entered_with_consent` without a PhotoId); (b) `PasswordResetTests` accept any of `Pending`/`Sent`/`Failed` for `DeliveryState` because the Testcontainers MySQL container cannot reach the Mailpit SMTP host. Also fixed: `ListStaffHandler` converts `Guid.Empty` to `null` for `StaffMemberResponse.ProfileId` when a user has no `AttendantProfile`. All gates passed at task completion.
+Last activity: 2026-09-26 — Phase 21 executed end-to-end via GSD execute-phase. The fast gate passed after each plan (21-01 / 21-02 / 21-03) and the full 6-stage local CI gate passed at completion. OpenAPI client drift was detected on the first full-gate pass because the nullable-param backend change invalidated the generated `apiV1PhotosGet` signature; the regenerated client (`api-v-1-photos-get.ts` + `photos.service.ts`) was committed separately and a second full-gate run passed cleanly.
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed (cumulative): 17 (11 v1.0 + 1 v1.1 + 3 v2.0 + 9 v2.1)
+- Total plans completed (cumulative): 20 (11 v1.0 + 1 v1.1 + 3 v2.0 + 9 v2.1 + 3 v2.2 Phases 19/20/21)
 - v2.1 milestone: 9 plans, 9 summaries, 3 verifications, full local CI verification passing
 - Average duration per plan: ~5-15 min (autonomous execution)
 
@@ -54,6 +54,9 @@ Last activity: 2026-09-26 — Phase 20 executed end-to-end via GSD execute-phase
 | Phase 18 P01 | 25 min | 4 tasks | 16 files |
 | Phase 18 P02 | 25 min | 5 tasks | 12 files |
 | Phase 18 P03 | 30 min | 5 tasks | 22 files |
+| Phase 21 P01 | 20 min | 2 tasks | 5 files |
+| Phase 21 P02 | 12 min | 2 tasks | 5 files |
+| Phase 21 P03 | 35 min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -67,6 +70,8 @@ Last activity: 2026-09-26 — Phase 20 executed end-to-end via GSD execute-phase
 - v2.1 password reset: SMTP self-service for admins only (gatekeeper self-reset deferred); temp passwords one-time + `MustChangePassword` re-armed + refresh-token revoke-all; enumeration-safe uniform response + decoy verify; durable `PasswordResetRequest` table doubles as rate-limit counter (consolidated single-table design to settle in Phase 18 planning)
 - v2.0 photo capture: browser-only, client-side compression (0.8→0.6→0.3 ladder), EXIF strip via canvas redraw, 3× retry with 1s/2s/4s backoff
 - v2.0 consent model: per-tenant per-category policy, five entry states, append-only audit log, hardcoded override reason codes
+- v2.2 PCAP-02 lazy list thumbnails: `ce-photo` gains an opt-in `lazy` input that defers the authenticated `GET /api/v1/photos/{id}` blob fetch via IntersectionObserver (200px rootMargin) — the inner `<img loading="lazy">` only defers decode, not the authenticated HTTP request. Default off so gallery/panel/lightbox stay regression-safe. New `ce-photo-thumb` primitive resolves entity → most-recent photo id via `photosApi.list(0, 1, { entityType, entityId })` then delegates the blob fetch to `ce-photo`.
+- v2.2 PCAP-01/PCAP-03 stay green via the existing capture/compression/EXIF/retry suites — Phase 21 is a gap-closeout, not a re-implementation. Dead v2.0 shims (PhotoBindingCacheService localStorage + generateThumbnail) removed; ce-photo-panel refactored to a single authoritative `photosApi.list()` source (closes T-21-07 stale localStorage metadata).
 - (superseded 2026-09-22) v2.2 Door Integration (Phases 14–15, renumbered from v2.1 on 2026-09-19) gated on real condominium hardware — see next entries
 - v2.2 milestone is software-only closeout (party-mode planning session 2026-09-22); Door Integration renumbered to v2.3, Phases 14–15 stay reserved
 - v2.3 door integration is simulator-first (2026-09-22): `IDoorController`/`IDeviceHandler` abstractions, HMAC-SHA256 unlock security, event normalization, ledger integration, health monitoring, and admin UI are all built and verified against a simulated/loopback device adapter; real vendor drivers stay out of scope until hardware exists; Phases 14–15 reservations retired, v2.3 phases start at 23
@@ -86,7 +91,7 @@ Last activity: 2026-09-26 — Phase 20 executed end-to-end via GSD execute-phase
 | Category | Item | Status | Deferred At | Milestone |
 |----------|------|--------|-------------|-----------|
 | v1.1 | UI Parity & Functional Fixes (Phase 9 partial) | Residents page only; login/dashboard/showcase/visits/vehicles/etc. pending | 2026-09-13 | v2.2 target (UI-03/UI-04) |
-| v2.0 (tech debt) | Backend /api/v1/photos/{id}/thumbnail route | Forward-compatible shim (CSS object-fit cover) | 2026-09-13 | v2.2 candidate |
+| v2.0 (tech debt) | Backend /api/v1/photos/{id}/thumbnail route | Closed in Phase 21: ce-photo uses object-fit cover on the authenticated source blob; no server-side thumbnailing needed. | 2026-09-13 | v2.2 (resolved 2026-09-26) |
 | v2.0 (tech debt) | Backend /api/v1/consent-policy list endpoint | Forward-compatible shim (4× parallel calls) | 2026-09-13 | v2.2 candidate |
 | v2.0 (tech debt) | Backend X-Total-Count header on /api/v1/entry-log | Forward-compatible shim (entries.length approximation) | 2026-09-13 | v2.2 target |
 | v2.1 | Webhook/WhatsApp temp-password delivery, photo on packages | Deferred requirements (REQUIREMENTS.md) | 2026-09-19 | v2.1+ |
@@ -108,3 +113,4 @@ Resume file: None
 
 - Review v2.4 roadmap, then run `/gsd-plan-phase 27`
 - v2.5 sits behind v2.3's simulator foundation: review `milestones/v2.5-REQUIREMENTS.md`, request Hikvision partner-portal doc access early (Phase 31 entry gate for Phase 34), and line up the pilot condominium (HW-09)
+- v2.2 has one more phase (22 — final closeout per ROADMAP). Execute via `/gsd-execute-phase 22` after the manual review/merge of Phase 21.
