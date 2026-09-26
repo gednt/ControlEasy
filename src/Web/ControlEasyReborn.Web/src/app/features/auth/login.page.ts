@@ -7,7 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import type { TenantLookupResponse } from '../../core/services/auth.service';
 import { DemoInfoService } from '../../core/services/demo-info.service';
 import { BootstrapInfoService } from '../../core/services/bootstrap-info.service';
-import { CeButtonComponent, CeSpinnerComponent, CeInputComponent, CeCheckboxComponent, CeIconComponent, ThemeService } from '../../design-system';
+import { CeButtonComponent, CeSpinnerComponent, CeInputComponent, CeCheckboxComponent, CeIconComponent, ThemeService, ToastService } from '../../design-system';
 
 const DEMO_ACCOUNTS = [
   { label: 'Platform Admin', email: 'platform@controleasy.app' },
@@ -167,52 +167,39 @@ const DEMO_ACCOUNTS = [
               </button>
             </div>
 
-            @if (forgotPasswordMessage()) {
-              <div class="forgot-success-banner" role="status">
-                <ce-icon name="check-circle" [size]="18" />
-                <span>{{ forgotPasswordMessage() }}</span>
+            @if (forgotPasswordError()) {
+              <div class="login-error" role="alert" style="margin-bottom: var(--space-3);">
+                <ce-icon name="alert-circle" [size]="18" />
+                <span>{{ forgotPasswordError() }}</span>
               </div>
-              <p class="forgot-modal-hint text-secondary text-xs" style="margin-top: var(--space-3); line-height: 1.5;">
-                If your account exists and is an administrator, an email with temporary credentials has been sent.
-              </p>
-              <ce-button variant="primary" size="md" type="button" (click)="closeForgotPassword()" style="margin-top: var(--space-4); width: 100%;">
-                Back to sign in
-              </ce-button>
-            } @else {
-              <p class="forgot-modal-subtitle">
-                Enter your registered administrator email to receive a temporary recovery password.
-              </p>
-
-              @if (forgotPasswordError()) {
-                <div class="login-error" role="alert" style="margin-bottom: var(--space-3);">
-                  <ce-icon name="alert-circle" [size]="18" />
-                  <span>{{ forgotPasswordError() }}</span>
-                </div>
-              }
-
-              <form [formGroup]="forgotPasswordForm" (ngSubmit)="onForgotPasswordSubmit()" class="login-form">
-                <ce-input
-                  label="Email address"
-                  inputId="forgot-email"
-                  type="email"
-                  autocomplete="email"
-                  placeholder="admin@controleasy.app"
-                  formControlName="email"
-                  [error]="forgotEmailError()"
-                >
-                  <span input-prefix><ce-icon name="user" [size]="16" /></span>
-                </ce-input>
-
-                <div class="forgot-modal-actions" style="margin-top: var(--space-4); display: flex; gap: var(--space-3); justify-content: flex-end;">
-                  <ce-button variant="ghost" size="md" type="button" (click)="closeForgotPassword()" [disabled]="forgotPasswordSubmitting()">
-                    Cancel
-                  </ce-button>
-                  <ce-button variant="primary" size="md" type="submit" [loading]="forgotPasswordSubmitting()" [disabled]="forgotPasswordForm.invalid || forgotPasswordSubmitting()">
-                    Send instructions
-                  </ce-button>
-                </div>
-              </form>
             }
+
+            <p class="forgot-modal-subtitle">
+              Enter your registered administrator email to receive a temporary recovery password.
+            </p>
+
+            <form [formGroup]="forgotPasswordForm" (ngSubmit)="onForgotPasswordSubmit()" class="login-form">
+              <ce-input
+                label="Email address"
+                inputId="forgot-email"
+                type="email"
+                autocomplete="email"
+                placeholder="admin@controleasy.app"
+                formControlName="email"
+                [error]="forgotEmailError()"
+              >
+                <span input-prefix><ce-icon name="user" [size]="16" /></span>
+              </ce-input>
+
+              <div class="forgot-modal-actions" style="margin-top: var(--space-4); display: flex; gap: var(--space-3); justify-content: flex-end;">
+                <ce-button variant="ghost" size="md" type="button" (click)="closeForgotPassword()" [disabled]="forgotPasswordSubmitting()">
+                  Cancel
+                </ce-button>
+                <ce-button variant="primary" size="md" type="submit" [loading]="forgotPasswordSubmitting()" [disabled]="forgotPasswordForm.invalid || forgotPasswordSubmitting()">
+                  Send instructions
+                </ce-button>
+              </div>
+            </form>
           </div>
         </div>
       }
@@ -359,19 +346,6 @@ const DEMO_ACCOUNTS = [
       margin-bottom: var(--space-4);
       line-height: 1.4;
     }
-    .forgot-success-banner {
-      padding: var(--space-3) var(--space-4);
-      background: var(--color-success-light, #ecfdf5);
-      border: 1px solid color-mix(in oklch, var(--color-success, #10b981) 30%, transparent);
-      border-radius: var(--radius-md);
-      color: var(--color-success, #065f46);
-      font-size: var(--font-size-sm);
-      display: flex;
-      align-items: flex-start;
-      gap: var(--space-2);
-      font-weight: var(--font-weight-medium);
-      line-height: 1.4;
-    }
 
     .login-theme-toggle {
       position: fixed;
@@ -516,6 +490,7 @@ export class LoginPage implements OnDestroy {
   readonly themeService = inject(ThemeService);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
+  private readonly toast = inject(ToastService);
   private readonly destroy$ = new Subject<void>();
   private readonly emailChange$ = new Subject<string>();
 
@@ -536,7 +511,6 @@ export class LoginPage implements OnDestroy {
 
   forgotPasswordOpen = signal(false);
   forgotPasswordSubmitting = signal(false);
-  forgotPasswordMessage = signal<string | null>(null);
   forgotPasswordError = signal<string | null>(null);
 
   forgotPasswordForm: FormGroup = this.fb.group({
@@ -616,14 +590,12 @@ export class LoginPage implements OnDestroy {
       this.forgotPasswordForm.reset();
     }
     this.forgotPasswordError.set(null);
-    this.forgotPasswordMessage.set(null);
     this.forgotPasswordOpen.set(true);
   }
 
   closeForgotPassword(): void {
     this.forgotPasswordOpen.set(false);
     this.forgotPasswordError.set(null);
-    this.forgotPasswordMessage.set(null);
     this.forgotPasswordSubmitting.set(false);
   }
 
@@ -636,7 +608,8 @@ export class LoginPage implements OnDestroy {
     this.authService.forgotPassword(email).subscribe({
       next: (res) => {
         this.forgotPasswordSubmitting.set(false);
-        this.forgotPasswordMessage.set(res.message);
+        this.toast.info(res.message);
+        this.closeForgotPassword();
       },
       error: (err) => {
         this.forgotPasswordSubmitting.set(false);

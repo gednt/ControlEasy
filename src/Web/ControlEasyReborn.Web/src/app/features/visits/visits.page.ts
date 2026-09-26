@@ -4,7 +4,16 @@ import { RouterLink } from '@angular/router';
 import { VisitsApiService, VisitResponse } from './visits-api.service';
 import { ApartmentsApiService, formatApartmentLabel } from '../apartments/apartments-api.service';
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
-import { CeButtonComponent, CeModalComponent, CePhotoPanelComponent, CePhotoThumbComponent } from '../../design-system';
+import {
+  CeBadgeComponent,
+  CeButtonComponent,
+  CeCardComponent,
+  CeIconComponent,
+  CeModalComponent,
+  CePhotoPanelComponent,
+  CePhotoThumbComponent,
+  CeTableComponent,
+} from '../../design-system';
 import { VisitCreateModalComponent } from './visit-create-modal.component';
 import { GatewayControlService } from '../access-control/gateway-control.service';
 import { QrPassModalComponent } from '../access-control/components/qr-pass-modal.component';
@@ -18,10 +27,14 @@ type StatusFilter = 'all' | 'Pending' | 'CheckedIn';
   imports: [
     CommonModule,
     RouterLink,
+    CeBadgeComponent,
     CeButtonComponent,
+    CeCardComponent,
+    CeIconComponent,
     CeModalComponent,
     CePhotoPanelComponent,
     CePhotoThumbComponent,
+    CeTableComponent,
     VisitCreateModalComponent,
     QrPassModalComponent,
   ],
@@ -33,7 +46,9 @@ type StatusFilter = 'all' | 'Pending' | 'CheckedIn';
           Administrative pre-registration, scheduled arrivals, and visit history ({{ visits().length }} records). For immediate walk-in access and gate control, use the <a routerLink="/gatehouse" class="inline-link">Gatehouse operator panel</a>.
         </p>
       </div>
-      <button class="ce-button variant-primary size-md" (click)="openCreate()">+ Pre-register visit</button>
+      <ce-button variant="primary" size="md" (click)="openCreate()">
+        <ce-icon name="plus" [size]="16" /> Pre-register visit
+      </ce-button>
     </div>
 
     <div class="filter-tabs">
@@ -57,8 +72,8 @@ type StatusFilter = 'all' | 'Pending' | 'CheckedIn';
     @if (loading()) {
       <p class="text-secondary">Loading visits...</p>
     } @else {
-      <div class="ce-card">
-        <table class="ce-table">
+      <ce-card [padded]="false">
+        <ce-table>
           <thead>
             <tr>
               <th>Photo</th>
@@ -79,44 +94,42 @@ type StatusFilter = 'all' | 'Pending' | 'CheckedIn';
                 <td>{{ visit.visitorDocument }}</td>
                 <td>{{ getApartmentLabel(visit.apartmentId) }}</td>
                 <td>
-                  <span class="ce-badge" [class]="getStatusBadgeClass(visit.status)">
-                    {{ getStatusLabel(visit.status) }}
-                  </span>
+                  <ce-badge [tone]="getStatusBadgeTone(visit.status)" size="sm" [content]="getStatusLabel(visit.status)" />
                 </td>
                 <td>{{ visit.checkedInAtUtc ? (visit.checkedInAtUtc | date: 'short') : '—' }}</td>
                 <td>{{ visit.checkedOutAtUtc ? (visit.checkedOutAtUtc | date: 'short') : '—' }}</td>
                 <td>
-                  <button class="ce-button variant-ghost size-sm" (click)="openPhotos(visit)">Photos</button>
+                  <ce-button variant="ghost" size="sm" (click)="openPhotos(visit)">Photos</ce-button>
                   @if (visit.status === 'Pending') {
-                    <button
-                      class="ce-button variant-secondary size-sm"
+                    <ce-button
+                      variant="secondary"
+                      size="sm"
                       [disabled]="actionInFlight() === visit.id"
+                      [loading]="actionInFlight() === visit.id"
                       (click)="onGenerateQrPass(visit)"
                       title="Issue and display QR Access Pass for this visit"
                     >
                       QR Pass
-                    </button>
-                    <button
-                      class="ce-button variant-primary size-sm"
+                    </ce-button>
+                    <ce-button
+                      variant="primary"
+                      size="sm"
                       [disabled]="actionInFlight() === visit.id"
+                      [loading]="actionInFlight() === visit.id"
                       (click)="onCheckIn(visit)"
                     >
-                      @if (actionInFlight() === visit.id) {
-                        <span class="spinner"></span>
-                      }
                       Check in
-                    </button>
+                    </ce-button>
                   } @else if (visit.status === 'CheckedIn') {
-                    <button
-                      class="ce-button variant-secondary size-sm"
+                    <ce-button
+                      variant="secondary"
+                      size="sm"
                       [disabled]="actionInFlight() === visit.id"
+                      [loading]="actionInFlight() === visit.id"
                       (click)="onCheckOut(visit)"
                     >
-                      @if (actionInFlight() === visit.id) {
-                        <span class="spinner"></span>
-                      }
                       Check out
-                    </button>
+                    </ce-button>
                   } @else {
                     <span class="text-secondary text-xs">—</span>
                   }
@@ -128,8 +141,8 @@ type StatusFilter = 'all' | 'Pending' | 'CheckedIn';
               </tr>
             }
           </tbody>
-        </table>
-      </div>
+        </ce-table>
+      </ce-card>
     }
 
     <ce-visit-create-modal [open]="createOpen()" (closed)="closeCreate()" (created)="onVisitCreated($event)" />
@@ -200,102 +213,11 @@ type StatusFilter = 'all' | 'Pending' | 'CheckedIn';
         color: var(--color-danger);
         font-size: var(--font-size-sm);
       }
-      .ce-card {
-        background: var(--color-surface-elevated);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-xl);
-        overflow: hidden;
-      }
-      .ce-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: var(--font-size-sm);
-      }
-      .ce-table th,
-      .ce-table td {
-        padding: var(--space-3) var(--space-4);
-        border-bottom: 1px solid var(--color-border);
-        text-align: left;
-        vertical-align: middle;
-      }
-      .ce-table thead {
-        background: var(--color-neutral-light);
-      }
-      .ce-badge {
-        padding: var(--space-1) var(--space-2);
-        border-radius: var(--radius-full);
-        font-size: var(--font-size-xs);
-        font-weight: var(--font-weight-medium);
-        border: 1px solid transparent;
-      }
-      .badge-pending {
-        background: var(--color-neutral-light);
-        color: var(--color-text-secondary);
-      }
-      .badge-onsite {
-        background: var(--color-success-light);
-        color: var(--color-success);
-      }
-      .badge-done {
-        background: var(--color-neutral-light);
-        color: var(--color-text-muted);
-      }
-      .badge-cancelled {
-        background: var(--color-danger-light);
-        color: var(--color-danger);
-      }
-      .ce-button {
-        border: 0;
-        border-radius: var(--radius-lg);
-        padding: 0 var(--space-3);
-        cursor: pointer;
-        font-family: inherit;
-        display: inline-flex;
-        align-items: center;
-        gap: var(--space-2);
-      }
-      .ce-button.size-sm {
-        height: 2rem;
-        font-size: var(--font-size-sm);
-      }
-      .ce-button.size-md {
-        height: 2.5rem;
-        padding: 0 var(--space-4);
-      }
-      .variant-primary {
-        background: var(--color-primary);
-        color: var(--color-text-on-primary);
-      }
-      .variant-secondary {
-        background: var(--color-surface);
-        color: var(--color-text-primary);
-        border: 1px solid var(--color-border);
-      }
-      .variant-ghost {
-        background: transparent;
-      }
-      .ce-button:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
-      .spinner {
-        width: 1rem;
-        height: 1rem;
-        border: 2px solid currentColor;
-        border-top-color: transparent;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
       .text-secondary {
         color: var(--color-text-secondary);
       }
       .text-xs {
         font-size: var(--font-size-xs);
-      }
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
       }
     `,
   ],
@@ -318,7 +240,6 @@ export class VisitsPage {
   photosModalOpen = signal(false);
   photosVisit = signal<VisitResponse | null>(null);
 
-  // QR Pass modal state
   readonly qrPassModalOpen = signal(false);
   readonly activeQrPayload = signal<string | null>(null);
   readonly activeSubjectName = signal('');
@@ -388,18 +309,18 @@ export class VisitsPage {
     }
   }
 
-  getStatusBadgeClass(status: string): string {
+  getStatusBadgeTone(status: string): 'neutral' | 'success' | 'warning' | 'danger' {
     switch (status) {
       case 'Pending':
-        return 'badge-pending';
+        return 'neutral';
       case 'CheckedIn':
-        return 'badge-onsite';
+        return 'success';
       case 'CheckedOut':
-        return 'badge-done';
+        return 'neutral';
       case 'Cancelled':
-        return 'badge-cancelled';
+        return 'danger';
       default:
-        return 'badge-pending';
+        return 'neutral';
     }
   }
 

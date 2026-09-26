@@ -1,9 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { importProvidersFrom } from '@angular/core';
 import { of } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { ApartmentsApiService } from '../apartments/apartments-api.service';
 import { VehiclesApiService } from './vehicles-api.service';
 import { VehiclesPage } from './vehicles.page';
+import { CE_LUCIDE_ICONS } from '../../design-system/components/icon/icon.registry';
 
 describe('VehiclesPage', () => {
   let fixture: ComponentFixture<VehiclesPage>;
@@ -37,6 +39,7 @@ describe('VehiclesPage', () => {
     await TestBed.configureTestingModule({
       imports: [VehiclesPage],
       providers: [
+        importProvidersFrom(CE_LUCIDE_ICONS),
         { provide: VehiclesApiService, useValue: vehiclesApi },
         { provide: ApartmentsApiService, useValue: apartmentsApi },
         { provide: AuthService, useValue: auth },
@@ -60,5 +63,15 @@ describe('VehiclesPage', () => {
         vehicleType: 2,
       }),
     );
+  });
+
+  it('renders no Unicode decimal-entity icon glyphs (uses ce-icon)', () => {
+    const html = (fixture.nativeElement as HTMLElement).innerHTML;
+    expect(html).not.toContain('&#128663;');
+    expect(html).not.toContain('&#8635;');
+    expect(html).not.toContain('&#43;');
+    expect(html).not.toContain('&#128247;');
+    expect(html).not.toContain('&#9998;');
+    expect(fixture.nativeElement.querySelector('ce-icon')).not.toBeNull();
   });
 });

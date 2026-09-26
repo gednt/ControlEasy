@@ -1,10 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { importProvidersFrom } from '@angular/core';
 import { VisitsPage } from './visits.page';
 import { VisitsApiService } from './visits-api.service';
 import { ApartmentsApiService } from '../apartments/apartments-api.service';
 import { GatewayControlService } from '../access-control/gateway-control.service';
+import { CE_LUCIDE_ICONS } from '../../design-system/components/icon/icon.registry';
 
 import { provideRouter } from '@angular/router';
 
@@ -17,6 +19,7 @@ describe('VisitsPage', () => {
     await TestBed.configureTestingModule({
       imports: [VisitsPage],
       providers: [
+        importProvidersFrom(CE_LUCIDE_ICONS),
         provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
