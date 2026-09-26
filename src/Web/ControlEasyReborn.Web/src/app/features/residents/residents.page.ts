@@ -173,12 +173,16 @@ type SortKey = 'nameAsc' | 'newest';
                 </td>
                 <td class="resident-actions">
                   <ce-dropdown align="end">
-                    <button class="action-menu-btn" ceDropdownTrigger type="button" aria-label="Resident actions" aria-haspopup="menu">
+                    <button
+                      class="action-menu-btn"
+                      ceDropdownTrigger
+                      type="button"
+                      aria-label="Resident actions"
+                      aria-haspopup="menu"
+                    >
                       <ce-icon name="more-horizontal" [size]="16" />
                     </button>
-                    <button role="menuitem" type="button" (click)="openViewModal(resident)">
-                      View photos
-                    </button>
+                    <button role="menuitem" type="button" (click)="openViewModal(resident)">View photos</button>
                     @if (canWrite()) {
                       <button role="menuitem" type="button" (click)="openEditModal(resident)">Edit</button>
                       @if (resident.active) {
@@ -249,7 +253,11 @@ type SortKey = 'nameAsc' | 'newest';
 
     <ce-modal
       [open]="createModalOpen()"
-      [title]="createModalStep() === 'photos' ? 'Add photos for ' + (createdResident()?.name ?? 'resident') : 'Add new resident'"
+      [title]="
+        createModalStep() === 'photos'
+          ? 'Add photos for ' + (createdResident()?.name ?? 'resident')
+          : 'Add new resident'
+      "
       [size]="createModalStep() === 'photos' ? 'lg' : 'md'"
       (openChange)="onCreateModalOpenChange($event)"
     >
@@ -429,12 +437,18 @@ type SortKey = 'nameAsc' | 'newest';
       .page-title-block {
         min-width: 0;
       }
-      .eyebrow { margin: 0 0 var(--space-2); color: var(--color-text-secondary); font: 700 var(--font-size-xs)/1 var(--font-family-mono); letter-spacing: .13em; text-transform: uppercase; }
+      .eyebrow {
+        margin: 0 0 var(--space-2);
+        color: var(--color-text-secondary);
+        font: 700 var(--font-size-xs)/1 var(--font-family-mono);
+        letter-spacing: 0.13em;
+        text-transform: uppercase;
+      }
       .page-title {
         font-family: var(--font-family-display);
         font-size: clamp(2rem, 3vw, 3rem);
         font-weight: 500;
-        letter-spacing: -.04em;
+        letter-spacing: -0.04em;
         margin-bottom: var(--space-1);
       }
       .page-subtitle {
@@ -478,7 +492,7 @@ type SortKey = 'nameAsc' | 'newest';
         background: transparent;
         color: var(--color-text-secondary);
         font: 700 var(--font-size-xs)/1 var(--font-family-mono);
-        letter-spacing: .06em;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
         cursor: pointer;
         border-bottom: 2px solid transparent;
@@ -557,9 +571,13 @@ type SortKey = 'nameAsc' | 'newest';
         cursor: pointer;
         color: var(--color-text-secondary);
         box-shadow: var(--shadow-sm);
-        transition: background var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
+        transition:
+          background var(--duration-fast) var(--ease-out),
+          color var(--duration-fast) var(--ease-out),
+          border-color var(--duration-fast) var(--ease-out);
       }
-      .action-menu-btn:hover, .action-menu-btn:focus-visible {
+      .action-menu-btn:hover,
+      .action-menu-btn:focus-visible {
         background: var(--color-primary-light);
         border-color: var(--color-primary);
         color: var(--color-primary);
@@ -748,7 +766,13 @@ export class ResidentsPage implements OnDestroy {
       if (tab === 'active' && !resident.active) return false;
       if (tab === 'pending' || tab === 'overdue') return false;
       if (search) {
-        const haystack = [resident.name, resident.cpf, resident.email ?? '', resident.phone ?? '', this.getApartmentLabel(resident.apartmentId)]
+        const haystack = [
+          resident.name,
+          resident.cpf,
+          resident.email ?? '',
+          resident.phone ?? '',
+          this.getApartmentLabel(resident.apartmentId),
+        ]
           .join(' ')
           .toLowerCase();
         if (!haystack.includes(search)) return false;

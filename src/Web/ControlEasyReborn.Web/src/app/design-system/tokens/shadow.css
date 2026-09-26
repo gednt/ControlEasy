@@ -7,10 +7,11 @@
   --shadow-primary-glow: 0 12px 26px rgb(168 77 61 / 0.22);
 }
 
-[data-theme="dark"] {
+[data-theme='dark'] {
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
   --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.4), inset 0 0 0 1px rgb(255 255 255 / 0.04);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.4), 0 8px 10px -6px rgb(0 0 0 / 0.3);
+  --shadow-primary-glow: 0 12px 26px rgb(210 128 103 / 0.28);
 }

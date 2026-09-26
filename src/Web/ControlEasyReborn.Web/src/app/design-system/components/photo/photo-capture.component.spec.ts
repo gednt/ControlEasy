@@ -123,9 +123,8 @@ describe('CePhotoCaptureComponent', () => {
     // JPEG (which is what gets emitted after compression).
     // Easier route: install a noop via prototype override.
     const fakeBlob = new Blob([new Uint8Array(100)], { type: 'image/jpeg' });
-    const toBlobSpy = spyOn(HTMLCanvasElement.prototype, 'toBlob').and.callFake(
-      ((cb: (b: Blob | null) => void) => cb(fakeBlob)) as any,
-    );
+    const toBlobSpy = spyOn(HTMLCanvasElement.prototype, 'toBlob').and.callFake(((cb: (b: Blob | null) => void) =>
+      cb(fakeBlob)) as any);
     const decodeSpy = spyOn(HTMLImageElement.prototype, 'decode').and.callFake(async () => undefined);
     const ok = new File([new Uint8Array(100)], 'ok.jpg', { type: 'image/jpeg' });
     capture.onFileSelected({ target: { files: [ok] } } as unknown as Event);
@@ -139,9 +138,8 @@ describe('CePhotoCaptureComponent', () => {
 
   it('retries upload on transient failure then succeeds', async () => {
     const fakeBlob = new Blob([new Uint8Array(100)], { type: 'image/jpeg' });
-    const toBlobSpy = spyOn(HTMLCanvasElement.prototype, 'toBlob').and.callFake(
-      ((cb: (b: Blob | null) => void) => cb(fakeBlob)) as any,
-    );
+    const toBlobSpy = spyOn(HTMLCanvasElement.prototype, 'toBlob').and.callFake(((cb: (b: Blob | null) => void) =>
+      cb(fakeBlob)) as any);
     const decodeSpy = spyOn(HTMLImageElement.prototype, 'decode').and.callFake(async () => undefined);
     let calls = 0;
     photosApi.upload.and.callFake(() => {
@@ -160,9 +158,8 @@ describe('CePhotoCaptureComponent', () => {
 
   it('shows error toast on terminal upload failure', async () => {
     const fakeBlob = new Blob([new Uint8Array(100)], { type: 'image/jpeg' });
-    const toBlobSpy = spyOn(HTMLCanvasElement.prototype, 'toBlob').and.callFake(
-      ((cb: (b: Blob | null) => void) => cb(fakeBlob)) as any,
-    );
+    const toBlobSpy = spyOn(HTMLCanvasElement.prototype, 'toBlob').and.callFake(((cb: (b: Blob | null) => void) =>
+      cb(fakeBlob)) as any);
     const decodeSpy = spyOn(HTMLImageElement.prototype, 'decode').and.callFake(async () => undefined);
     photosApi.upload.and.returnValue(throwError(() => new Error('server 500')));
     const toast = TestBed.inject(ToastService) as unknown as StubToastService;
@@ -185,7 +182,7 @@ describe('CePhotoCaptureComponent', () => {
     host.mode = 'camera';
     host.open.set(true);
     hostFixture.detectChanges();
-    capture.modeChange.subscribe((m) => host.mode = m);
+    capture.modeChange.subscribe((m) => (host.mode = m));
     await capture.startCamera();
     const toast = TestBed.inject(ToastService) as unknown as StubToastService;
     expect(toast.warning).toHaveBeenCalled();

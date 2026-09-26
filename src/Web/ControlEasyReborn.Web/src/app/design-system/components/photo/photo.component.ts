@@ -40,7 +40,9 @@ export type CePhotoSize = 'thumbnail' | 'source';
         [style.height.px]="displaySize()"
         role="img"
         aria-label="Photo unavailable"
-      >?</div>
+      >
+        ?
+      </div>
     } @else {
       <img
         [src]="sourceUrl()!"
@@ -70,7 +72,7 @@ export type CePhotoSize = 'thumbnail' | 'source';
         cursor: pointer;
       }
       .ce-photo-skeleton {
-        background: var(--color-surface-alt, #eee);
+        background: var(--color-surface-muted);
         border-radius: var(--radius-md, 4px);
         animation: ce-photo-pulse 1.5s ease-in-out infinite;
       }
@@ -78,18 +80,25 @@ export type CePhotoSize = 'thumbnail' | 'source';
         display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--color-surface-alt, #eee);
-        color: var(--color-text-muted, #888);
+        background: var(--color-surface-muted);
+        color: var(--color-text-muted);
         opacity: 0.6;
         border-radius: var(--radius-md, 4px);
         font-size: 1.5rem;
       }
       @keyframes ce-photo-pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.6; }
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.6;
+        }
       }
       @media (prefers-reduced-motion: reduce) {
-        .ce-photo-skeleton { animation: none; }
+        .ce-photo-skeleton {
+          animation: none;
+        }
       }
     `,
   ],
@@ -128,60 +137,63 @@ export class CePhotoComponent implements OnDestroy {
   });
 
   constructor() {
-    effect((onCleanup) => {
-      const id = this.photoId();
-      const lazy = this.lazy();
-      this.releaseObjectUrl();
-      this.loading.set(true);
-      this.error.set(false);
-      this.disconnectObserver();
-      this.unsubscribe();
+    effect(
+      (onCleanup) => {
+        const id = this.photoId();
+        const lazy = this.lazy();
+        this.releaseObjectUrl();
+        this.loading.set(true);
+        this.error.set(false);
+        this.disconnectObserver();
+        this.unsubscribe();
 
-      const runFetch = (): Subscription => {
-        return this.photosApi.get(id).subscribe({
-          next: (blob) => {
-            this.objectUrl = URL.createObjectURL(blob);
-            this.sourceUrl.set(this.objectUrl);
-            this.loading.set(false);
-          },
-          error: () => {
-            this.sourceUrl.set(null);
-            this.loading.set(false);
-            this.error.set(true);
-          },
-        });
-      };
+        const runFetch = (): Subscription => {
+          return this.photosApi.get(id).subscribe({
+            next: (blob) => {
+              this.objectUrl = URL.createObjectURL(blob);
+              this.sourceUrl.set(this.objectUrl);
+              this.loading.set(false);
+            },
+            error: () => {
+              this.sourceUrl.set(null);
+              this.loading.set(false);
+              this.error.set(true);
+            },
+          });
+        };
 
-      if (!lazy) {
-        this.subscription = runFetch();
+        if (!lazy) {
+          this.subscription = runFetch();
+          onCleanup(() => {
+            this.disconnectObserver();
+            this.unsubscribe();
+            this.releaseObjectUrl();
+          });
+          return;
+        }
+
+        const target = this.elementRef.nativeElement;
+        this.observer = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (!entry.isIntersecting) continue;
+              this.disconnectObserver();
+              this.subscription = runFetch();
+              break;
+            }
+          },
+          { rootMargin: '200px' },
+        );
+        this.observer.observe(target);
+
         onCleanup(() => {
           this.disconnectObserver();
           this.unsubscribe();
           this.releaseObjectUrl();
         });
-        return;
-      }
-
-      const target = this.elementRef.nativeElement;
-      this.observer = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            if (!entry.isIntersecting) continue;
-            this.disconnectObserver();
-            this.subscription = runFetch();
-            break;
-          }
-        },
-        { rootMargin: '200px' },
-      );
-      this.observer.observe(target);
-
-      onCleanup(() => {
-        this.disconnectObserver();
-        this.unsubscribe();
-        this.releaseObjectUrl();
-      });
-    }, { allowSignalWrites: true });
+      },
+      { allowSignalWrites: true },
+    );
   }
 
   onLoad(): void {

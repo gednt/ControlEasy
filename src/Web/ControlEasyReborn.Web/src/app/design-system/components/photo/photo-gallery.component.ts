@@ -20,19 +20,10 @@ import type { PhotoResponse } from '../../../features/photos/photos-api.service'
   template: `
     <div class="gallery">
       @for (photo of photos(); track photo.id; let i = $index) {
-        <ce-photo
-          [photoId]="photo.id"
-          [size]="'thumbnail'"
-          (photoClicked)="openLightbox(i)"
-        />
+        <ce-photo [photoId]="photo.id" [size]="'thumbnail'" (photoClicked)="openLightbox(i)" />
       }
       @if (canAdd()) {
-        <button
-          type="button"
-          class="add-tile"
-          aria-label="Add photo"
-          (click)="onAdd()"
-        >
+        <button type="button" class="add-tile" aria-label="Add photo" (click)="onAdd()">
           <ce-icon name="plus" [size]="24" />
         </button>
       }
@@ -64,24 +55,24 @@ import type { PhotoResponse } from '../../../features/photos/photos-api.service'
       .add-tile {
         width: 96px;
         height: 96px;
-        border: 2px dashed var(--color-border, #ccc);
+        border: 2px dashed var(--color-border);
         border-radius: var(--radius-md, 4px);
         background: transparent;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--color-text-muted, #888);
+        color: var(--color-text-muted);
         transition:
           color var(--duration-fast, 150ms) var(--ease-out, ease-out),
           border-color var(--duration-fast, 150ms) var(--ease-out, ease-out);
       }
       .add-tile:hover {
-        border-color: var(--color-primary, #0066cc);
-        color: var(--color-primary, #0066cc);
+        border-color: var(--color-primary);
+        color: var(--color-primary);
       }
       .empty {
-        color: var(--color-text-muted, #888);
+        color: var(--color-text-muted);
         font-size: var(--font-size-sm, 14px);
         padding: var(--space-3, 12px);
       }

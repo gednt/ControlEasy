@@ -293,4 +293,3 @@ describe('QrScanPage', () => {
     localStorage.removeItem(ACCESS_DIRECTION_STORAGE_KEY);
   }));
 });
-

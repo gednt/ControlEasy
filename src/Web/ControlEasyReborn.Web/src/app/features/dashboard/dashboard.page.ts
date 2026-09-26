@@ -9,13 +9,7 @@ import { getApiErrorMessage } from '../../core/utils/api-error.util';
 @Component({
   selector: 'ce-dashboard-page',
   standalone: true,
-  imports: [
-    CommonModule,
-    RouterLink,
-    CeButtonComponent,
-    CeIconComponent,
-    CeSpinnerComponent,
-  ],
+  imports: [CommonModule, RouterLink, CeButtonComponent, CeIconComponent, CeSpinnerComponent],
   template: `
     <header class="ledger-heading">
       <div>
@@ -28,10 +22,20 @@ import { getApiErrorMessage } from '../../core/utils/api-error.util';
           <ce-icon name="refresh" [size]="15" /> Refresh record
         </button>
         @if (canUseGatehouse()) {
-          <a routerLink="/gatehouse" [queryParams]="{ tab: 'walkin' }" class="refresh-record" data-testid="dashboard-add-visit-btn">
+          <a
+            routerLink="/gatehouse"
+            [queryParams]="{ tab: 'walkin' }"
+            class="refresh-record"
+            data-testid="dashboard-add-visit-btn"
+          >
             <ce-icon name="plus" [size]="15" /> Add visit
           </a>
-          <a routerLink="/gatehouse" [queryParams]="{ tab: 'qr' }" class="entry-stamp" data-testid="dashboard-record-access-btn">
+          <a
+            routerLink="/gatehouse"
+            [queryParams]="{ tab: 'qr' }"
+            class="entry-stamp"
+            data-testid="dashboard-record-access-btn"
+          >
             <ce-icon name="plus" [size]="18" /> Record access
           </a>
         }
@@ -236,13 +240,12 @@ import { getApiErrorMessage } from '../../core/utils/api-error.util';
       .entry-stamp {
         border: 2px solid var(--color-primary);
         background: var(--color-primary);
-        color: white;
-        box-shadow: 3px 3px 0 #702d25;
+        color: var(--color-text-on-primary);
+        box-shadow: var(--shadow-primary-glow);
         transform: rotate(-1deg);
       }
       .entry-stamp:hover {
-        transform: rotate(0deg) translate(-1px, -1px);
-        box-shadow: 4px 4px 0 #702d25;
+        transform: rotate(0deg) translateY(-1px);
       }
       .refresh-record:hover {
         border-color: var(--color-primary);
@@ -261,15 +264,15 @@ import { getApiErrorMessage } from '../../core/utils/api-error.util';
       .work-ledger {
         background: var(--color-surface);
         box-shadow: var(--shadow-card);
-        border-top: 4px solid var(--color-sidebar);
+        border-top: 4px solid var(--color-sidebar-bg);
       }
       .ledger-strip {
         display: flex;
         justify-content: space-between;
         gap: var(--space-3);
         padding: var(--space-3) var(--space-5);
-        color: #f8f2e7;
-        background: var(--color-sidebar);
+        color: var(--color-sidebar-text);
+        background: var(--color-sidebar-bg);
         font: 700 var(--font-size-xs)/1 var(--font-family-mono);
         letter-spacing: 0.08em;
         text-transform: uppercase;
@@ -291,7 +294,7 @@ import { getApiErrorMessage } from '../../core/utils/api-error.util';
         background-image: linear-gradient(
           to bottom,
           transparent calc(100% - 1px),
-          rgba(67, 52, 32, 0.035) calc(100% - 1px)
+          var(--color-rule-soft) calc(100% - 1px)
         );
         background-size: 100% 1.9rem;
       }
@@ -320,8 +323,8 @@ import { getApiErrorMessage } from '../../core/utils/api-error.util';
           to bottom,
           transparent 0,
           transparent 31px,
-          rgba(79, 60, 35, 0.09) 31px,
-          rgba(79, 60, 35, 0.09) 32px
+          color-mix(in oklch, var(--color-text-primary) 8%, transparent) 31px,
+          color-mix(in oklch, var(--color-text-primary) 8%, transparent) 32px
         );
       }
       .record-heading {
@@ -361,7 +364,7 @@ import { getApiErrorMessage } from '../../core/utils/api-error.util';
       }
       .arrival-row {
         min-height: 4.45rem;
-        border-bottom: 1px solid rgba(93, 75, 50, 0.22);
+        border-bottom: 1px solid var(--color-rule);
         padding: var(--space-2) 0;
         transition: background-color 180ms ease;
       }
@@ -396,31 +399,31 @@ import { getApiErrorMessage } from '../../core/utils/api-error.util';
         transform: rotate(-1deg);
       }
       .badge-pending {
-        color: #856312;
-        background: #fff4cf;
+        color: var(--color-warning);
+        background: var(--color-warning-light);
       }
       .badge-onsite {
-        color: #32694b;
-        background: #e2efe3;
+        color: var(--color-success);
+        background: var(--color-success-light);
       }
       .badge-done {
-        color: #55626b;
-        background: #edf0ef;
+        color: var(--color-text-secondary);
+        background: var(--color-neutral-light);
       }
       .badge-cancelled {
-        color: #9d3f36;
-        background: #f8e2df;
+        color: var(--color-danger);
+        background: var(--color-danger-light);
       }
       .latest-entry {
         animation: move-to-handover 1.1s ease-out both;
       }
       @keyframes move-to-handover {
         0% {
-          background: #f7df9b;
+          background: color-mix(in oklch, var(--color-primary) 30%, transparent);
           transform: translateX(-1.2rem);
         }
         65% {
-          background: #f8efcf;
+          background: color-mix(in oklch, var(--color-primary) 14%, transparent);
         }
         100% {
           background: transparent;
@@ -471,7 +474,7 @@ import { getApiErrorMessage } from '../../core/utils/api-error.util';
       }
       .handover-record {
         border-left: 3px solid var(--color-primary);
-        background: color-mix(in srgb, var(--color-surface) 94%, #ead8b0);
+        background: color-mix(in oklch, var(--color-warning-light) 45%, var(--color-surface));
       }
       .handover-heading {
         display: flex;
@@ -504,7 +507,7 @@ import { getApiErrorMessage } from '../../core/utils/api-error.util';
         top: 0.7rem;
         left: 0.42rem;
         height: calc(100% - 0.55rem);
-        border-left: 1px dashed var(--color-border-strong);
+        border-left: 1px dashed var(--color-border);
       }
       .timeline-dot {
         z-index: 1;
@@ -529,8 +532,8 @@ import { getApiErrorMessage } from '../../core/utils/api-error.util';
       }
       .fresh-note {
         padding: var(--space-2);
-        background: #f7e6bd;
-        color: #6f5018;
+        background: var(--color-warning-light);
+        color: var(--color-warning);
       }
       .page-error {
         margin-bottom: var(--space-4);

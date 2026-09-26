@@ -33,10 +33,7 @@ export const DEFAULT_COMPRESSION: CompressionOptions = {
  * quality exceeds the byte budget. Callers should map this to a
  * user-visible toast.
  */
-export async function compressImage(
-  source: Blob,
-  options: CompressionOptions = DEFAULT_COMPRESSION,
-): Promise<Blob> {
+export async function compressImage(source: Blob, options: CompressionOptions = DEFAULT_COMPRESSION): Promise<Blob> {
   const img = await loadImage(source);
   const canvas = resize(img, options.maxDimension);
 
@@ -79,11 +76,7 @@ function resize(img: HTMLImageElement, maxDimension: number): HTMLCanvasElement 
 
 function canvasToBlob(canvas: HTMLCanvasElement, quality: number, mime: string): Promise<Blob> {
   return new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error('CANVAS_TO_BLOB_FAILED'))),
-      mime,
-      quality,
-    );
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('CANVAS_TO_BLOB_FAILED'))), mime, quality);
   });
 }
 

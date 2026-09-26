@@ -47,7 +47,7 @@ describe('AccessCredentialsPage', () => {
     credentials: any[] = [],
     apartments: any[] = [],
     residents: any[] = [],
-    vehicles: any[] = []
+    vehicles: any[] = [],
   ): void {
     const credReq = httpMock.expectOne('/api/v1/access-credentials');
     expect(credReq.request.method).toBe('GET');
@@ -80,8 +80,15 @@ describe('AccessCredentialsPage', () => {
         },
       ],
       [{ id: 'apt-garden-14', block: 'Garden', unit: '14', active: true }],
-      [{ id: '00000000-0000-0000-0000-0000000000aa', name: 'Taylor Morgan', apartmentId: 'apt-garden-14', active: true }],
-      []
+      [
+        {
+          id: '00000000-0000-0000-0000-0000000000aa',
+          name: 'Taylor Morgan',
+          apartmentId: 'apt-garden-14',
+          active: true,
+        },
+      ],
+      [],
     );
 
     fixture.detectChanges();
@@ -163,7 +170,7 @@ describe('AccessCredentialsPage', () => {
         { id: '00000000-0000-0000-0000-000000000011', name: 'Avery Chen', apartmentId: 'apt-garden-14', active: true },
         { id: '00000000-0000-0000-0000-000000000022', name: 'Maria Souza', apartmentId: null, active: true },
       ],
-      []
+      [],
     );
 
     component.openIssueModal({
@@ -200,7 +207,7 @@ describe('AccessCredentialsPage', () => {
           ownerResidentId: 'res-1',
           active: true,
         },
-      ]
+      ],
     );
 
     component.openIssueModal({
@@ -227,7 +234,7 @@ describe('AccessCredentialsPage', () => {
       [],
       [{ id: 'apt-garden-14', block: 'Garden', unit: '14', active: true }],
       [{ id: 'res-1', name: 'Jordan Lee', apartmentId: 'apt-garden-14', active: true }],
-      []
+      [],
     );
 
     component.openIssueModal();

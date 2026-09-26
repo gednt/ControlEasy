@@ -4,10 +4,7 @@ import { of } from 'rxjs';
 import { CeAuditRowComponent } from './audit-row.component';
 import { CE_LUCIDE_ICONS } from '../icon/icon.registry';
 import { PhotosApiService } from '../../../features/photos/photos-api.service';
-import type {
-  EntryLogResponse,
-  EntryState,
-} from '../../../features/entry-log/entry-log.service';
+import type { EntryLogResponse, EntryState } from '../../../features/entry-log/entry-log.service';
 
 describe('CeAuditRowComponent', () => {
   let fixture: ComponentFixture<CeAuditRowComponent>;
@@ -45,8 +42,7 @@ describe('CeAuditRowComponent', () => {
   });
 
   it('renders the entry-state badge', () => {
-    const badge: HTMLElement | null =
-      fixture.nativeElement.querySelector('ce-entry-state-badge');
+    const badge: HTMLElement | null = fixture.nativeElement.querySelector('ce-entry-state-badge');
     expect(badge).toBeTruthy();
   });
 
@@ -82,7 +78,7 @@ describe('CeAuditRowComponent', () => {
   it('does NOT apply override-row class for other states', () => {
     fixture.componentRef.setInput('entry', {
       ...baseEntry,
-       entryState: 'entered_without_consent',
+      entryState: 'entered_without_consent',
     });
     fixture.detectChanges();
     const row = fixture.nativeElement.querySelector('tr');
@@ -110,7 +106,10 @@ describe('CeAuditRowComponent', () => {
   });
 
   it('renders the resolved porteiro name when supplied, never the raw GUID', () => {
-    fixture.componentRef.setInput('entry', { ...baseEntry, performedByProfileId: '11111111-1111-1111-1111-111111111111' });
+    fixture.componentRef.setInput('entry', {
+      ...baseEntry,
+      performedByProfileId: '11111111-1111-1111-1111-111111111111',
+    });
     fixture.componentRef.setInput('porteiroName', 'Synthetic Porteiro One');
     fixture.detectChanges();
 
@@ -120,7 +119,10 @@ describe('CeAuditRowComponent', () => {
   });
 
   it('falls back to em-dash when porteiroName is not supplied', () => {
-    fixture.componentRef.setInput('entry', { ...baseEntry, performedByProfileId: '22222222-2222-2222-2222-222222222222' });
+    fixture.componentRef.setInput('entry', {
+      ...baseEntry,
+      performedByProfileId: '22222222-2222-2222-2222-222222222222',
+    });
     fixture.componentRef.setInput('porteiroName', undefined);
     fixture.detectChanges();
 

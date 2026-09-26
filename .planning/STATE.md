@@ -1,21 +1,20 @@
 ---
 gsd_state_version: 1.0
 milestone: v2.2
-milestone_name: Ledger & Reports Polish (current focused milestone; v2.2
-  Phases 19–22 all complete on `version/2.2`. v2.4 Resident Self-Service &
-  Visitor Experience roadmap exists; ready for `/gsd-plan-phase 27`.)
-current_phase: 23
-current_phase_name: v2.4 milestone entry (Phase 23+ planned per
-  ROADMAP.md / v2.4-REQUIREMENTS.md — execution not started)
-status: ready
-last_updated: "2026-09-26T18:30:00.000Z"
+milestone_name: UI Parity & Operational Closeout
+status: Awaiting next milestone
+stopped_at: Milestone v2.5 (Real Vendor Hardware Integration — Control iD, Intelbras, Hikvision) requirements + roadmap created on `feat/planning-lineage-unification`; MILESTONES.md, REQUIREMENTS.md (v2.4 file frontmatter), v2.3-REQUIREMENTS.md DOOR-R1..R3 pointers, ROADMAP.md, PROJECT.md, STATE.md updated. Planning artifacts only — no code changes.
+last_updated: "2026-09-26T18:35:26.568Z"
 last_activity: 2026-09-26
+last_activity_desc: Milestone v2.2 completed and archived
+state_head: 71bca5dd573226673e760c13fa8d7ffde13a8a3d
 progress:
   total_phases: 4
-  completed_phases: 4
+  completed_phases: 1
   total_plans: 15
   completed_plans: 15
-  percent: 100
+current_phase: 23
+current_phase_name: v2.4 milestone entry (Phase 23+ planned per
 ---
 
 # Project State
@@ -29,11 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-23)
 
 ## Current Position
 
-Phase: 22 — Mockup Parity & Test Closeout (complete; v2.2 milestone closeout complete)
+Phase: Milestone v2.2 complete
 Plan: —
-Status: Phase 22 executed 2026-09-26 on `version/2.2` — 4 plans complete (UI-01 mockup parity + UI-02 forgot-password toast + TEST-01 E2E refresh + TEST-02 Nyquist validation coverage). Full local CI gate PASSED (format, Release build, UnitTests 255/255, ArchitectureTests 20/20, Testcontainers MySQL IntegrationTests, Angular production Docker build, OpenAPI client drift). 3 atomic commits on `version/2.2` (`docs(phase-22): finalize 22-VALIDATION.md + cross-phase audit` → `feat(phase-22): UI-01 mockup parity + UI-02 forgot-password toast` → `test(e2e): rewrite gatehouse-workflow against tabbed panel + fix module-pages labels`) plus a docs commit to flip `22-VALIDATION.md` `nyquist_compliant: true` + create `22-VERIFICATION.md` + advance STATE.md to Phase 23 (v2.4 milestone entry). All four v2.2 phases (19/20/21/22) now have `*-VALIDATION.md`; the milestone's Nyquist validation coverage is complete. See `.planning/phases/22-mockup-parity-test-closeout/22-VERIFICATION.md` for per-requirement evidence and surfaced decisions.
-
-Last activity: 2026-09-26 — Phase 22 executed end-to-end via GSD execute-phase. Per-turn fast gate passed after Wave 1 (22-04 docs + 22-01 UI parity + 22-02 forgot-password toast) and after Wave 2 (22-03 E2E refresh). The full 6-stage local CI gate passed at completion on the first run (no OpenAPI drift, no format issues, no test regressions). Surfaced decisions: dashboard parity = design-system conformance (no layout redesign), no client-side 429 cooldown, gatehouse E2E refresh (not delete), v2.0/v2.1 `*-VALIDATION.md` backfill is out of scope for TEST-02 and deferred.
+Status: Awaiting next milestone
+Last activity: 2026-09-26 — Milestone v2.2 completed and archived
 
 ## Performance Metrics
 
@@ -120,6 +118,4 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Review v2.4 roadmap, then run `/gsd-plan-phase 27`
-- v2.5 sits behind v2.3's simulator foundation: review `milestones/v2.5-REQUIREMENTS.md`, request Hikvision partner-portal doc access early (Phase 31 entry gate for Phase 34), and line up the pilot condominium (HW-09)
-- v2.2 has one more phase (22 — final closeout per ROADMAP). Execute via `/gsd-execute-phase 22` after the manual review/merge of Phase 21.
+- Start the next milestone with /gsd-new-milestone

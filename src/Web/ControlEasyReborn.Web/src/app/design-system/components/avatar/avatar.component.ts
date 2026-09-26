@@ -13,23 +13,46 @@ import { Component, input, ChangeDetectionStrategy, computed } from '@angular/co
       </div>
     }
   `,
-  styles: [`
-    .ce-avatar-img, .ce-avatar-initials {
-      border-radius: var(--radius-full);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      flex-shrink: 0;
-      color: var(--color-text-on-primary);
-      font-weight: var(--font-weight-semibold);
-    }
-    .size-xs { width: 1.5rem; height: 1.5rem; font-size: 0.625rem; }
-    .size-sm { width: 2rem; height: 2rem; font-size: 0.75rem; }
-    .size-md { width: 2.5rem; height: 2.5rem; font-size: 0.8rem; }
-    .size-lg { width: 3rem; height: 3rem; font-size: 0.9rem; }
-    .size-xl { width: 4rem; height: 4rem; font-size: 1.1rem; }
-  `],
+  styles: [
+    `
+      .ce-avatar-img,
+      .ce-avatar-initials {
+        border-radius: var(--radius-full);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        flex-shrink: 0;
+        color: var(--color-text-on-primary);
+        font-weight: var(--font-weight-semibold);
+      }
+      .size-xs {
+        width: 1.5rem;
+        height: 1.5rem;
+        font-size: 0.625rem;
+      }
+      .size-sm {
+        width: 2rem;
+        height: 2rem;
+        font-size: 0.75rem;
+      }
+      .size-md {
+        width: 2.5rem;
+        height: 2.5rem;
+        font-size: 0.8rem;
+      }
+      .size-lg {
+        width: 3rem;
+        height: 3rem;
+        font-size: 0.9rem;
+      }
+      .size-xl {
+        width: 4rem;
+        height: 4rem;
+        font-size: 1.1rem;
+      }
+    `,
+  ],
 })
 export class CeAvatarComponent {
   src = input<string | null>(null);
@@ -41,7 +64,13 @@ export class CeAvatarComponent {
   initials = computed(() => {
     const n = this.name();
     if (!n) return '?';
-    return n.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    return n
+      .trim()
+      .split(/\s+/)
+      .map((w) => w[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
   });
 
   backgroundColor = computed(() => {

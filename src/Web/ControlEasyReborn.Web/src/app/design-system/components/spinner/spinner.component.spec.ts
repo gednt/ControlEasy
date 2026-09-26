@@ -27,7 +27,7 @@ describe('CeSpinnerComponent', () => {
     expect(component.tone()).toBe('current');
   });
 
-  ['sm', 'md', 'lg'].forEach(size => {
+  ['sm', 'md', 'lg'].forEach((size) => {
     it(`should render size-${size} class`, () => {
       fixture.componentRef.setInput('size', size as any);
       fixture.detectChanges();
@@ -36,7 +36,7 @@ describe('CeSpinnerComponent', () => {
     });
   });
 
-  ['primary', 'current'].forEach(tone => {
+  ['primary', 'current'].forEach((tone) => {
     it(`should render tone-${tone} class`, () => {
       fixture.componentRef.setInput('tone', tone as any);
       fixture.detectChanges();

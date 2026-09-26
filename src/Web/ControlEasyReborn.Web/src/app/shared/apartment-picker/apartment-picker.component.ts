@@ -1,12 +1,4 @@
-import {
-  Component,
-  ChangeDetectionStrategy,
-  inject,
-  signal,
-  Input,
-  forwardRef,
-  OnInit,
-} from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, Input, forwardRef, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import {
@@ -41,7 +33,8 @@ import {
             [disabled]="disabled"
             [value]="value ?? ''"
             (change)="onSelect($event)"
-            (blur)="onTouched()">
+            (blur)="onTouched()"
+          >
             <option value="">{{ placeholder }}</option>
             @for (apartment of apartments(); track apartment.id) {
               <option [value]="apartment.id">{{ formatLabel(apartment) }}</option>
@@ -54,56 +47,69 @@ import {
       }
     </div>
   `,
-  styles: [`
-    .ce-input-group { display: flex; flex-direction: column; gap: var(--space-1); }
-    .ce-input-label {
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
-      color: var(--color-text-primary);
-    }
-    .ce-input-wrapper {
-      display: flex;
-      align-items: center;
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-lg);
-      transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
-      overflow: hidden;
-    }
-    .ce-input-wrapper:focus-within {
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 15%, transparent);
-    }
-    .ce-input-wrapper.has-error {
-      border-color: var(--color-danger);
-      box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-danger) 15%, transparent);
-    }
-    .select-wrapper { padding: 0; }
-    .ce-select {
-      flex: 1;
-      border: 0;
-      background: transparent;
-      padding: var(--space-3);
-      font-family: inherit;
-      font-size: var(--font-size-sm);
-      color: var(--color-text-primary);
-      outline: none;
-      min-height: 2.5rem;
-      width: 100%;
-      cursor: pointer;
-    }
-    .ce-select:disabled { opacity: 0.6; cursor: not-allowed; }
-    .picker-loading {
-      padding: var(--space-3);
-      font-size: var(--font-size-sm);
-      color: var(--color-text-secondary);
-    }
-    .ce-input-error {
-      font-size: var(--font-size-xs);
-      color: var(--color-danger);
-      font-weight: var(--font-weight-medium);
-    }
-  `],
+  styles: [
+    `
+      .ce-input-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-1);
+      }
+      .ce-input-label {
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-primary);
+      }
+      .ce-input-wrapper {
+        display: flex;
+        align-items: center;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        transition:
+          border-color var(--duration-fast) var(--ease-out),
+          box-shadow var(--duration-fast) var(--ease-out);
+        overflow: hidden;
+      }
+      .ce-input-wrapper:focus-within {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 15%, transparent);
+      }
+      .ce-input-wrapper.has-error {
+        border-color: var(--color-danger);
+        box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-danger) 15%, transparent);
+      }
+      .select-wrapper {
+        padding: 0;
+      }
+      .ce-select {
+        flex: 1;
+        border: 0;
+        background: transparent;
+        padding: var(--space-3);
+        font-family: inherit;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+        outline: none;
+        min-height: 2.5rem;
+        width: 100%;
+        cursor: pointer;
+      }
+      .ce-select:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .picker-loading {
+        padding: var(--space-3);
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+      }
+      .ce-input-error {
+        font-size: var(--font-size-xs);
+        color: var(--color-danger);
+        font-weight: var(--font-weight-medium);
+      }
+    `,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ApartmentPickerComponent implements ControlValueAccessor, OnInit {

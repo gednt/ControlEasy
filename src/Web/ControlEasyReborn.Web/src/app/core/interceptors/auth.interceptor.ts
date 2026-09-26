@@ -6,10 +6,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const token = authService.accessToken();
 
-  const publicUrls = [
-    '/api/v1/security/auth/login',
-    '/api/v1/security/tenants',
-  ];
+  const publicUrls = ['/api/v1/security/auth/login', '/api/v1/security/tenants'];
 
   const isPublic = publicUrls.some((url) => req.url.includes(url));
 

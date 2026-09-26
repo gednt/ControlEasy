@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  OnInit,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -72,7 +65,8 @@ function toLocalDateString(d: Date): string {
           <p class="eyebrow">Operations audit & reports</p>
           <h1 class="page-title">Reports & shift history</h1>
           <p class="lede">
-            Unified chronological audit ledger spanning visits, security scans, refused attempts, and package deliveries.
+            Unified chronological audit ledger spanning visits, security scans, refused attempts, and package
+            deliveries.
           </p>
         </div>
 
@@ -170,7 +164,9 @@ function toLocalDateString(d: Date): string {
             <div class="summary-icon"><ce-icon name="calendar" [size]="18" /></div>
             <div>
               <h2 class="summary-title">Daily visit volume</h2>
-              <p class="summary-subtitle">Total arrivals in selected timeframe: <strong>{{ totalPeriodVisits() }}</strong></p>
+              <p class="summary-subtitle">
+                Total arrivals in selected timeframe: <strong>{{ totalPeriodVisits() }}</strong>
+              </p>
             </div>
           </div>
 
@@ -182,10 +178,7 @@ function toLocalDateString(d: Date): string {
                 <div class="count-row">
                   <span class="count-date">{{ day.date | date: 'mediumDate' }}</span>
                   <div class="count-bar-container">
-                    <div
-                      class="count-bar"
-                      [style.width.%]="calcCountPercent(day.count)"
-                    ></div>
+                    <div class="count-bar" [style.width.%]="calcCountPercent(day.count)"></div>
                   </div>
                   <strong class="count-val">{{ day.count }}</strong>
                 </div>
@@ -442,7 +435,7 @@ function toLocalDateString(d: Date): string {
         display: inline-flex;
         border: 1px solid var(--color-border);
         border-radius: var(--radius-md);
-        background: var(--color-surface-muted, #f8fafc);
+        background: var(--color-surface-muted);
         overflow: hidden;
       }
 
@@ -454,7 +447,9 @@ function toLocalDateString(d: Date): string {
         font-weight: 600;
         color: var(--color-text-secondary);
         cursor: pointer;
-        transition: background 0.15s ease, color 0.15s ease;
+        transition:
+          background 0.15s ease,
+          color 0.15s ease;
         font-family: inherit;
       }
 
@@ -463,13 +458,13 @@ function toLocalDateString(d: Date): string {
       }
 
       .preset-btn:hover {
-        background: rgba(0, 0, 0, 0.04);
+        background: color-mix(in oklch, var(--color-text-primary) 6%, transparent);
         color: var(--color-text-primary);
       }
 
       .preset-btn.active {
-        background: var(--color-primary, #2563eb);
-        color: #fff;
+        background: var(--color-primary);
+        color: var(--color-text-on-primary);
       }
 
       .custom-dates {
@@ -529,11 +524,11 @@ function toLocalDateString(d: Date): string {
         width: 36px;
         height: 36px;
         border-radius: var(--radius-md);
-        background: var(--color-surface-muted, #f1f5f9);
+        background: var(--color-surface-muted);
         display: flex;
         align-items: center;
         justify-content: center;
-        color: var(--color-primary, #2563eb);
+        color: var(--color-primary);
       }
 
       .summary-title {
@@ -572,14 +567,14 @@ function toLocalDateString(d: Date): string {
       .count-bar-container {
         flex: 1;
         height: 8px;
-        background: var(--color-surface-muted, #f1f5f9);
+        background: var(--color-surface-muted);
         border-radius: 9999px;
         overflow: hidden;
       }
 
       .count-bar {
         height: 100%;
-        background: var(--color-primary, #2563eb);
+        background: var(--color-primary);
         border-radius: 9999px;
         transition: width 0.3s ease;
       }
@@ -601,7 +596,7 @@ function toLocalDateString(d: Date): string {
       .apt-badge {
         padding: 2px 8px;
         border-radius: 9999px;
-        background: var(--color-surface-muted, #f1f5f9);
+        background: var(--color-surface-muted);
         color: var(--color-text-secondary);
         font-weight: 600;
       }
@@ -700,7 +695,7 @@ function toLocalDateString(d: Date): string {
         font-size: var(--font-size-xs);
         text-transform: uppercase;
         letter-spacing: 0.05em;
-        background: var(--color-surface-muted, #f8fafc);
+        background: var(--color-surface-muted);
       }
 
       .ce-table td {
@@ -730,28 +725,28 @@ function toLocalDateString(d: Date): string {
       }
 
       .kind-visit {
-        background: rgba(37, 99, 235, 0.12);
-        color: rgb(37, 99, 235);
+        background: var(--color-info-light);
+        color: var(--color-info);
       }
 
       .kind-event {
-        background: rgba(100, 116, 139, 0.12);
-        color: rgb(71, 85, 105);
+        background: color-mix(in oklch, var(--color-neutral) 14%, transparent);
+        color: var(--color-text-secondary);
       }
 
       .kind-package {
-        background: rgba(147, 51, 234, 0.12);
-        color: rgb(147, 51, 234);
+        background: var(--color-accent-pink-light);
+        color: var(--color-accent-pink);
       }
 
       .kind-refused {
-        background: rgba(239, 68, 68, 0.12);
-        color: rgb(220, 38, 38);
+        background: var(--color-danger-light);
+        color: var(--color-danger);
       }
 
       .kind-legacy {
-        background: rgba(245, 158, 11, 0.12);
-        color: rgb(180, 83, 9);
+        background: color-mix(in oklch, var(--color-warning) 14%, transparent);
+        color: var(--color-warning);
       }
 
       .subject-cell {
@@ -781,27 +776,27 @@ function toLocalDateString(d: Date): string {
       }
 
       .state-checkedin {
-        background: rgba(34, 197, 94, 0.15);
-        color: rgb(22, 163, 74);
+        background: color-mix(in oklch, var(--color-success) 18%, transparent);
+        color: var(--color-success);
       }
 
       .state-pending {
-        background: rgba(234, 179, 8, 0.15);
-        color: rgb(161, 98, 7);
+        background: color-mix(in oklch, var(--color-warning) 18%, transparent);
+        color: var(--color-warning);
       }
 
       .state-checkedout {
-        background: rgba(100, 116, 139, 0.15);
-        color: rgb(71, 85, 105);
+        background: color-mix(in oklch, var(--color-neutral) 18%, transparent);
+        color: var(--color-text-secondary);
       }
 
       .state-refused {
-        background: rgba(239, 68, 68, 0.15);
-        color: rgb(220, 38, 38);
+        background: color-mix(in oklch, var(--color-danger) 18%, transparent);
+        color: var(--color-danger);
       }
 
       .state-default {
-        background: var(--color-surface-muted, #f1f5f9);
+        background: var(--color-surface-muted);
         color: var(--color-text-secondary);
       }
 
@@ -817,15 +812,15 @@ function toLocalDateString(d: Date): string {
         align-items: center;
         gap: 4px;
         font-size: 0.75rem;
-        color: rgb(109, 40, 217);
+        color: var(--color-accent-pink);
       }
 
       .carrier-tag {
         display: inline-block;
         padding: 1px 6px;
         border-radius: 4px;
-        background: rgba(109, 40, 217, 0.1);
-        color: rgb(109, 40, 217);
+        background: color-mix(in oklch, var(--color-accent-pink) 14%, transparent);
+        color: var(--color-accent-pink);
         font-weight: 600;
         font-size: 0.72rem;
         width: fit-content;
@@ -871,8 +866,8 @@ function toLocalDateString(d: Date): string {
       .form-error-banner {
         padding: var(--space-3);
         border-radius: var(--radius-md);
-        background: var(--color-danger-light, #fee2e2);
-        color: var(--color-danger, #b91c1c);
+        background: var(--color-danger-light);
+        color: var(--color-danger);
         font-size: var(--font-size-sm);
       }
 
@@ -916,19 +911,13 @@ export class ReportsPage implements OnInit {
 
   private apartmentsMap = signal<Map<string, ApartmentResponse>>(new Map());
 
-  readonly totalPeriodVisits = computed(() =>
-    this.visitCounts().reduce((acc, cur) => acc + (cur.count ?? 0), 0),
-  );
+  readonly totalPeriodVisits = computed(() => this.visitCounts().reduce((acc, cur) => acc + (cur.count ?? 0), 0));
 
   readonly topApartments = computed(() => {
-    return [...this.residentsPerApartment()]
-      .sort((a, b) => (b.count ?? 0) - (a.count ?? 0))
-      .slice(0, 10);
+    return [...this.residentsPerApartment()].sort((a, b) => (b.count ?? 0) - (a.count ?? 0)).slice(0, 10);
   });
 
-  private maxDayCount = computed(() =>
-    Math.max(1, ...this.visitCounts().map((v) => v.count ?? 0)),
-  );
+  private maxDayCount = computed(() => Math.max(1, ...this.visitCounts().map((v) => v.count ?? 0)));
 
   ngOnInit(): void {
     this.loadApartments();
@@ -1137,17 +1126,15 @@ export class ReportsPage implements OnInit {
     if (bounds.from) countsParams.from = bounds.from;
     if (bounds.to) countsParams.to = bounds.to;
 
-    this.reportsApi
-      .apiV1ReportsVisitCountsByDayGet(countsParams)
-      .subscribe({
-        next: (counts) => {
-          this.visitCounts.set(counts);
-          this.loadingSummaries.set(false);
-        },
-        error: () => {
-          this.loadingSummaries.set(false);
-        },
-      });
+    this.reportsApi.apiV1ReportsVisitCountsByDayGet(countsParams).subscribe({
+      next: (counts) => {
+        this.visitCounts.set(counts);
+        this.loadingSummaries.set(false);
+      },
+      error: () => {
+        this.loadingSummaries.set(false);
+      },
+    });
 
     this.reportsApi.apiV1ReportsResidentsPerApartmentGet().subscribe({
       next: (res) => {

@@ -113,9 +113,7 @@ export class AdministrationApiService {
   }
 
   listConfigurations(skip = 0, take = 50): Observable<ConfigurationResponse[]> {
-    const params = new HttpParams()
-      .set('skip', skip.toString())
-      .set('take', take.toString());
+    const params = new HttpParams().set('skip', skip.toString()).set('take', take.toString());
     return this.http.get<ConfigurationResponse[]>(`${this.baseUrl}/configurations`, { params });
   }
 

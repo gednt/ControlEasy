@@ -2,11 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, Subject, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { AdministrationPage } from './administration.page';
-import {
-  AdministrationApiService,
-  CondominiumSettingsDto,
-  AuditLogResponse,
-} from './administration-api.service';
+import { AdministrationApiService, CondominiumSettingsDto, AuditLogResponse } from './administration-api.service';
 import { AuthService, type StaffMemberResponse } from '../../core/services/auth.service';
 
 describe('AdministrationPage', () => {
@@ -87,7 +83,9 @@ describe('AdministrationPage', () => {
       isPlatformAdmin: signal(false),
       roles: signal<string[]>(['TenantAdmin']),
       listStaff: jasmine.createSpy('listStaff').and.returnValue(of([] as StaffMemberResponse[])),
-      resetUserPassword: jasmine.createSpy('resetUserPassword').and.returnValue(of({ userId: 'u-1', mustChangePassword: true, deliveryState: 'Sent' })),
+      resetUserPassword: jasmine
+        .createSpy('resetUserPassword')
+        .and.returnValue(of({ userId: 'u-1', mustChangePassword: true, deliveryState: 'Sent' })),
     };
 
     await TestBed.configureTestingModule({
@@ -198,10 +196,26 @@ describe('AdministrationPage', () => {
   });
 
   it('should expose Staff & Passwords tab for TenantAdmin and load staff on activation', async () => {
-    authMock.listStaff.and.returnValue(of([
-      { userId: 'u-1', profileId: 'p-1', email: 'synthetic-admin@example.test', displayName: 'Synthetic Admin', roles: 'TenantAdmin', active: true },
-      { userId: 'u-2', profileId: 'p-2', email: 'synthetic-porteiro@example.test', displayName: 'Synthetic Porteiro', roles: 'Porteiro', active: true },
-    ] as StaffMemberResponse[]));
+    authMock.listStaff.and.returnValue(
+      of([
+        {
+          userId: 'u-1',
+          profileId: 'p-1',
+          email: 'synthetic-admin@example.test',
+          displayName: 'Synthetic Admin',
+          roles: 'TenantAdmin',
+          active: true,
+        },
+        {
+          userId: 'u-2',
+          profileId: 'p-2',
+          email: 'synthetic-porteiro@example.test',
+          displayName: 'Synthetic Porteiro',
+          roles: 'Porteiro',
+          active: true,
+        },
+      ] as StaffMemberResponse[]),
+    );
 
     component.setTab('staff');
     await fixture.whenStable();
@@ -217,12 +231,30 @@ describe('AdministrationPage', () => {
   });
 
   it('should reset a staff member with delivery feedback and no plaintext', () => {
-    authMock.listStaff.and.returnValue(of([
-      { userId: 'u-2', profileId: 'p-2', email: 'synthetic-porteiro@example.test', displayName: 'Synthetic Porteiro', roles: 'Porteiro', active: true },
-    ] as StaffMemberResponse[]));
+    authMock.listStaff.and.returnValue(
+      of([
+        {
+          userId: 'u-2',
+          profileId: 'p-2',
+          email: 'synthetic-porteiro@example.test',
+          displayName: 'Synthetic Porteiro',
+          roles: 'Porteiro',
+          active: true,
+        },
+      ] as StaffMemberResponse[]),
+    );
 
     component.setTab('staff');
-    component.staff.set([{ userId: 'u-2', profileId: 'p-2', email: 'synthetic-porteiro@example.test', displayName: 'Synthetic Porteiro', roles: 'Porteiro', active: true }]);
+    component.staff.set([
+      {
+        userId: 'u-2',
+        profileId: 'p-2',
+        email: 'synthetic-porteiro@example.test',
+        displayName: 'Synthetic Porteiro',
+        roles: 'Porteiro',
+        active: true,
+      },
+    ]);
     fixture.detectChanges();
 
     spyOn(window, 'confirm').and.returnValue(true);
@@ -241,12 +273,30 @@ describe('AdministrationPage', () => {
   it('should disable the row button while resetting and re-enable after completion', () => {
     const inFlight = new Subject<{ userId: string; mustChangePassword: boolean; deliveryState: string }>();
     authMock.resetUserPassword.and.returnValue(inFlight);
-    authMock.listStaff.and.returnValue(of([
-      { userId: 'u-2', profileId: 'p-2', email: 'synthetic-porteiro@example.test', displayName: 'Synthetic Porteiro', roles: 'Porteiro', active: true },
-    ] as StaffMemberResponse[]));
+    authMock.listStaff.and.returnValue(
+      of([
+        {
+          userId: 'u-2',
+          profileId: 'p-2',
+          email: 'synthetic-porteiro@example.test',
+          displayName: 'Synthetic Porteiro',
+          roles: 'Porteiro',
+          active: true,
+        },
+      ] as StaffMemberResponse[]),
+    );
 
     component.setTab('staff');
-    component.staff.set([{ userId: 'u-2', profileId: 'p-2', email: 'synthetic-porteiro@example.test', displayName: 'Synthetic Porteiro', roles: 'Porteiro', active: true }]);
+    component.staff.set([
+      {
+        userId: 'u-2',
+        profileId: 'p-2',
+        email: 'synthetic-porteiro@example.test',
+        displayName: 'Synthetic Porteiro',
+        roles: 'Porteiro',
+        active: true,
+      },
+    ]);
     fixture.detectChanges();
     spyOn(window, 'confirm').and.returnValue(true);
 

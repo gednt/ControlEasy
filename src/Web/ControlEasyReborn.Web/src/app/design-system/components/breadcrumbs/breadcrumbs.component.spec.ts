@@ -55,10 +55,7 @@ describe('CeBreadcrumbsComponent', () => {
   });
 
   it('should set aria-current=page on last item', () => {
-    fixture.componentRef.setInput('crumbs', [
-      { label: 'Home', route: '/' },
-      { label: 'Joao Silva' },
-    ]);
+    fixture.componentRef.setInput('crumbs', [{ label: 'Home', route: '/' }, { label: 'Joao Silva' }]);
     fixture.detectChanges();
     const last: HTMLElement = fixture.nativeElement.querySelector('[aria-current="page"]');
     expect(last).toBeTruthy();

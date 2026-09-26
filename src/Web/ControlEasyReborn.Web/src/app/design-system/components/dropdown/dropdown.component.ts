@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, inject, input, output, signal, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  OnDestroy,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
 
 @Component({
   selector: 'ce-dropdown',
@@ -15,12 +25,18 @@ import { ChangeDetectionStrategy, Component, ElementRef, OnDestroy, inject, inpu
       }
     </div>
   `,
-  styles: [`
-    .ce-dropdown { display: inline-block; position: relative; }
-    :host ::ng-deep [ceDropdownTrigger], :host ::ng-deep [dropdown-trigger] {
-      cursor: pointer;
-    }
-  `],
+  styles: [
+    `
+      .ce-dropdown {
+        display: inline-block;
+        position: relative;
+      }
+      :host ::ng-deep [ceDropdownTrigger],
+      :host ::ng-deep [dropdown-trigger] {
+        cursor: pointer;
+      }
+    `,
+  ],
   host: {
     '(document:click)': 'onDocumentClick($event)',
     '(window:resize)': 'reposition()',
@@ -79,7 +95,9 @@ export class CeDropdownComponent implements OnDestroy {
 
   private positionPanel(): void {
     const panel = this.panelRef()?.nativeElement;
-    const trigger = this.elementRef.nativeElement.querySelector('[ceDropdownTrigger], [dropdown-trigger]') as HTMLElement | null;
+    const trigger = this.elementRef.nativeElement.querySelector(
+      '[ceDropdownTrigger], [dropdown-trigger]',
+    ) as HTMLElement | null;
     if (!panel || !trigger) return;
 
     const triggerRect = trigger.getBoundingClientRect();
@@ -87,8 +105,9 @@ export class CeDropdownComponent implements OnDestroy {
     panel.style.position = 'fixed';
     panel.style.visibility = 'hidden';
     const panelRect = panel.getBoundingClientRect();
-    const opensDownward = window.innerHeight - triggerRect.bottom >= panelRect.height + margin
-      || triggerRect.top < panelRect.height + margin;
+    const opensDownward =
+      window.innerHeight - triggerRect.bottom >= panelRect.height + margin ||
+      triggerRect.top < panelRect.height + margin;
     const desiredLeft = this.align() === 'end' ? triggerRect.right - panelRect.width : triggerRect.left;
     panel.style.left = `${Math.max(margin, Math.min(desiredLeft, window.innerWidth - panelRect.width - margin))}px`;
     panel.style.top = `${opensDownward ? triggerRect.bottom + margin : triggerRect.top - panelRect.height - margin}px`;

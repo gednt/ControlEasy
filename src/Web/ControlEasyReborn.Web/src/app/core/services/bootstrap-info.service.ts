@@ -19,9 +19,7 @@ export class BootstrapInfoService {
 
   async load(): Promise<void> {
     try {
-      const info = await firstValueFrom(
-        this.http.get<BootstrapInfoResponse>('/api/v1/security/bootstrap'),
-      );
+      const info = await firstValueFrom(this.http.get<BootstrapInfoResponse>('/api/v1/security/bootstrap'));
       this.pending.set(info.pending);
       this.email.set(info.email ?? null);
       this.password.set(info.password ?? null);

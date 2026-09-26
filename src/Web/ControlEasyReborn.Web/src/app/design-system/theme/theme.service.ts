@@ -10,17 +10,18 @@ export class ThemeService {
   readonly theme = signal<Theme>(this.loadStoredTheme());
   readonly resolvedTheme = signal<ResolvedTheme>(this.resolve(this.theme()));
 
-  private prefersDark = typeof window !== 'undefined'
-    ? window.matchMedia('(prefers-color-scheme: dark)')
-    : null;
+  private prefersDark = typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)') : null;
 
   constructor() {
-    effect(() => {
-      const resolved = this.resolve(this.theme());
-      this.resolvedTheme.set(resolved);
-      this.applyToDocument(resolved);
-      this.persistTheme(this.theme());
-    }, { allowSignalWrites: true });
+    effect(
+      () => {
+        const resolved = this.resolve(this.theme());
+        this.resolvedTheme.set(resolved);
+        this.applyToDocument(resolved);
+        this.persistTheme(this.theme());
+      },
+      { allowSignalWrites: true },
+    );
 
     if (this.prefersDark) {
       this.prefersDark.addEventListener('change', () => {

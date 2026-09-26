@@ -1,15 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, UrlTree } from '@angular/router';
-import {
-  HttpClient,
-  provideHttpClient,
-  withInterceptors,
-  HttpErrorResponse,
-} from '@angular/common/http';
-import {
-  HttpTestingController,
-  provideHttpClientTesting,
-} from '@angular/common/http/testing';
+import { HttpClient, provideHttpClient, withInterceptors, HttpErrorResponse } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { of, throwError } from 'rxjs';
 import { errorInterceptor } from './error.interceptor';
 import { AuthService } from '../services/auth.service';
@@ -18,17 +10,11 @@ describe('errorInterceptor', () => {
   let http: HttpClient;
   let httpMock: HttpTestingController;
   let router: Router;
-  let auth: jasmine.SpyObj<
-    Pick<AuthService, 'refreshAuth' | 'logout' | 'accessToken' | 'isAuthenticated'>
-  >;
+  let auth: jasmine.SpyObj<Pick<AuthService, 'refreshAuth' | 'logout' | 'accessToken' | 'isAuthenticated'>>;
   let navigateSpy: jasmine.Spy;
 
   beforeEach(() => {
-    auth = jasmine.createSpyObj<AuthService>('AuthService', [
-      'refreshAuth',
-      'logout',
-      'accessToken',
-    ]);
+    auth = jasmine.createSpyObj<AuthService>('AuthService', ['refreshAuth', 'logout', 'accessToken']);
     auth.accessToken.and.returnValue('stub-token');
     Object.defineProperty(auth, 'isAuthenticated', {
       configurable: true,
@@ -61,10 +47,9 @@ describe('errorInterceptor', () => {
       error: () => {},
     });
 
-    httpMock.expectOne('/api/v1/access-subjects/search').flush(
-      { detail: 'Caller lacks Access.Access.Operate.' },
-      { status: 403, statusText: 'Forbidden' },
-    );
+    httpMock
+      .expectOne('/api/v1/access-subjects/search')
+      .flush({ detail: 'Caller lacks Access.Access.Operate.' }, { status: 403, statusText: 'Forbidden' });
 
     expect(navigateSpy).toHaveBeenCalledWith(['/access-denied']);
   });
@@ -81,10 +66,9 @@ describe('errorInterceptor', () => {
       error: () => {},
     });
 
-    httpMock.expectOne('/api/v1/auth/login').flush(
-      { detail: 'forbidden while logged out' },
-      { status: 403, statusText: 'Forbidden' },
-    );
+    httpMock
+      .expectOne('/api/v1/auth/login')
+      .flush({ detail: 'forbidden while logged out' }, { status: 403, statusText: 'Forbidden' });
 
     expect(navigateSpy).not.toHaveBeenCalled();
   });
@@ -97,10 +81,9 @@ describe('errorInterceptor', () => {
       error: () => {},
     });
 
-    httpMock.expectOne('/api/v1/access-events/scans').flush(
-      { detail: 'stray 403 while on /access-denied' },
-      { status: 403, statusText: 'Forbidden' },
-    );
+    httpMock
+      .expectOne('/api/v1/access-events/scans')
+      .flush({ detail: 'stray 403 while on /access-denied' }, { status: 403, statusText: 'Forbidden' });
 
     expect(navigateSpy).not.toHaveBeenCalled();
   });
@@ -115,10 +98,9 @@ describe('errorInterceptor', () => {
       error: () => {},
     });
 
-    httpMock.expectOne('/api/v1/access-events/scans').flush(
-      { detail: 'token expired' },
-      { status: 401, statusText: 'Unauthorized' },
-    );
+    httpMock
+      .expectOne('/api/v1/access-events/scans')
+      .flush({ detail: 'token expired' }, { status: 401, statusText: 'Unauthorized' });
 
     expect(auth.refreshAuth).toHaveBeenCalled();
     expect(auth.logout).toHaveBeenCalledTimes(1);
@@ -134,10 +116,9 @@ describe('errorInterceptor', () => {
       error: () => {},
     });
 
-    httpMock.expectOne('/api/v1/access-events/scans').flush(
-      { detail: 'token expired' },
-      { status: 401, statusText: 'Unauthorized' },
-    );
+    httpMock
+      .expectOne('/api/v1/access-events/scans')
+      .flush({ detail: 'token expired' }, { status: 401, statusText: 'Unauthorized' });
 
     expect(auth.logout).toHaveBeenCalledTimes(1);
   });

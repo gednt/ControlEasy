@@ -1,4 +1,15 @@
-import { AfterViewInit, Component, ChangeDetectionStrategy, inject, OnInit, effect, DestroyRef, HostListener, PLATFORM_ID, ViewChild } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  ChangeDetectionStrategy,
+  inject,
+  OnInit,
+  effect,
+  DestroyRef,
+  HostListener,
+  PLATFORM_ID,
+  ViewChild,
+} from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../sidebar/sidebar.component';
@@ -16,12 +27,7 @@ import { DrawerService } from '../../core/services/drawer.service';
     <div class="app-shell" [class.drawer-open]="drawerService.isOpen()">
       <ce-sidebar />
       @if (drawerService.isOpen()) {
-        <button
-          type="button"
-          class="drawer-backdrop"
-          aria-label="Close menu"
-          (click)="drawerService.close()"
-        ></button>
+        <button type="button" class="drawer-backdrop" aria-label="Close menu" (click)="drawerService.close()"></button>
       }
       <div class="main-area">
         <ce-demo-banner />
@@ -33,51 +39,59 @@ import { DrawerService } from '../../core/services/drawer.service';
       <ce-toast-host />
     </div>
   `,
-  styles: [`
-    .app-shell {
-      display: grid;
-      grid-template-columns: var(--sidebar-width) 1fr;
-      min-height: 100vh;
-    }
-    @media (max-width: 1023px) {
-      .app-shell { grid-template-columns: var(--sidebar-width-collapsed) 1fr; }
-    }
-    @media (max-width: 639px) {
-      .app-shell { grid-template-columns: 1fr; }
-    }
-    .main-area {
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-      background: var(--color-background);
-    }
-    .page-content {
-      flex: 1;
-      padding: var(--space-8);
-      overflow-x: auto;
-      max-width: calc(var(--content-max-width) + var(--space-16));
-      width: 100%;
-      margin: 0 auto;
-    }
-    @media (max-width: 639px) {
-      .page-content { padding: var(--space-4); }
-    }
-    .drawer-backdrop {
-      display: none;
-    }
-    @media (max-width: 639px) {
-      .drawer-backdrop {
-        display: block;
-        position: fixed;
-        inset: 0;
-        z-index: 50;
-        border: 0;
-        padding: 0;
-        background: rgb(0 0 0 / 0.5);
-        cursor: pointer;
+  styles: [
+    `
+      .app-shell {
+        display: grid;
+        grid-template-columns: var(--sidebar-width) 1fr;
+        min-height: 100vh;
       }
-    }
-  `],
+      @media (max-width: 1023px) {
+        .app-shell {
+          grid-template-columns: var(--sidebar-width-collapsed) 1fr;
+        }
+      }
+      @media (max-width: 639px) {
+        .app-shell {
+          grid-template-columns: 1fr;
+        }
+      }
+      .main-area {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        background: var(--color-background);
+      }
+      .page-content {
+        flex: 1;
+        padding: var(--space-8);
+        overflow-x: auto;
+        max-width: calc(var(--content-max-width) + var(--space-16));
+        width: 100%;
+        margin: 0 auto;
+      }
+      @media (max-width: 639px) {
+        .page-content {
+          padding: var(--space-4);
+        }
+      }
+      .drawer-backdrop {
+        display: none;
+      }
+      @media (max-width: 639px) {
+        .drawer-backdrop {
+          display: block;
+          position: fixed;
+          inset: 0;
+          z-index: 50;
+          border: 0;
+          padding: 0;
+          background: var(--color-modal-backdrop);
+          cursor: pointer;
+        }
+      }
+    `,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AppShellComponent implements OnInit, AfterViewInit {

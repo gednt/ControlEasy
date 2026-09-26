@@ -1,10 +1,23 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, of, throwError, switchMap, tap, catchError } from 'rxjs';
-import { SecurityApiService, LoginResponse, TenantLookupResponse, ForgotPasswordResponse, ResetUserPasswordResponse, StaffMemberResponse } from './security-api.service';
+import {
+  SecurityApiService,
+  LoginResponse,
+  TenantLookupResponse,
+  ForgotPasswordResponse,
+  ResetUserPasswordResponse,
+  StaffMemberResponse,
+} from './security-api.service';
 import { TenantSessionService } from './tenant-session.service';
 
-export type { LoginResponse, TenantLookupResponse, ForgotPasswordResponse, ResetUserPasswordResponse, StaffMemberResponse } from './security-api.service';
+export type {
+  LoginResponse,
+  TenantLookupResponse,
+  ForgotPasswordResponse,
+  ResetUserPasswordResponse,
+  StaffMemberResponse,
+} from './security-api.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -195,9 +208,7 @@ export class AuthService {
   }
 
   getRememberedEmail(): string | null {
-    return typeof localStorage !== 'undefined'
-      ? localStorage.getItem(this.emailKey)
-      : null;
+    return typeof localStorage !== 'undefined' ? localStorage.getItem(this.emailKey) : null;
   }
 
   setRememberedEmail(email: string, remember: boolean): void {
@@ -280,8 +291,7 @@ export class AuthService {
   }
 
   private loadDemoPersonaFromStorage(): boolean {
-    return typeof localStorage !== 'undefined'
-      && localStorage.getItem(this.demoPersonaKey) === 'true';
+    return typeof localStorage !== 'undefined' && localStorage.getItem(this.demoPersonaKey) === 'true';
   }
 
   private setMustChangePassword(value: boolean): void {
@@ -296,21 +306,26 @@ export class AuthService {
   }
 
   private loadMustChangePassword(): boolean {
-    return typeof localStorage !== 'undefined'
-      && localStorage.getItem(this.mustChangePasswordKey) === 'true';
+    return typeof localStorage !== 'undefined' && localStorage.getItem(this.mustChangePasswordKey) === 'true';
   }
 
   private normalizeRoles(roles: string[] | string): string[] {
     if (Array.isArray(roles)) {
       return roles;
     }
-    return roles.split(',').map((role) => role.trim()).filter(Boolean);
+    return roles
+      .split(',')
+      .map((role) => role.trim())
+      .filter(Boolean);
   }
 
   private normalizePermissions(permissions: string[] | string): string[] {
     if (Array.isArray(permissions)) {
       return permissions;
     }
-    return permissions.split(',').map((permission) => permission.trim()).filter(Boolean);
+    return permissions
+      .split(',')
+      .map((permission) => permission.trim())
+      .filter(Boolean);
   }
 }

@@ -43,11 +43,13 @@ describe('CondominiumsPage', () => {
 
   it('onResetUserPassword should call authService.resetUserPassword when confirmed', () => {
     spyOn(window, 'confirm').and.returnValue(true);
-    authServiceSpy.resetUserPassword.and.returnValue(of({
-      userId: 'user-123',
-      mustChangePassword: true,
-      deliveryState: 'Sent',
-    }));
+    authServiceSpy.resetUserPassword.and.returnValue(
+      of({
+        userId: 'user-123',
+        mustChangePassword: true,
+        deliveryState: 'Sent',
+      }),
+    );
 
     component.onResetUserPassword('user-123', 'John Doe');
 
@@ -60,11 +62,13 @@ describe('CondominiumsPage', () => {
 
   it('onResetUserPassword surfaces Failed delivery state without a temp password', () => {
     spyOn(window, 'confirm').and.returnValue(true);
-    authServiceSpy.resetUserPassword.and.returnValue(of({
-      userId: 'user-123',
-      mustChangePassword: true,
-      deliveryState: 'Failed',
-    }));
+    authServiceSpy.resetUserPassword.and.returnValue(
+      of({
+        userId: 'user-123',
+        mustChangePassword: true,
+        deliveryState: 'Failed',
+      }),
+    );
 
     component.onResetUserPassword('user-123', 'John Doe');
 

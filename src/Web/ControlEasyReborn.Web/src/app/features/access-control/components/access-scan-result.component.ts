@@ -28,7 +28,9 @@ import { ScanResult, ScanRefusal } from '../access-control.types';
     } @else if (decision() === 'refused') {
       <div class="result result--refused" role="status" aria-live="polite">
         <h3>Access refused</h3>
-        <p>Reason: <code>{{ failureCode() }}</code></p>
+        <p>
+          Reason: <code>{{ failureCode() }}</code>
+        </p>
       </div>
     } @else {
       <div class="result result--unavailable" role="status" aria-live="polite">

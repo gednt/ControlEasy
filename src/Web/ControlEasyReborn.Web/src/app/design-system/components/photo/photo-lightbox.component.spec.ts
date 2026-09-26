@@ -29,10 +29,7 @@ describe('CePhotoLightboxComponent', () => {
     photosApi.get.and.returnValue(of(new Blob(['photo'], { type: 'image/jpeg' })));
     await TestBed.configureTestingModule({
       imports: [CePhotoLightboxComponent],
-      providers: [
-        importProvidersFrom(CE_LUCIDE_ICONS),
-        { provide: PhotosApiService, useValue: photosApi },
-      ],
+      providers: [importProvidersFrom(CE_LUCIDE_ICONS), { provide: PhotosApiService, useValue: photosApi }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(CePhotoLightboxComponent);

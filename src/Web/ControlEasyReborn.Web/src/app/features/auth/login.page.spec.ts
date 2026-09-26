@@ -87,7 +87,9 @@ describe('LoginPage', () => {
   });
 
   it('onForgotPasswordSubmit should call authService.forgotPassword and surface an info toast (not an inline banner)', () => {
-    authServiceSpy.forgotPassword.and.returnValue(of({ message: 'If an account matches that email, instructions have been sent.' }));
+    authServiceSpy.forgotPassword.and.returnValue(
+      of({ message: 'If an account matches that email, instructions have been sent.' }),
+    );
     component.openForgotPassword();
     component.forgotPasswordForm.patchValue({ email: 'admin@condoeasy.com' });
 
@@ -100,10 +102,12 @@ describe('LoginPage', () => {
   });
 
   it('onForgotPasswordSubmit should handle error and display error alert', () => {
-    authServiceSpy.forgotPassword.and.returnValue(throwError(() => ({
-      error: { detail: 'Too many requests' },
-      status: 429,
-    })));
+    authServiceSpy.forgotPassword.and.returnValue(
+      throwError(() => ({
+        error: { detail: 'Too many requests' },
+        status: 429,
+      })),
+    );
     component.openForgotPassword();
     component.forgotPasswordForm.patchValue({ email: 'admin@condoeasy.com' });
 
@@ -115,10 +119,12 @@ describe('LoginPage', () => {
   });
 
   it('onSubmit should set loginError and re-enable form on 401 (enumeration-safe)', () => {
-    authServiceSpy.login.and.returnValue(throwError(() => ({
-      error: { detail: 'Invalid email or password.' },
-      status: 401,
-    })));
+    authServiceSpy.login.and.returnValue(
+      throwError(() => ({
+        error: { detail: 'Invalid email or password.' },
+        status: 401,
+      })),
+    );
     component.loginForm.patchValue({ email: 'admin@condoeasy.com', password: 'demo123' });
 
     component.onSubmit();

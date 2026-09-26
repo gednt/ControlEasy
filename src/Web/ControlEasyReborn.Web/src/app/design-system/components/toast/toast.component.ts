@@ -24,52 +24,82 @@ export interface Toast {
       }
     </div>
   `,
-  styles: [`
-    .ce-toast-host {
-      position: fixed;
-      bottom: var(--space-6);
-      right: var(--space-6);
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-3);
-      max-width: 24rem;
-    }
-    @media (max-width: 639px) {
-      .ce-toast-host { left: var(--space-4); right: var(--space-4); bottom: var(--space-4); max-width: none; }
-    }
-    .ce-toast {
-      display: flex;
-      align-items: flex-start;
-      gap: var(--space-3);
-      padding: var(--space-3) var(--space-4);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-lg);
-      animation: toast-in var(--duration-base) var(--ease-out);
-      font-size: var(--font-size-sm);
-      min-width: 16rem;
-    }
-    .ce-toast.tone-success { background: var(--color-success-light); color: var(--color-success); }
-    .ce-toast.tone-info { background: var(--color-info-light); color: var(--color-info); }
-    .ce-toast.tone-warning { background: var(--color-warning-light); color: var(--color-warning); }
-    .ce-toast.tone-error { background: var(--color-danger-light); color: var(--color-danger); }
-    .ce-toast-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
-    .ce-toast-message { flex: 1; line-height: var(--line-height-normal); }
-    .ce-toast-close {
-      background: transparent;
-      border: 0;
-      color: inherit;
-      cursor: pointer;
-      font-size: 1rem;
-      padding: 0;
-      line-height: 1;
-      opacity: 0.7;
-    }
-    .ce-toast-close:hover { opacity: 1; }
-    @media (prefers-reduced-motion: reduce) {
-      .ce-toast { animation: none; }
-    }
-  `],
+  styles: [
+    `
+      .ce-toast-host {
+        position: fixed;
+        bottom: var(--space-6);
+        right: var(--space-6);
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3);
+        max-width: 24rem;
+      }
+      @media (max-width: 639px) {
+        .ce-toast-host {
+          left: var(--space-4);
+          right: var(--space-4);
+          bottom: var(--space-4);
+          max-width: none;
+        }
+      }
+      .ce-toast {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-3);
+        padding: var(--space-3) var(--space-4);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-lg);
+        animation: toast-in var(--duration-base) var(--ease-out);
+        font-size: var(--font-size-sm);
+        min-width: 16rem;
+      }
+      .ce-toast.tone-success {
+        background: var(--color-success-light);
+        color: var(--color-success);
+      }
+      .ce-toast.tone-info {
+        background: var(--color-info-light);
+        color: var(--color-info);
+      }
+      .ce-toast.tone-warning {
+        background: var(--color-warning-light);
+        color: var(--color-warning);
+      }
+      .ce-toast.tone-error {
+        background: var(--color-danger-light);
+        color: var(--color-danger);
+      }
+      .ce-toast-icon {
+        font-size: 1rem;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+      .ce-toast-message {
+        flex: 1;
+        line-height: var(--line-height-normal);
+      }
+      .ce-toast-close {
+        background: transparent;
+        border: 0;
+        color: inherit;
+        cursor: pointer;
+        font-size: 1rem;
+        padding: 0;
+        line-height: 1;
+        opacity: 0.7;
+      }
+      .ce-toast-close:hover {
+        opacity: 1;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .ce-toast {
+          animation: none;
+        }
+      }
+    `,
+  ],
 })
 export class CeToastHostComponent {
   toasts = signal<Toast[]>([]);
@@ -78,7 +108,7 @@ export class CeToastHostComponent {
 
   add(toast: Omit<Toast, 'id'>): number {
     const id = CeToastHostComponent.nextId++;
-    this.toasts.update(t => [...t, { ...toast, id }]);
+    this.toasts.update((t) => [...t, { ...toast, id }]);
     if (toast.duration > 0) {
       setTimeout(() => this.dismiss(id), toast.duration);
     }
@@ -86,16 +116,21 @@ export class CeToastHostComponent {
   }
 
   dismiss(id: number): void {
-    this.toasts.update(t => t.filter(toast => toast.id !== id));
+    this.toasts.update((t) => t.filter((toast) => toast.id !== id));
   }
 
   iconForTone(tone: string): string {
     switch (tone) {
-      case 'success': return '\u2713';
-      case 'error': return '\u2717';
-      case 'warning': return '\u26A0';
-      case 'info': return '\u2139';
-      default: return '\u2139';
+      case 'success':
+        return '\u2713';
+      case 'error':
+        return '\u2717';
+      case 'warning':
+        return '\u26A0';
+      case 'info':
+        return '\u2139';
+      default:
+        return '\u2139';
     }
   }
 }

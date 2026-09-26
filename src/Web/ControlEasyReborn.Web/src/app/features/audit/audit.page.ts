@@ -1,13 +1,9 @@
-import {
-  Component,
-  ChangeDetectionStrategy,
-  OnInit,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { CeAuditFiltersComponent, type PorteiroOption } from '../../design-system/components/audit-filters/audit-filters.component';
+import {
+  CeAuditFiltersComponent,
+  type PorteiroOption,
+} from '../../design-system/components/audit-filters/audit-filters.component';
 import { CeAuditRowComponent } from '../../design-system/components/audit-row/audit-row.component';
 import { CeTableComponent } from '../../design-system/components/table/table.component';
 import { CePaginationComponent } from '../../design-system/components/pagination/pagination.component';
@@ -17,11 +13,7 @@ import { CeSpinnerComponent } from '../../design-system/components/spinner/spinn
 import { CePhotoLightboxComponent } from '../../design-system/components/photo/photo-lightbox.component';
 import { CeIconComponent } from '../../design-system/components/icon/icon.component';
 import { ToastService } from '../../design-system/components/toast/toast.component';
-import {
-  EntryLogService,
-  type AuditFilters,
-  type EntryLogResponse,
-} from '../../features/entry-log/entry-log.service';
+import { EntryLogService, type AuditFilters, type EntryLogResponse } from '../../features/entry-log/entry-log.service';
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
 import { AuthService, type StaffMemberResponse } from '../../core/services/auth.service';
 
@@ -82,11 +74,7 @@ import { AuthService, type StaffMemberResponse } from '../../core/services/auth.
           <p>Loading entries…</p>
         </div>
       } @else if (entries().length === 0) {
-        <ce-empty-state
-          icon="📋"
-          title="No entries"
-          description="No entries match the current filters."
-        />
+        <ce-empty-state icon="📋" title="No entries" description="No entries match the current filters." />
       } @else {
         <ce-table>
           <thead>
@@ -112,9 +100,7 @@ import { AuthService, type StaffMemberResponse } from '../../core/services/auth.
         </ce-table>
 
         <div class="pagination-row">
-          <span class="page-summary">
-            Showing {{ entries().length }} entries
-          </span>
+          <span class="page-summary"> Showing {{ entries().length }} entries </span>
           <ce-pagination
             [page]="page()"
             [pageSize]="filters().take"
@@ -155,7 +141,7 @@ import { AuthService, type StaffMemberResponse } from '../../core/services/auth.
         margin: 0 0 var(--space-1, 4px) 0;
       }
       .page-subtitle {
-        color: var(--color-text-secondary, #6b7280);
+        color: var(--color-text-secondary);
         font-size: var(--font-size-sm, 14px);
         margin: 0;
         max-width: 48rem;
@@ -167,7 +153,7 @@ import { AuthService, type StaffMemberResponse } from '../../core/services/auth.
         justify-content: center;
         gap: var(--space-3, 12px);
         padding: var(--space-12, 48px) var(--space-4, 16px);
-        color: var(--color-text-secondary, #6b7280);
+        color: var(--color-text-secondary);
       }
       .pagination-row {
         display: flex;
@@ -178,7 +164,7 @@ import { AuthService, type StaffMemberResponse } from '../../core/services/auth.
       }
       .page-summary {
         font-size: var(--font-size-sm, 14px);
-        color: var(--color-text-secondary, #6b7280);
+        color: var(--color-text-secondary);
       }
     `,
   ],
@@ -201,7 +187,7 @@ export class AuditPage implements OnInit {
   readonly porteiroOptions = computed<PorteiroOption[]>(() =>
     this.porteiros()
       .filter((p) => p.profileId !== null && p.profileId !== undefined)
-      .map((p) => ({ profileId: p.profileId as string, displayName: p.displayName }))
+      .map((p) => ({ profileId: p.profileId as string, displayName: p.displayName })),
   );
 
   readonly porteiroNameById = computed<Map<string, string>>(() => {
@@ -231,9 +217,7 @@ export class AuditPage implements OnInit {
       })),
   );
 
-  page = computed(() =>
-    Math.floor(this.filters().skip / this.filters().take) + 1,
-  );
+  page = computed(() => Math.floor(this.filters().skip / this.filters().take) + 1);
 
   ngOnInit(): void {
     void this.loadEntries();
@@ -252,9 +236,7 @@ export class AuditPage implements OnInit {
   private async loadEntries(): Promise<void> {
     this.loading.set(true);
     try {
-      const entries = await firstValueFrom(
-        this.entryLogService.list(this.filters()),
-      );
+      const entries = await firstValueFrom(this.entryLogService.list(this.filters()));
       this.entries.set(entries);
       // Phase 13 deviation: backend has no X-Total-Count. Use entries.length
       // so the pagination component still renders.
@@ -301,9 +283,7 @@ export class AuditPage implements OnInit {
   async exportCsv(): Promise<void> {
     this.exporting.set(true);
     try {
-      const blob = await firstValueFrom(
-        this.entryLogService.export(this.filters()),
-      );
+      const blob = await firstValueFrom(this.entryLogService.export(this.filters()));
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

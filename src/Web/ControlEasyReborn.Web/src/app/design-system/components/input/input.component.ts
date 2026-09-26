@@ -1,4 +1,12 @@
-import { Component, input, forwardRef, ChangeDetectionStrategy, ChangeDetectorRef, inject, signal } from '@angular/core';
+import {
+  Component,
+  input,
+  forwardRef,
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  inject,
+  signal,
+} from '@angular/core';
 import { NG_VALUE_ACCESSOR, ControlValueAccessor } from '@angular/forms';
 
 @Component({
@@ -38,58 +46,69 @@ import { NG_VALUE_ACCESSOR, ControlValueAccessor } from '@angular/forms';
       }
     </div>
   `,
-  styles: [`
-    .ce-input-group { display: flex; flex-direction: column; gap: var(--space-1); }
-    .ce-input-label {
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
-      color: var(--color-text-primary);
-    }
-    .ce-input-wrapper {
-      display: flex;
-      align-items: center;
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-lg);
-      transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
-      overflow: hidden;
-    }
-    .ce-input-wrapper:focus-within {
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 15%, transparent);
-    }
-    .ce-input-wrapper.has-error {
-      border-color: var(--color-danger);
-      box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-danger) 15%, transparent);
-    }
-    .ce-input {
-      flex: 1;
-      border: 0;
-      background: transparent;
-      padding: var(--space-3);
-      font-family: inherit;
-      font-size: var(--font-size-sm);
-      color: var(--color-text-primary);
-      outline: none;
-      min-height: 2.5rem;
-    }
-    .ce-input::placeholder { color: var(--color-text-muted); }
-    .ce-input-error {
-      font-size: var(--font-size-xs);
-      color: var(--color-danger);
-      font-weight: var(--font-weight-medium);
-    }
-    .ce-input-helper {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-secondary);
-    }
-    :host ::ng-deep [input-prefix], :host ::ng-deep [input-suffix] {
-      display: flex;
-      align-items: center;
-      padding: 0 var(--space-3);
-      color: var(--color-text-muted);
-    }
-  `],
+  styles: [
+    `
+      .ce-input-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-1);
+      }
+      .ce-input-label {
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-primary);
+      }
+      .ce-input-wrapper {
+        display: flex;
+        align-items: center;
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        transition:
+          border-color var(--duration-fast) var(--ease-out),
+          box-shadow var(--duration-fast) var(--ease-out);
+        overflow: hidden;
+      }
+      .ce-input-wrapper:focus-within {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 15%, transparent);
+      }
+      .ce-input-wrapper.has-error {
+        border-color: var(--color-danger);
+        box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-danger) 15%, transparent);
+      }
+      .ce-input {
+        flex: 1;
+        border: 0;
+        background: transparent;
+        padding: var(--space-3);
+        font-family: inherit;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+        outline: none;
+        min-height: 2.5rem;
+      }
+      .ce-input::placeholder {
+        color: var(--color-text-muted);
+      }
+      .ce-input-error {
+        font-size: var(--font-size-xs);
+        color: var(--color-danger);
+        font-weight: var(--font-weight-medium);
+      }
+      .ce-input-helper {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+      }
+      :host ::ng-deep [input-prefix],
+      :host ::ng-deep [input-suffix] {
+        display: flex;
+        align-items: center;
+        padding: 0 var(--space-3);
+        color: var(--color-text-muted);
+      }
+    `,
+  ],
 })
 export class CeInputComponent implements ControlValueAccessor {
   label = input('');

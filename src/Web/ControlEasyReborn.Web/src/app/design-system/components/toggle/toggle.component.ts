@@ -1,9 +1,4 @@
-import {
-  Component,
-  ChangeDetectionStrategy,
-  input,
-  output,
-} from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
 
 /**
  * Accessible toggle switch (role="switch", aria-checked) used by the consent
@@ -31,7 +26,10 @@ import {
   `,
   styles: [
     `
-      :host { display: inline-flex; line-height: 0; }
+      :host {
+        display: inline-flex;
+        line-height: 0;
+      }
       .ce-toggle {
         display: inline-flex;
         align-items: center;
@@ -48,21 +46,21 @@ import {
         cursor: not-allowed;
       }
       .ce-toggle:focus-visible {
-        outline: 2px solid var(--color-primary, #0066cc);
+        outline: 2px solid var(--color-primary);
         outline-offset: 4px;
         border-radius: var(--radius-md, 6px);
       }
       .track {
         width: 44px;
         height: 24px;
-        background: var(--color-neutral-light, #e5e7eb);
+        background: var(--color-neutral-light);
         border-radius: 12px;
         position: relative;
         transition: background 150ms ease-out;
         flex-shrink: 0;
       }
       .track.on {
-        background: var(--color-primary, #0066cc);
+        background: var(--color-primary);
       }
       .thumb {
         position: absolute;
@@ -70,21 +68,23 @@ import {
         left: 2px;
         width: 20px;
         height: 20px;
-        background: white;
+        background: var(--color-text-on-primary);
         border-radius: 50%;
         transition: transform 150ms ease-out;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
       }
       .thumb.on {
         transform: translateX(20px);
       }
       .label {
         font-size: var(--font-size-sm, 14px);
-        color: var(--color-text-secondary, #4b5563);
+        color: var(--color-text-secondary);
       }
       @media (prefers-reduced-motion: reduce) {
         .track,
-        .thumb { transition: none; }
+        .thumb {
+          transition: none;
+        }
       }
     `,
   ],

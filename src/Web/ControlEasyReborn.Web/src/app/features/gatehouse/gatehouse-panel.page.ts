@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  OnInit,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -79,7 +72,8 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
             </div>
           </div>
           <p class="lede">
-            Single operator workstation for credential scanning, manual resident lookup, immediate walk-in registration, and open visit management.
+            Single operator workstation for credential scanning, manual resident lookup, immediate walk-in registration,
+            and open visit management.
           </p>
         </div>
       </header>
@@ -161,7 +155,8 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
                 <div>
                   <h2 class="section-title">Walk-in visitor registration</h2>
                   <p class="section-subtitle">
-                    Register a visitor directly at the gate. Visitors registered here land immediately in <strong>Checked-In</strong> status.
+                    Register a visitor directly at the gate. Visitors registered here land immediately in
+                    <strong>Checked-In</strong> status.
                   </p>
                 </div>
               </div>
@@ -177,9 +172,9 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
                     <div>
                       <strong>{{ s.visit.visitorName }} checked in successfully!</strong>
                       <p>
-                        Document: {{ s.visit.visitorDocument }} ·
-                        Destination: {{ getApartmentLabel(s.visit.apartmentId) }} ·
-                        Time: {{ s.visit.checkedInAtUtc | date: 'shortTime' }}
+                        Document: {{ s.visit.visitorDocument }} · Destination:
+                        {{ getApartmentLabel(s.visit.apartmentId) }} · Time:
+                        {{ s.visit.checkedInAtUtc | date: 'shortTime' }}
                       </p>
                     </div>
                   </div>
@@ -193,11 +188,7 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
                         View QR pass
                       </button>
                     }
-                    <button
-                      type="button"
-                      class="ce-button variant-primary size-sm"
-                      (click)="dismissWalkinSuccess()"
-                    >
+                    <button type="button" class="ce-button variant-primary size-sm" (click)="dismissWalkinSuccess()">
                       Register another visitor
                     </button>
                   </div>
@@ -404,7 +395,8 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
     <ce-modal [open]="packageDropOpen()" title="Register package drop" size="md" (closed)="closePackageDrop()">
       <form class="package-drop-form" [formGroup]="packageDropForm" (ngSubmit)="submitPackageDrop()">
         <p class="package-drop-intro">
-          Record a package without registering a visitor or granting entry. Search for the recipient to set its destination.
+          Record a package without registering a visitor or granting entry. Search for the recipient to set its
+          destination.
         </p>
 
         <label class="field-label">
@@ -445,7 +437,8 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
 
         @if (packageDropRecipient(); as recipient) {
           <p class="package-drop-destination" data-testid="package-drop-destination">
-            Deliver to <strong>{{ recipient.displayName }}</strong> — {{ recipient.apartmentBlock }} / {{ recipient.apartmentUnit }}
+            Deliver to <strong>{{ recipient.displayName }}</strong> — {{ recipient.apartmentBlock }} /
+            {{ recipient.apartmentUnit }}
           </p>
         }
 
@@ -502,7 +495,11 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
             variant="primary"
             size="md"
             type="submit"
-            [disabled]="packageDropForm.invalid || (!packageDropRecipient() && !packageDropCondominium()) || packageDropSubmitting()"
+            [disabled]="
+              packageDropForm.invalid ||
+              (!packageDropRecipient() && !packageDropCondominium()) ||
+              packageDropSubmitting()
+            "
             data-testid="package-drop-submit"
           >
             {{ packageDropSubmitting() ? 'Recording…' : 'Record package drop' }}
@@ -569,16 +566,16 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
         border-radius: 9999px;
         font-size: var(--font-size-xs);
         font-weight: 600;
-        background: rgba(34, 197, 94, 0.12);
-        color: rgb(22, 163, 74);
-        border: 1px solid rgba(34, 197, 94, 0.25);
+        background: var(--color-success-light);
+        color: var(--color-success);
+        border: 1px solid color-mix(in oklch, var(--color-success) 35%, transparent);
       }
 
       .pulse-dot {
         width: 8px;
         height: 8px;
         border-radius: 50%;
-        background: rgb(34, 197, 94);
+        background: var(--color-success);
         animation: pulse-ring 2s infinite ease-in-out;
       }
 
@@ -601,7 +598,7 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
         padding: 4px 10px;
         border-radius: 9999px;
         font-size: var(--font-size-xs);
-        background: var(--color-surface-muted, #f1f5f9);
+        background: var(--color-surface-muted);
         color: var(--color-text-secondary);
         border: 1px solid var(--color-border);
       }
@@ -641,13 +638,13 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
 
       .tab-btn:hover {
         color: var(--color-text-primary);
-        background: var(--color-surface-muted, rgba(0, 0, 0, 0.03));
+        background: var(--color-surface-muted);
         border-radius: var(--radius-md) var(--radius-md) 0 0;
       }
 
       .tab-btn.active {
-        color: var(--color-primary, #2563eb);
-        border-bottom-color: var(--color-primary, #2563eb);
+        color: var(--color-primary);
+        border-bottom-color: var(--color-primary);
         background: transparent;
       }
 
@@ -657,8 +654,8 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
         font-size: 0.72rem;
         font-weight: 700;
         border-radius: 9999px;
-        background: var(--color-primary, #2563eb);
-        color: #fff;
+        background: var(--color-primary);
+        color: var(--color-text-on-primary);
       }
 
       .tab-content {
@@ -720,7 +717,7 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
       }
 
       .required {
-        color: var(--color-danger, #ef4444);
+        color: var(--color-danger);
       }
 
       .ce-input {
@@ -737,8 +734,8 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
 
       .ce-input:focus {
         outline: none;
-        border-color: var(--color-primary, #2563eb);
-        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 18%, transparent);
       }
 
       .walkin-options {
@@ -773,8 +770,8 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
         justify-content: space-between;
         gap: var(--space-3);
         padding: var(--space-4);
-        background: rgba(34, 197, 94, 0.1);
-        border: 1px solid rgba(34, 197, 94, 0.3);
+        background: var(--color-success-light);
+        border: 1px solid color-mix(in oklch, var(--color-success) 35%, transparent);
         border-radius: var(--radius-lg);
         color: var(--color-text-primary);
         flex-wrap: wrap;
@@ -784,7 +781,7 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
         display: flex;
         align-items: center;
         gap: var(--space-3);
-        color: rgb(21, 128, 61);
+        color: var(--color-success);
       }
 
       .success-header p {
@@ -802,8 +799,8 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
       .form-error-banner {
         padding: var(--space-3);
         border-radius: var(--radius-md);
-        background: var(--color-danger-light, #fee2e2);
-        color: var(--color-danger, #b91c1c);
+        background: var(--color-danger-light);
+        color: var(--color-danger);
         font-size: var(--font-size-sm);
       }
 
@@ -1181,7 +1178,9 @@ export class GatehousePanelPage implements OnInit {
     }
     const recipientQuery = this.packageDropForm.controls.recipientQuery.value.trim();
     if (recipientQuery.length < 3) {
-      this.packageDropError.set('Type at least 3 characters to identify the subject before recording a condominium drop.');
+      this.packageDropError.set(
+        'Type at least 3 characters to identify the subject before recording a condominium drop.',
+      );
       return;
     }
     this.gateway.searchSubject({ type: 'name', value: recipientQuery, unit: null }).subscribe({
@@ -1191,7 +1190,9 @@ export class GatehousePanelPage implements OnInit {
         this.packageDropCondominium.set(true);
       },
       error: (err) => {
-        this.packageDropError.set(getApiErrorMessage(err, 'Failed to record a subject lookup for the condominium drop.'));
+        this.packageDropError.set(
+          getApiErrorMessage(err, 'Failed to record a subject lookup for the condominium drop.'),
+        );
       },
     });
   }
@@ -1213,7 +1214,7 @@ export class GatehousePanelPage implements OnInit {
     this.gateway
       .recordPackageDrop({
         lookupAuditId,
-        destinationApartmentId: isCondominium ? null : recipient!.apartmentId ?? null,
+        destinationApartmentId: isCondominium ? null : (recipient!.apartmentId ?? null),
         packageDescription: value.packageDescription.trim(),
         packageCarrierCode: value.packageCarrierCode.trim() || null,
       })

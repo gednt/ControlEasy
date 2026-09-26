@@ -1,21 +1,10 @@
-import {
-  Component,
-  ChangeDetectionStrategy,
-  OnInit,
-  computed,
-  inject,
-  signal,
-} from '@angular/core';
+import { Component, ChangeDetectionStrategy, OnInit, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { CeToggleComponent } from '../../design-system/components/toggle/toggle.component';
 import { CeButtonComponent } from '../../design-system/components/button/button.component';
 import { CeSpinnerComponent } from '../../design-system/components/spinner/spinner.component';
 import { ToastService } from '../../design-system/components/toast/toast.component';
-import {
-  ConsentPolicyService,
-  type ConsentPolicyResponse,
-  type SubjectCategory,
-} from './consent-policy.service';
+import { ConsentPolicyService, type ConsentPolicyResponse, type SubjectCategory } from './consent-policy.service';
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
 import { formatRuntimeDate } from '../../core/config/runtime-config';
 
@@ -62,9 +51,7 @@ const CATEGORIES: CategoryRow[] = [
     <div class="policy-page">
       <header class="page-header">
         <h1 class="page-title">Consent Policy</h1>
-        <p class="page-subtitle">
-          When photo is required, the gatehouse camera opens automatically for that category.
-        </p>
+        <p class="page-subtitle">When photo is required, the gatehouse camera opens automatically for that category.</p>
       </header>
 
       @if (loading()) {
@@ -125,7 +112,7 @@ const CATEGORIES: CategoryRow[] = [
         margin: 0;
       }
       .page-subtitle {
-        color: var(--color-text-secondary, #6b7280);
+        color: var(--color-text-secondary);
         font-size: var(--font-size-sm, 14px);
         margin: 0;
         max-width: 36rem;
@@ -140,20 +127,23 @@ const CATEGORIES: CategoryRow[] = [
         justify-content: space-between;
         align-items: center;
         padding: var(--space-3, 12px) var(--space-4, 16px);
-        background: var(--color-surface-alt, #f9fafb);
-        border: 1px solid var(--color-border, #e5e7eb);
+        background: var(--color-surface-muted);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-lg, 8px);
         gap: var(--space-4, 16px);
       }
-      .info { flex: 1; min-width: 0; }
+      .info {
+        flex: 1;
+        min-width: 0;
+      }
       .name {
         font-size: var(--font-size-base, 16px);
         font-weight: var(--font-weight-semibold, 600);
-        color: var(--color-text-primary, #111827);
+        color: var(--color-text-primary);
       }
       .desc {
         font-size: var(--font-size-xs, 13px);
-        color: var(--color-text-secondary, #6b7280);
+        color: var(--color-text-secondary);
         margin-top: var(--space-1, 4px);
       }
       .footer {
@@ -161,12 +151,12 @@ const CATEGORIES: CategoryRow[] = [
         justify-content: space-between;
         align-items: center;
         padding-top: var(--space-4, 16px);
-        border-top: 1px solid var(--color-border, #e5e7eb);
+        border-top: 1px solid var(--color-border);
         gap: var(--space-3, 12px);
       }
       .last-updated {
         font-size: var(--font-size-xs, 12px);
-        color: var(--color-text-muted, #9ca3af);
+        color: var(--color-text-muted);
       }
       .loading-state {
         display: flex;
@@ -174,7 +164,7 @@ const CATEGORIES: CategoryRow[] = [
         align-items: center;
         gap: var(--space-3, 12px);
         padding: var(--space-12, 48px) var(--space-4, 16px);
-        color: var(--color-text-secondary, #6b7280);
+        color: var(--color-text-secondary);
       }
     `,
   ],
@@ -190,15 +180,13 @@ export class ConsentPolicyEditorPage implements OnInit {
   loading = signal(false);
   saving = signal(false);
 
-  isRequired = (cat: SubjectCategory): boolean =>
-    this.draft().get(cat) ?? false;
+  isRequired = (cat: SubjectCategory): boolean => this.draft().get(cat) ?? false;
 
   dirty = computed(() => {
     const draft = this.draft();
     const current = this.policies();
     for (const cat of this.categories) {
-      const cur = current.find((p) => p.subjectCategory === cat.value)
-        ?.photoRequired ?? false;
+      const cur = current.find((p) => p.subjectCategory === cat.value)?.photoRequired ?? false;
       const drf = draft.get(cat.value) ?? false;
       if (cur !== drf) return true;
     }
@@ -223,9 +211,7 @@ export class ConsentPolicyEditorPage implements OnInit {
   private async load(): Promise<void> {
     this.loading.set(true);
     try {
-      const policies = await firstValueFrom(
-        this.consentPolicyService.getAll(),
-      );
+      const policies = await firstValueFrom(this.consentPolicyService.getAll());
       this.policies.set(policies);
       const draft = new Map<SubjectCategory, boolean>();
       for (const cat of this.categories) {
@@ -234,9 +220,7 @@ export class ConsentPolicyEditorPage implements OnInit {
       }
       this.draft.set(draft);
     } catch (err) {
-      this.toast.error(
-        getApiErrorMessage(err, 'Failed to load consent policy'),
-      );
+      this.toast.error(getApiErrorMessage(err, 'Failed to load consent policy'));
     } finally {
       this.loading.set(false);
     }
@@ -253,9 +237,7 @@ export class ConsentPolicyEditorPage implements OnInit {
     try {
       const updates = this.categories
         .filter((cat) => {
-          const cur = this.policies().find(
-            (p) => p.subjectCategory === cat.value,
-          )?.photoRequired ?? false;
+          const cur = this.policies().find((p) => p.subjectCategory === cat.value)?.photoRequired ?? false;
           const drf = this.draft().get(cat.value) ?? false;
           return cur !== drf;
         })
@@ -269,15 +251,11 @@ export class ConsentPolicyEditorPage implements OnInit {
         return;
       }
 
-      const results = await firstValueFrom(
-        this.consentPolicyService.updateAll(updates),
-      );
+      const results = await firstValueFrom(this.consentPolicyService.updateAll(updates));
       // Merge new policies into the cache.
       const updated = [...this.policies()];
       for (const r of results) {
-        const idx = updated.findIndex(
-          (p) => p.subjectCategory === r.subjectCategory,
-        );
+        const idx = updated.findIndex((p) => p.subjectCategory === r.subjectCategory);
         if (idx >= 0) {
           updated[idx] = r;
         } else {

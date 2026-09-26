@@ -1,9 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import {
-  provideHttpClientTesting,
-  HttpTestingController,
-} from '@angular/common/http/testing';
+import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { ConsentPolicyService } from './consent-policy.service';
 import type { UpdateConsentPolicyRequest } from './consent-policy.service';
 
@@ -46,11 +43,7 @@ describe('ConsentPolicyService', () => {
   it('getAll fires 4 parallel GETs and filters 404s', (done) => {
     service.getAll().subscribe((policies) => {
       expect(policies.length).toBe(3); // vehicles -> null
-      expect(policies.map((p) => p.subjectCategory).sort()).toEqual([
-        'dwellers',
-        'service-providers',
-        'visitors',
-      ]);
+      expect(policies.map((p) => p.subjectCategory).sort()).toEqual(['dwellers', 'service-providers', 'visitors']);
       done();
     });
 

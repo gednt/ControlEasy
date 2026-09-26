@@ -27,7 +27,7 @@ describe('CeBadgeComponent', () => {
     expect(component.size()).toBe('md');
   });
 
-  ['primary', 'success', 'warning', 'danger', 'info', 'neutral'].forEach(tone => {
+  ['primary', 'success', 'warning', 'danger', 'info', 'neutral'].forEach((tone) => {
     it(`should render tone-${tone} class`, () => {
       fixture.componentRef.setInput('tone', tone as any);
       fixture.detectChanges();
@@ -36,7 +36,7 @@ describe('CeBadgeComponent', () => {
     });
   });
 
-  ['sm', 'md'].forEach(size => {
+  ['sm', 'md'].forEach((size) => {
     it(`should render size-${size} class`, () => {
       fixture.componentRef.setInput('size', size as any);
       fixture.detectChanges();

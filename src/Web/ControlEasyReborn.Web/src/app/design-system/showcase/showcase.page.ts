@@ -146,9 +146,21 @@ import { ICON_SHOWCASE_NAMES, ICON_SHOWCASE_SIZES } from '../components/icon/ico
       <section class="showcase-section">
         <h2>Stat Tiles</h2>
         <div class="showcase-grid-4">
-          <ce-stat-tile label="Total Residents" [value]="1248" [trend]="{ direction: 'up', value: '+12%', tone: 'success' }"></ce-stat-tile>
-          <ce-stat-tile label="Active Visits" [value]="42" [trend]="{ direction: 'down', value: '-5%', tone: 'danger' }"></ce-stat-tile>
-          <ce-stat-tile label="Vehicles" [value]="389" [trend]="{ direction: 'flat', value: '0%', tone: 'neutral' }"></ce-stat-tile>
+          <ce-stat-tile
+            label="Total Residents"
+            [value]="1248"
+            [trend]="{ direction: 'up', value: '+12%', tone: 'success' }"
+          ></ce-stat-tile>
+          <ce-stat-tile
+            label="Active Visits"
+            [value]="42"
+            [trend]="{ direction: 'down', value: '-5%', tone: 'danger' }"
+          ></ce-stat-tile>
+          <ce-stat-tile
+            label="Vehicles"
+            [value]="389"
+            [trend]="{ direction: 'flat', value: '0%', tone: 'neutral' }"
+          ></ce-stat-tile>
           <ce-stat-tile label="No Trend" [value]="56"></ce-stat-tile>
         </div>
       </section>
@@ -175,7 +187,9 @@ import { ICON_SHOWCASE_NAMES, ICON_SHOWCASE_SIZES } from '../components/icon/ico
             <div class="ce-modal size-md" role="dialog" aria-modal="true">
               <div class="ce-modal-header">
                 <h2 class="ce-modal-title">Example Modal</h2>
-                <button class="ce-modal-close" type="button" aria-label="Close" (click)="modalOpen.set(false)">&times;</button>
+                <button class="ce-modal-close" type="button" aria-label="Close" (click)="modalOpen.set(false)">
+                  &times;
+                </button>
               </div>
               <div class="ce-modal-body">
                 <p>This is a modal dialog. Press Escape or click the backdrop to close.</p>
@@ -204,11 +218,23 @@ import { ICON_SHOWCASE_NAMES, ICON_SHOWCASE_SIZES } from '../components/icon/ico
         <ce-table>
           <table class="ce-table">
             <thead>
-              <tr><th>Name</th><th>Apartment</th><th>Status</th></tr>
+              <tr>
+                <th>Name</th>
+                <th>Apartment</th>
+                <th>Status</th>
+              </tr>
             </thead>
             <tbody>
-              <tr><td>Jo\u00e3o Silva</td><td>101</td><td><ce-badge content="Active" tone="success"></ce-badge></td></tr>
-              <tr><td>Maria Santos</td><td>202</td><td><ce-badge content="Inactive" tone="neutral"></ce-badge></td></tr>
+              <tr>
+                <td>João Silva</td>
+                <td>101</td>
+                <td><ce-badge content="Active" tone="success"></ce-badge></td>
+              </tr>
+              <tr>
+                <td>Maria Santos</td>
+                <td>202</td>
+                <td><ce-badge content="Inactive" tone="neutral"></ce-badge></td>
+              </tr>
             </tbody>
           </table>
         </ce-table>
@@ -217,11 +243,12 @@ import { ICON_SHOWCASE_NAMES, ICON_SHOWCASE_SIZES } from '../components/icon/ico
       <section class="showcase-section">
         <h2>Empty State</h2>
         <ce-empty-state
-          icon="\u2709"
+          icon="✉"
           title="No messages"
           description="You don't have any messages yet. Start a conversation!"
           actionLabel="New Message"
-          (action)="toastService.info('Create new message')">
+          (action)="toastService.info('Create new message')"
+        >
         </ce-empty-state>
       </section>
 
@@ -238,7 +265,7 @@ import { ICON_SHOWCASE_NAMES, ICON_SHOWCASE_SIZES } from '../components/icon/ico
       <section class="showcase-section">
         <h2>Avatar</h2>
         <div class="showcase-row">
-          <ce-avatar name="Jo\u00e3o Silva" size="xs"></ce-avatar>
+          <ce-avatar name="João Silva" size="xs"></ce-avatar>
           <ce-avatar name="Maria Santos" size="sm"></ce-avatar>
           <ce-avatar name="Carlos" size="md"></ce-avatar>
           <ce-avatar name="Ana" size="lg"></ce-avatar>
@@ -248,7 +275,13 @@ import { ICON_SHOWCASE_NAMES, ICON_SHOWCASE_SIZES } from '../components/icon/ico
 
       <section class="showcase-section">
         <h2>Breadcrumbs</h2>
-        <ce-breadcrumbs [crumbs]="[{ label: 'Home', route: '/' }, { label: 'Residents', route: '/residents' }, { label: 'Jo\u00e3o Silva' }]"></ce-breadcrumbs>
+        <ce-breadcrumbs
+          [crumbs]="[
+            { label: 'Home', route: '/' },
+            { label: 'Residents', route: '/residents' },
+            { label: 'João Silva' },
+          ]"
+        ></ce-breadcrumbs>
       </section>
 
       <section class="showcase-section">
@@ -278,7 +311,11 @@ import { ICON_SHOWCASE_NAMES, ICON_SHOWCASE_SIZES } from '../components/icon/ico
       <section class="showcase-section">
         <h2>Checkbox</h2>
         <div class="showcase-col">
-          <ce-checkbox label="Remember my email" [checked]="checkboxValue()" (checkedChange)="checkboxValue.set($event)"></ce-checkbox>
+          <ce-checkbox
+            label="Remember my email"
+            [checked]="checkboxValue()"
+            (checkedChange)="checkboxValue.set($event)"
+          ></ce-checkbox>
           <ce-checkbox label="Disabled option" [disabled]="true"></ce-checkbox>
           <ce-checkbox label="Indeterminate" [indeterminate]="true"></ce-checkbox>
         </div>
@@ -298,100 +335,102 @@ import { ICON_SHOWCASE_NAMES, ICON_SHOWCASE_SIZES } from '../components/icon/ico
       <ce-toast-host />
     </div>
   `,
-  styles: [`
-    .showcase {
-      padding: var(--space-6);
-      max-width: var(--content-max-width);
-      margin: 0 auto;
-    }
-    .showcase-header {
-      margin-bottom: var(--space-8);
-    }
-    .showcase-header h1 {
-      font-size: var(--font-size-3xl);
-      font-weight: var(--font-weight-bold);
-    }
-    .showcase-header p {
-      color: var(--color-text-secondary);
-      font-size: var(--font-size-sm);
-      margin-top: var(--space-2);
-    }
-    .theme-switcher {
-      display: flex;
-      align-items: center;
-      gap: var(--space-2);
-      margin-top: var(--space-4);
-    }
-    .theme-switcher label {
-      font-size: var(--font-size-sm);
-      color: var(--color-text-secondary);
-    }
-    .theme-switcher select {
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      background: var(--color-surface);
-      color: var(--color-text-primary);
-      padding: var(--space-1) var(--space-2);
-      font-family: inherit;
-    }
-    .showcase-section {
-      margin-bottom: var(--space-8);
-    }
-    .showcase-section h2 {
-      font-size: var(--font-size-xl);
-      font-weight: var(--font-weight-semibold);
-      margin-bottom: var(--space-4);
-      padding-bottom: var(--space-2);
-      border-bottom: 1px solid var(--color-border);
-    }
-    .showcase-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-3);
-      align-items: center;
-    }
-    .showcase-col {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-3);
-      max-width: 24rem;
-    }
-    .showcase-grid-3 {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
-      gap: var(--space-4);
-    }
-    .showcase-grid-4 {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
-      gap: var(--space-4);
-    }
-    .showcase-hint {
-      font-size: var(--font-size-sm);
-      color: var(--color-text-secondary);
-      margin-bottom: var(--space-3);
-    }
-    .showcase-icon-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
-      gap: var(--space-3);
-      margin-bottom: var(--space-6);
-    }
-    .showcase-icon-cell,
-    .showcase-icon-size {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: var(--space-2);
-      padding: var(--space-3);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-md);
-      background: var(--color-surface);
-      font-size: var(--font-size-xs);
-      color: var(--color-text-secondary);
-      text-align: center;
-    }
-  `],
+  styles: [
+    `
+      .showcase {
+        padding: var(--space-6);
+        max-width: var(--content-max-width);
+        margin: 0 auto;
+      }
+      .showcase-header {
+        margin-bottom: var(--space-8);
+      }
+      .showcase-header h1 {
+        font-size: var(--font-size-3xl);
+        font-weight: var(--font-weight-bold);
+      }
+      .showcase-header p {
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
+        margin-top: var(--space-2);
+      }
+      .theme-switcher {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+        margin-top: var(--space-4);
+      }
+      .theme-switcher label {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+      }
+      .theme-switcher select {
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        background: var(--color-surface);
+        color: var(--color-text-primary);
+        padding: var(--space-1) var(--space-2);
+        font-family: inherit;
+      }
+      .showcase-section {
+        margin-bottom: var(--space-8);
+      }
+      .showcase-section h2 {
+        font-size: var(--font-size-xl);
+        font-weight: var(--font-weight-semibold);
+        margin-bottom: var(--space-4);
+        padding-bottom: var(--space-2);
+        border-bottom: 1px solid var(--color-border);
+      }
+      .showcase-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3);
+        align-items: center;
+      }
+      .showcase-col {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3);
+        max-width: 24rem;
+      }
+      .showcase-grid-3 {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+        gap: var(--space-4);
+      }
+      .showcase-grid-4 {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+        gap: var(--space-4);
+      }
+      .showcase-hint {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        margin-bottom: var(--space-3);
+      }
+      .showcase-icon-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+        gap: var(--space-3);
+        margin-bottom: var(--space-6);
+      }
+      .showcase-icon-cell,
+      .showcase-icon-size {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-3);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        background: var(--color-surface);
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        text-align: center;
+      }
+    `,
+  ],
 })
 export class ShowcasePageComponent {
   readonly themeService = inject(ThemeService);

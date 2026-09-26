@@ -34,52 +34,28 @@ import { formatRuntimeDate } from '../../../core/config/runtime-config';
         aria-label="Photo viewer"
         (click)="onBackdropClick()"
       >
-        <button
-          type="button"
-          class="close-btn"
-          aria-label="Close"
-          (click)="close($event)"
-        >
+        <button type="button" class="close-btn" aria-label="Close" (click)="close($event)">
           <ce-icon name="x" [size]="24" />
         </button>
 
         @if (hasMultiple()) {
-          <button
-            type="button"
-            class="nav-btn prev"
-            aria-label="Previous photo"
-            (click)="prev($event)"
-          >
+          <button type="button" class="nav-btn prev" aria-label="Previous photo" (click)="prev($event)">
             <ce-icon name="chevron-left" [size]="28" />
           </button>
-          <button
-            type="button"
-            class="nav-btn next"
-            aria-label="Next photo"
-            (click)="next($event)"
-          >
+          <button type="button" class="nav-btn next" aria-label="Next photo" (click)="next($event)">
             <ce-icon name="chevron-right" [size]="28" />
           </button>
         }
 
         <div class="photo-container" (click)="stop($event)">
           @if (currentPhoto(); as photo) {
-            <ce-photo
-              class="lightbox-image"
-              [photoId]="photo.id"
-              size="source"
-              [clickable]="false"
-            />
+            <ce-photo class="lightbox-image" [photoId]="photo.id" size="source" [clickable]="false" />
             <div class="caption">
               <span class="caption-text">
                 {{ formatTimestamp(photo) }}
               </span>
               @if (canDelete()) {
-                <ce-button
-                  variant="danger"
-                  size="sm"
-                  (click)="onDelete($event)"
-                >
+                <ce-button variant="danger" size="sm" (click)="onDelete($event)">
                   <ce-icon name="trash-2" [size]="14" />
                   Delete
                 </ce-button>
@@ -132,7 +108,7 @@ import { formatRuntimeDate } from '../../../core/config/runtime-config';
         padding: 0 var(--space-2, 8px);
       }
       .caption-text {
-        color: var(--color-text-on-primary, #fff);
+        color: var(--color-text-on-primary);
       }
       .close-btn {
         position: absolute;
@@ -178,11 +154,17 @@ import { formatRuntimeDate } from '../../../core/config/runtime-config';
         color: white;
       }
       @keyframes ce-lb-fade {
-        from { opacity: 0; }
-        to { opacity: 1; }
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
       }
       @media (prefers-reduced-motion: reduce) {
-        .lightbox-overlay { animation: none; }
+        .lightbox-overlay {
+          animation: none;
+        }
       }
     `,
   ],

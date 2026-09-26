@@ -3,10 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { VehiclesApiService, VehicleResponse } from './vehicles-api.service';
 import { ApartmentPickerComponent } from '../../shared/apartment-picker/apartment-picker.component';
-import {
-  ApartmentsApiService,
-  formatApartmentLabel,
-} from '../apartments/apartments-api.service';
+import { ApartmentsApiService, formatApartmentLabel } from '../apartments/apartments-api.service';
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
 import { AuthService } from '../../core/services/auth.service';
 import {
@@ -112,15 +109,31 @@ const VEHICLE_TYPES = [
                 <td>{{ vehicle.brand ?? '—' }} {{ vehicle.model ?? '' }}</td>
                 <td>{{ getVehicleTypeLabel(vehicle.vehicleType) }}</td>
                 <td>
-                  <ce-badge [tone]="vehicle.active ? 'success' : 'neutral'" size="sm" [content]="vehicle.active ? 'Active' : 'Inactive'" />
+                  <ce-badge
+                    [tone]="vehicle.active ? 'success' : 'neutral'"
+                    size="sm"
+                    [content]="vehicle.active ? 'Active' : 'Inactive'"
+                  />
                 </td>
                 <td>
                   <div class="action-cell">
-                    <ce-button variant="ghost" size="sm" (click)="openPhotos(vehicle)" [attr.aria-label]="'Vehicle photos'" title="Photos">
+                    <ce-button
+                      variant="ghost"
+                      size="sm"
+                      (click)="openPhotos(vehicle)"
+                      [attr.aria-label]="'Vehicle photos'"
+                      title="Photos"
+                    >
                       <ce-icon name="camera" [size]="16" />
                     </ce-button>
                     @if (canWrite()) {
-                      <ce-button variant="ghost" size="sm" (click)="openEditModal(vehicle)" [attr.aria-label]="'Edit vehicle'" title="Edit">
+                      <ce-button
+                        variant="ghost"
+                        size="sm"
+                        (click)="openEditModal(vehicle)"
+                        [attr.aria-label]="'Edit vehicle'"
+                        title="Edit"
+                      >
                         <ce-icon name="edit" [size]="16" />
                       </ce-button>
                     }
@@ -130,11 +143,7 @@ const VEHICLE_TYPES = [
             } @empty {
               <tr>
                 <td colspan="8">
-                  <ce-empty-state
-                    icon=""
-                    title="No vehicles found"
-                    description=""
-                  >
+                  <ce-empty-state icon="" title="No vehicles found" description="">
                     <ce-icon name="car" [size]="40" />
                   </ce-empty-state>
                 </td>
@@ -147,7 +156,9 @@ const VEHICLE_TYPES = [
 
     <ce-modal
       [open]="createModalOpen()"
-      [title]="createModalStep() === 'photos' ? 'Add photos for ' + (createdVehicle()?.plate ?? 'vehicle') : 'Add vehicle'"
+      [title]="
+        createModalStep() === 'photos' ? 'Add photos for ' + (createdVehicle()?.plate ?? 'vehicle') : 'Add vehicle'
+      "
       [size]="createModalStep() === 'photos' ? 'lg' : 'md'"
       (openChange)="onCreateModalOpenChange($event)"
     >
@@ -156,9 +167,20 @@ const VEHICLE_TYPES = [
           <div class="form-error-banner">{{ createError() }}</div>
         }
         <form class="ce-form" [formGroup]="createForm" (ngSubmit)="onCreate()">
-          <ce-input label="Plate" inputId="cv-plate" placeholder="e.g. ABC-1234" formControlName="plate" [error]="createForm.get('plate')?.invalid && createForm.get('plate')?.touched ? 'Plate is required' : null" />
+          <ce-input
+            label="Plate"
+            inputId="cv-plate"
+            placeholder="e.g. ABC-1234"
+            formControlName="plate"
+            [error]="createForm.get('plate')?.invalid && createForm.get('plate')?.touched ? 'Plate is required' : null"
+          />
           <ce-input label="Owner name" inputId="cv-owner" placeholder="e.g. Maria Silva" formControlName="ownerName" />
-          <ce-apartment-picker formControlName="apartmentId" label="Apartment" inputId="cv-apartment" placeholder="Select block and unit..." />
+          <ce-apartment-picker
+            formControlName="apartmentId"
+            label="Apartment"
+            inputId="cv-apartment"
+            placeholder="Select block and unit..."
+          />
           <ce-input label="Brand" inputId="cv-brand" placeholder="e.g. Toyota" formControlName="brand" />
           <ce-input label="Model" inputId="cv-model" placeholder="e.g. Corolla" formControlName="model" />
           <ce-input label="Color" inputId="cv-color" placeholder="e.g. Silver" formControlName="color" />
@@ -173,12 +195,24 @@ const VEHICLE_TYPES = [
           </div>
         </form>
       } @else {
-        <ce-photo-panel entityType="vehicle" [entity]="createdVehiclePhotoEntity()" [canAdd]="canWrite()" [canDelete]="canWrite()" />
+        <ce-photo-panel
+          entityType="vehicle"
+          [entity]="createdVehiclePhotoEntity()"
+          [canAdd]="canWrite()"
+          [canDelete]="canWrite()"
+        />
       }
       <div ce-modal-footer>
         @if (createModalStep() === 'form') {
           <ce-button variant="ghost" size="sm" (click)="closeCreateModal()">Cancel</ce-button>
-          <ce-button variant="primary" size="sm" [disabled]="createForm.invalid || creating()" [loading]="creating()" (click)="onCreate()">Create</ce-button>
+          <ce-button
+            variant="primary"
+            size="sm"
+            [disabled]="createForm.invalid || creating()"
+            [loading]="creating()"
+            (click)="onCreate()"
+            >Create</ce-button
+          >
         } @else {
           <ce-button variant="primary" size="sm" (click)="closeCreateModal()">Done</ce-button>
         }
@@ -195,9 +229,20 @@ const VEHICLE_TYPES = [
           <div class="form-error-banner">{{ editError() }}</div>
         }
         <form class="ce-form" [formGroup]="editForm" (ngSubmit)="onEditVehicle()">
-          <ce-input label="Plate" inputId="ev-plate" placeholder="e.g. ABC-1234" formControlName="plate" [error]="editForm.get('plate')?.invalid && editForm.get('plate')?.touched ? 'Plate is required' : null" />
+          <ce-input
+            label="Plate"
+            inputId="ev-plate"
+            placeholder="e.g. ABC-1234"
+            formControlName="plate"
+            [error]="editForm.get('plate')?.invalid && editForm.get('plate')?.touched ? 'Plate is required' : null"
+          />
           <ce-input label="Owner name" inputId="ev-owner" placeholder="e.g. Maria Silva" formControlName="ownerName" />
-          <ce-apartment-picker formControlName="apartmentId" label="Apartment" inputId="ev-apartment" placeholder="Select block and unit..." />
+          <ce-apartment-picker
+            formControlName="apartmentId"
+            label="Apartment"
+            inputId="ev-apartment"
+            placeholder="Select block and unit..."
+          />
           <ce-input label="Brand" inputId="ev-brand" placeholder="e.g. Toyota" formControlName="brand" />
           <ce-input label="Model" inputId="ev-model" placeholder="e.g. Corolla" formControlName="model" />
           <ce-input label="Color" inputId="ev-color" placeholder="e.g. Silver" formControlName="color" />
@@ -212,12 +257,24 @@ const VEHICLE_TYPES = [
           </div>
         </form>
       } @else {
-        <ce-photo-panel entityType="vehicle" [entity]="editingVehiclePhotoEntity()" [canAdd]="canWrite()" [canDelete]="canWrite()" />
+        <ce-photo-panel
+          entityType="vehicle"
+          [entity]="editingVehiclePhotoEntity()"
+          [canAdd]="canWrite()"
+          [canDelete]="canWrite()"
+        />
       }
       <div ce-modal-footer>
         @if (editModalStep() === 'form') {
           <ce-button variant="ghost" size="sm" (click)="closeEditModal()">Cancel</ce-button>
-          <ce-button variant="primary" size="sm" [disabled]="editForm.invalid || saving()" [loading]="saving()" (click)="onEditVehicle()">Save changes</ce-button>
+          <ce-button
+            variant="primary"
+            size="sm"
+            [disabled]="editForm.invalid || saving()"
+            [loading]="saving()"
+            (click)="onEditVehicle()"
+            >Save changes</ce-button
+          >
         } @else {
           <ce-button variant="primary" size="sm" (click)="closeEditModal()">Done</ce-button>
         }
@@ -231,84 +288,104 @@ const VEHICLE_TYPES = [
       (openChange)="onPhotosModalOpenChange($event)"
     >
       @if (photosModalOpen()) {
-        <ce-photo-panel
-          entityType="vehicle"
-          [entity]="photosEntity()"
-          [canAdd]="canWrite()"
-          [canDelete]="canWrite()"
-        />
+        <ce-photo-panel entityType="vehicle" [entity]="photosEntity()" [canAdd]="canWrite()" [canDelete]="canWrite()" />
       }
       <div ce-modal-footer>
         <ce-button variant="ghost" size="sm" (click)="closePhotos()">Close</ce-button>
       </div>
     </ce-modal>
   `,
-  styles: [`
-    .page-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--space-4);
-      flex-wrap: wrap;
-      margin-bottom: var(--space-6);
-    }
-    .page-title-block { min-width: 0; }
-    .page-title { font-size: var(--font-size-2xl); margin-bottom: var(--space-1); }
-    .page-subtitle { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
-    .page-header-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
-    .page-error {
-      margin-bottom: var(--space-4); padding: var(--space-3); border-radius: var(--radius-lg);
-      background: var(--color-danger-light); color: var(--color-danger); font-size: var(--font-size-sm);
-    }
+  styles: [
+    `
+      .page-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-4);
+        flex-wrap: wrap;
+        margin-bottom: var(--space-6);
+      }
+      .page-title-block {
+        min-width: 0;
+      }
+      .page-title {
+        font-size: var(--font-size-2xl);
+        margin-bottom: var(--space-1);
+      }
+      .page-subtitle {
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
+      }
+      .page-header-actions {
+        display: flex;
+        gap: var(--space-2);
+        flex-wrap: wrap;
+      }
+      .page-error {
+        margin-bottom: var(--space-4);
+        padding: var(--space-3);
+        border-radius: var(--radius-lg);
+        background: var(--color-danger-light);
+        color: var(--color-danger);
+        font-size: var(--font-size-sm);
+      }
 
-    .loading-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: var(--space-12);
-      gap: var(--space-4);
-      color: var(--color-text-secondary);
-    }
+      .loading-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: var(--space-12);
+        gap: var(--space-4);
+        color: var(--color-text-secondary);
+      }
 
-    .actions-col { width: 1%; white-space: nowrap; }
-    .action-cell {
-      display: inline-flex;
-      gap: var(--space-1);
-    }
+      .actions-col {
+        width: 1%;
+        white-space: nowrap;
+      }
+      .action-cell {
+        display: inline-flex;
+        gap: var(--space-1);
+      }
 
-    .form-row { display: flex; flex-direction: column; gap: var(--space-1); }
-    .form-label {
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
-      color: var(--color-text-primary);
-    }
-    .vehicle-select {
-      width: 100%;
-      border: 1px solid var(--color-border);
-      background: var(--color-surface);
-      border-radius: var(--radius-lg);
-      padding: var(--space-3);
-      font-family: inherit;
-      font-size: var(--font-size-sm);
-      color: var(--color-text-primary);
-      outline: none;
-      min-height: 2.5rem;
-      cursor: pointer;
-    }
-    .vehicle-select:focus-visible {
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 15%, transparent);
-    }
-    .form-error-banner {
-      margin-bottom: var(--space-4);
-      padding: var(--space-3);
-      border-radius: var(--radius-lg);
-      background: var(--color-danger-light);
-      color: var(--color-danger);
-      font-size: var(--font-size-sm);
-    }
-  `],
+      .form-row {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-1);
+      }
+      .form-label {
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-text-primary);
+      }
+      .vehicle-select {
+        width: 100%;
+        border: 1px solid var(--color-border);
+        background: var(--color-surface);
+        border-radius: var(--radius-lg);
+        padding: var(--space-3);
+        font-family: inherit;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+        outline: none;
+        min-height: 2.5rem;
+        cursor: pointer;
+      }
+      .vehicle-select:focus-visible {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 15%, transparent);
+      }
+      .form-error-banner {
+        margin-bottom: var(--space-4);
+        padding: var(--space-3);
+        border-radius: var(--radius-lg);
+        background: var(--color-danger-light);
+        color: var(--color-danger);
+        font-size: var(--font-size-sm);
+      }
+    `,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class VehiclesPage {
@@ -388,7 +465,7 @@ export class VehiclesPage {
   }
 
   getVehicleTypeLabel(vehicleType: VehicleType): string {
-    const found = VEHICLE_TYPES.find(vt => vt.value === vehicleType);
+    const found = VEHICLE_TYPES.find((vt) => vt.value === vehicleType);
     return found ? found.label : String(vehicleType);
   }
 
@@ -396,7 +473,10 @@ export class VehiclesPage {
     this.loading.set(true);
     this.pageError.set(null);
     this.api.list().subscribe({
-      next: (data) => { this.vehicles.set(data); this.loading.set(false); },
+      next: (data) => {
+        this.vehicles.set(data);
+        this.loading.set(false);
+      },
       error: (err) => {
         this.pageError.set(getApiErrorMessage(err, 'Failed to load vehicles'));
         this.loading.set(false);
@@ -431,26 +511,28 @@ export class VehiclesPage {
     this.creating.set(true);
     this.createError.set(null);
     const v = this.createForm.value;
-    this.api.create({
-      plate: v.plate!,
-      ownerName: v.ownerName || null,
-      apartmentId: v.apartmentId || null,
-      brand: v.brand || null,
-      model: v.model || null,
-      color: v.color || null,
-      vehicleType: v.vehicleType ?? null,
-    }).subscribe({
-      next: (created) => {
-        this.creating.set(false);
-        this.createdVehicle.set(created);
-        this.createModalStep.set('photos');
-        this.load();
-      },
-      error: (err) => {
-        this.creating.set(false);
-        this.createError.set(getApiErrorMessage(err, 'Failed to create vehicle'));
-      },
-    });
+    this.api
+      .create({
+        plate: v.plate!,
+        ownerName: v.ownerName || null,
+        apartmentId: v.apartmentId || null,
+        brand: v.brand || null,
+        model: v.model || null,
+        color: v.color || null,
+        vehicleType: v.vehicleType ?? null,
+      })
+      .subscribe({
+        next: (created) => {
+          this.creating.set(false);
+          this.createdVehicle.set(created);
+          this.createModalStep.set('photos');
+          this.load();
+        },
+        error: (err) => {
+          this.creating.set(false);
+          this.createError.set(getApiErrorMessage(err, 'Failed to create vehicle'));
+        },
+      });
   }
 
   openEditModal(vehicle: VehicleResponse): void {
@@ -486,26 +568,28 @@ export class VehiclesPage {
     this.saving.set(true);
     this.editError.set(null);
     const v = this.editForm.value;
-    this.api.update(vehicle.id, {
-      plate: v.plate!,
-      ownerName: v.ownerName || null,
-      apartmentId: v.apartmentId || null,
-      brand: v.brand || null,
-      model: v.model || null,
-      color: v.color || null,
-      vehicleType: v.vehicleType ?? null,
-    }).subscribe({
-      next: (updated) => {
-        this.saving.set(false);
-        this.editingVehicle.set(updated);
-        this.editModalStep.set('photos');
-        this.load();
-      },
-      error: (err) => {
-        this.saving.set(false);
-        this.editError.set(getApiErrorMessage(err, 'Failed to update vehicle'));
-      },
-    });
+    this.api
+      .update(vehicle.id, {
+        plate: v.plate!,
+        ownerName: v.ownerName || null,
+        apartmentId: v.apartmentId || null,
+        brand: v.brand || null,
+        model: v.model || null,
+        color: v.color || null,
+        vehicleType: v.vehicleType ?? null,
+      })
+      .subscribe({
+        next: (updated) => {
+          this.saving.set(false);
+          this.editingVehicle.set(updated);
+          this.editModalStep.set('photos');
+          this.load();
+        },
+        error: (err) => {
+          this.saving.set(false);
+          this.editError.set(getApiErrorMessage(err, 'Failed to update vehicle'));
+        },
+      });
   }
 
   photosModalOpen = signal(false);

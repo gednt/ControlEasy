@@ -17,13 +17,15 @@ import { LucideIconName, resolveLucideIconName } from './icon.types';
       [attr.role]="label() ? 'img' : null"
     />
   `,
-  styles: [`
-    :host {
-      display: inline-flex;
-      line-height: 0;
-      color: currentColor;
-    }
-  `],
+  styles: [
+    `
+      :host {
+        display: inline-flex;
+        line-height: 0;
+        color: currentColor;
+      }
+    `,
+  ],
 })
 export class CeIconComponent {
   name = input.required<LucideIconName>();

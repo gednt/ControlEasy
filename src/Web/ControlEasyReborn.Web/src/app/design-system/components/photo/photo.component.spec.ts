@@ -18,7 +18,9 @@ class FakeIntersectionObserver {
     this.callback = callback;
     this.rootMargin = options?.rootMargin ?? '';
     this.thresholds = options?.threshold
-      ? (Array.isArray(options.threshold) ? options.threshold : [options.threshold])
+      ? Array.isArray(options.threshold)
+        ? options.threshold
+        : [options.threshold]
       : [0];
     FakeIntersectionObserver.instances.push(this);
   }
@@ -65,9 +67,7 @@ describe('CePhotoComponent', () => {
   let photosApiGetSpy: jasmine.Spy;
 
   beforeEach(async () => {
-    photosApiGetSpy = jasmine
-      .createSpy('get')
-      .and.returnValue(of(new Blob(['photo'], { type: 'image/jpeg' })));
+    photosApiGetSpy = jasmine.createSpy('get').and.returnValue(of(new Blob(['photo'], { type: 'image/jpeg' })));
 
     (globalThis as unknown as { IntersectionObserver: unknown }).IntersectionObserver =
       FakeIntersectionObserver as unknown as typeof IntersectionObserver;

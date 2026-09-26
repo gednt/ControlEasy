@@ -49,7 +49,7 @@ describe('CeButtonComponent', () => {
     expect(btn.classList.contains('md')).toBe(true);
   });
 
-  ['sm', 'md', 'lg'].forEach(size => {
+  ['sm', 'md', 'lg'].forEach((size) => {
     it(`should render size=${size} class`, () => {
       fixture.componentRef.setInput('size', size);
       fixture.detectChanges();
@@ -58,7 +58,7 @@ describe('CeButtonComponent', () => {
     });
   });
 
-  ['primary', 'secondary', 'ghost', 'danger'].forEach(variant => {
+  ['primary', 'secondary', 'ghost', 'danger'].forEach((variant) => {
     it(`should render variant=${variant} class`, () => {
       fixture.componentRef.setInput('variant', variant);
       fixture.detectChanges();

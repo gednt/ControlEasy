@@ -28,12 +28,7 @@ import { PhotoEventsService } from '../../../features/photos/photo-events.servic
   imports: [CePhotoComponent],
   template: `
     @if (photoId(); as id) {
-      <ce-photo
-        [photoId]="id"
-        size="thumbnail"
-        [clickable]="true"
-        (photoClicked)="photoClicked.emit()"
-      />
+      <ce-photo [photoId]="id" size="thumbnail" [clickable]="true" (photoClicked)="photoClicked.emit()" />
     } @else if (placeholderVisible()) {
       <span class="ce-photo-thumb-placeholder" aria-hidden="true"></span>
     }
@@ -49,7 +44,7 @@ import { PhotoEventsService } from '../../../features/photos/photo-events.servic
         width: 32px;
         height: 32px;
         border-radius: var(--radius-md, 4px);
-        background: var(--color-surface-alt, #eee);
+        background: var(--color-surface-muted);
         opacity: 0.6;
       }
     `,
@@ -75,20 +70,19 @@ export class CePhotoThumbComponent implements OnDestroy {
   private changeSubscription: Subscription | null = null;
 
   constructor() {
-    effect((onCleanup) => {
-      const entityType = this.entityType();
-      const entityId = this.entityId();
+    effect(
+      (onCleanup) => {
+        const entityType = this.entityType();
+        const entityId = this.entityId();
 
-      this.photoId.set(null);
-      this.resolved.set(false);
-      this.disconnectObserver();
-      this.unsubscribe();
-
-      const runResolve = (): void => {
+        this.photoId.set(null);
+        this.resolved.set(false);
+        this.disconnectObserver();
         this.unsubscribe();
-        this.subscription = this.photosApi
-          .list(0, 1, { entityType, entityId })
-          .subscribe({
+
+        const runResolve = (): void => {
+          this.unsubscribe();
+          this.subscription = this.photosApi.list(0, 1, { entityType, entityId }).subscribe({
             next: (photos) => {
               this.photoId.set(photos[0]?.id ?? null);
               this.resolved.set(true);
@@ -98,49 +92,49 @@ export class CePhotoThumbComponent implements OnDestroy {
               this.resolved.set(true);
             },
           });
-      };
+        };
 
-      const target = this.elementRef.nativeElement;
-      if (typeof IntersectionObserver === 'undefined') {
-        runResolve();
-      } else {
-        this.observer = new IntersectionObserver(
-          (entries) => {
-            for (const entry of entries) {
-              if (!entry.isIntersecting) continue;
-              this.disconnectObserver();
-              runResolve();
-              break;
-            }
-          },
-          { rootMargin: '200px' },
-        );
-        this.observer.observe(target);
-      }
+        const target = this.elementRef.nativeElement;
+        if (typeof IntersectionObserver === 'undefined') {
+          runResolve();
+        } else {
+          this.observer = new IntersectionObserver(
+            (entries) => {
+              for (const entry of entries) {
+                if (!entry.isIntersecting) continue;
+                this.disconnectObserver();
+                runResolve();
+                break;
+              }
+            },
+            { rootMargin: '200px' },
+          );
+          this.observer.observe(target);
+        }
 
-      onCleanup(() => {
-        this.disconnectObserver();
-        this.unsubscribe();
-      });
-    }, { allowSignalWrites: true });
+        onCleanup(() => {
+          this.disconnectObserver();
+          this.unsubscribe();
+        });
+      },
+      { allowSignalWrites: true },
+    );
 
     this.changeSubscription = this.photoEvents.changes$.subscribe(() => {
       if (!this.resolved()) return;
       const entityType = this.entityType();
       const entityId = this.entityId();
       this.unsubscribe();
-      this.subscription = this.photosApi
-        .list(0, 1, { entityType, entityId })
-        .subscribe({
-          next: (photos) => {
-            this.photoId.set(photos[0]?.id ?? null);
-            this.resolved.set(true);
-          },
-          error: () => {
-            this.photoId.set(null);
-            this.resolved.set(true);
-          },
-        });
+      this.subscription = this.photosApi.list(0, 1, { entityType, entityId }).subscribe({
+        next: (photos) => {
+          this.photoId.set(photos[0]?.id ?? null);
+          this.resolved.set(true);
+        },
+        error: () => {
+          this.photoId.set(null);
+          this.resolved.set(true);
+        },
+      });
     });
   }
 

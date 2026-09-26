@@ -7,7 +7,15 @@ import { AuthService } from '../../core/services/auth.service';
 import type { TenantLookupResponse } from '../../core/services/auth.service';
 import { DemoInfoService } from '../../core/services/demo-info.service';
 import { BootstrapInfoService } from '../../core/services/bootstrap-info.service';
-import { CeButtonComponent, CeSpinnerComponent, CeInputComponent, CeCheckboxComponent, CeIconComponent, ThemeService, ToastService } from '../../design-system';
+import {
+  CeButtonComponent,
+  CeSpinnerComponent,
+  CeInputComponent,
+  CeCheckboxComponent,
+  CeIconComponent,
+  ThemeService,
+  ToastService,
+} from '../../design-system';
 
 const DEMO_ACCOUNTS = [
   { label: 'Platform Admin', email: 'platform@controleasy.app' },
@@ -20,13 +28,17 @@ const DEMO_ACCOUNTS = [
 @Component({
   selector: 'ce-login-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, CeButtonComponent, CeSpinnerComponent, CeInputComponent, CeCheckboxComponent, CeIconComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    CeButtonComponent,
+    CeSpinnerComponent,
+    CeInputComponent,
+    CeCheckboxComponent,
+    CeIconComponent,
+  ],
   template: `
-    <button
-      class="login-theme-toggle icon-btn"
-      type="button"
-      aria-label="Toggle theme"
-      (click)="themeService.toggle()">
+    <button class="login-theme-toggle icon-btn" type="button" aria-label="Toggle theme" (click)="themeService.toggle()">
       @if (themeService.resolvedTheme() === 'dark') {
         <ce-icon name="moon" [size]="20" />
       } @else {
@@ -55,15 +67,19 @@ const DEMO_ACCOUNTS = [
             <p class="tenant-picker-label">Select a condominium to continue:</p>
             <div class="tenant-picker-grid">
               @for (tenant of tenants(); track tenant.tenantId) {
-                <button class="tenant-card"
-                        type="button"
-                        (click)="selectTenant(tenant)">
+                <button class="tenant-card" type="button" (click)="selectTenant(tenant)">
                   <div class="tenant-card-name">{{ tenant.displayName }}</div>
                   <div class="tenant-card-slug">{{ tenant.slug }}</div>
                 </button>
               }
             </div>
-            <ce-button variant="ghost" size="sm" type="button" (click)="backToLogin()" style="margin-top: var(--space-3);">
+            <ce-button
+              variant="ghost"
+              size="sm"
+              type="button"
+              (click)="backToLogin()"
+              style="margin-top: var(--space-3);"
+            >
               <span class="back-icon"><ce-icon name="chevron-right" [size]="16" /></span>
               Use a different account
             </ce-button>
@@ -97,7 +113,8 @@ const DEMO_ACCOUNTS = [
                 class="password-toggle"
                 (click)="showPassword.set(!showPassword())"
                 [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
-                tabindex="-1">
+                tabindex="-1"
+              >
                 <ce-icon [name]="showPassword() ? 'eye-off' : 'eye'" [size]="16" />
               </button>
             </ce-input>
@@ -113,10 +130,14 @@ const DEMO_ACCOUNTS = [
               </button>
             </div>
 
-            <ce-button variant="primary" size="lg" type="submit"
-                    [disabled]="loginForm.invalid || submitting()"
-                    [loading]="submitting()"
-                    style="margin-top: var(--space-2);">
+            <ce-button
+              variant="primary"
+              size="lg"
+              type="submit"
+              [disabled]="loginForm.invalid || submitting()"
+              [loading]="submitting()"
+              style="margin-top: var(--space-2);"
+            >
               Sign in
             </ce-button>
           </form>
@@ -133,8 +154,13 @@ const DEMO_ACCOUNTS = [
               <p class="bootstrap-shortcuts-hint">
                 Bootstrap credentials are prefilled. You must change your password after signing in.
               </p>
-              <ce-button type="button" variant="ghost" size="sm" class="bootstrap-shortcut-btn"
-                      (click)="fillBootstrapCredentials()">
+              <ce-button
+                type="button"
+                variant="ghost"
+                size="sm"
+                class="bootstrap-shortcut-btn"
+                (click)="fillBootstrapCredentials()"
+              >
                 Use Platform Admin
               </ce-button>
             </details>
@@ -146,8 +172,13 @@ const DEMO_ACCOUNTS = [
               <p class="demo-shortcuts-hint">Password: <code>demo123</code> — click to fill, then Sign in.</p>
               <div class="demo-shortcuts-grid">
                 @for (account of demoAccounts; track account.email) {
-                  <ce-button type="button" variant="ghost" size="sm" class="demo-shortcut-btn"
-                          (click)="fillDemoAccount(account.email)">
+                  <ce-button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    class="demo-shortcut-btn"
+                    (click)="fillDemoAccount(account.email)"
+                  >
                     {{ account.label }}
                   </ce-button>
                 }
@@ -159,7 +190,13 @@ const DEMO_ACCOUNTS = [
 
       @if (forgotPasswordOpen()) {
         <div class="forgot-modal-backdrop" (click)="closeForgotPassword()">
-          <div class="forgot-modal-card" role="dialog" aria-modal="true" aria-labelledby="forgot-password-title" (click)="$event.stopPropagation()">
+          <div
+            class="forgot-modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="forgot-password-title"
+            (click)="$event.stopPropagation()"
+          >
             <div class="forgot-modal-header">
               <h2 id="forgot-password-title" class="forgot-modal-title">Reset password</h2>
               <button type="button" class="forgot-modal-close" (click)="closeForgotPassword()" aria-label="Close modal">
@@ -191,11 +228,26 @@ const DEMO_ACCOUNTS = [
                 <span input-prefix><ce-icon name="user" [size]="16" /></span>
               </ce-input>
 
-              <div class="forgot-modal-actions" style="margin-top: var(--space-4); display: flex; gap: var(--space-3); justify-content: flex-end;">
-                <ce-button variant="ghost" size="md" type="button" (click)="closeForgotPassword()" [disabled]="forgotPasswordSubmitting()">
+              <div
+                class="forgot-modal-actions"
+                style="margin-top: var(--space-4); display: flex; gap: var(--space-3); justify-content: flex-end;"
+              >
+                <ce-button
+                  variant="ghost"
+                  size="md"
+                  type="button"
+                  (click)="closeForgotPassword()"
+                  [disabled]="forgotPasswordSubmitting()"
+                >
                   Cancel
                 </ce-button>
-                <ce-button variant="primary" size="md" type="submit" [loading]="forgotPasswordSubmitting()" [disabled]="forgotPasswordForm.invalid || forgotPasswordSubmitting()">
+                <ce-button
+                  variant="primary"
+                  size="md"
+                  type="submit"
+                  [loading]="forgotPasswordSubmitting()"
+                  [disabled]="forgotPasswordForm.invalid || forgotPasswordSubmitting()"
+                >
                   Send instructions
                 </ce-button>
               </div>
@@ -205,282 +257,300 @@ const DEMO_ACCOUNTS = [
       }
     </main>
   `,
-  styles: [`
-    .login-page {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      background: var(--color-background);
-      padding: var(--space-4);
-      position: relative;
-    }
-    .login-card {
-      width: 100%;
-      max-width: 28rem;
-      background: var(--color-surface-elevated);
-      border-radius: var(--radius-xl);
-      padding: var(--space-8);
-      box-shadow: var(--shadow-xl);
-      border: 0;
-      position: relative;
-    }
-    .login-card::before {
-      content: "";
-      display: block;
-      width: 4rem;
-      height: 3px;
-      background: var(--color-primary);
-      margin-bottom: var(--space-6);
-    }
-    .login-brand {
-      display: flex;
-      align-items: center;
-      gap: var(--space-3);
-      margin-bottom: var(--space-5);
-    }
-    .login-brand-mark {
-      width: 3rem;
-      height: 3rem;
-      background: var(--color-primary);
-      color: var(--color-text-on-primary);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      font-weight: var(--font-weight-bold);
-      font-size: 1.5rem;
-      box-shadow: 0 5px 12px rgb(168 77 61 / 0.2);
-    }
-    .login-brand-text {
-      font-size: var(--font-size-lg);
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-primary);
-    }
-    .login-title {
-      font-size: var(--font-size-3xl);
-      letter-spacing: -0.03em;
-      margin-bottom: var(--space-2);
-    }
-    .login-subtitle {
-      color: var(--color-text-secondary);
-      font-size: var(--font-size-sm);
-      margin-bottom: var(--space-6);
-    }
+  styles: [
+    `
+      .login-page {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        background: var(--color-background);
+        padding: var(--space-4);
+        position: relative;
+      }
+      .login-card {
+        width: 100%;
+        max-width: 28rem;
+        background: var(--color-surface-elevated);
+        border-radius: var(--radius-xl);
+        padding: var(--space-8);
+        box-shadow: var(--shadow-xl);
+        border: 0;
+        position: relative;
+      }
+      .login-card::before {
+        content: '';
+        display: block;
+        width: 4rem;
+        height: 3px;
+        background: var(--color-primary);
+        margin-bottom: var(--space-6);
+      }
+      .login-brand {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        margin-bottom: var(--space-5);
+      }
+      .login-brand-mark {
+        width: 3rem;
+        height: 3rem;
+        background: var(--color-primary);
+        color: var(--color-text-on-primary);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        font-weight: var(--font-weight-bold);
+        font-size: 1.5rem;
+        box-shadow: 0 5px 12px rgb(168 77 61 / 0.2);
+      }
+      .login-brand-text {
+        font-size: var(--font-size-lg);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+      }
+      .login-title {
+        font-size: var(--font-size-3xl);
+        letter-spacing: -0.03em;
+        margin-bottom: var(--space-2);
+      }
+      .login-subtitle {
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
+        margin-bottom: var(--space-6);
+      }
 
-    .login-form {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-4);
-    }
+      .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-4);
+      }
 
-    .login-options-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--space-2);
-    }
-    .forgot-password-link {
-      background: none;
-      border: 0;
-      padding: 0;
-      color: var(--color-primary);
-      font-size: var(--font-size-xs);
-      font-weight: var(--font-weight-medium);
-      cursor: pointer;
-      text-decoration: underline;
-      font-family: inherit;
-    }
-    .forgot-password-link:hover {
-      opacity: 0.85;
-    }
+      .login-options-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-2);
+      }
+      .forgot-password-link {
+        background: none;
+        border: 0;
+        padding: 0;
+        color: var(--color-primary);
+        font-size: var(--font-size-xs);
+        font-weight: var(--font-weight-medium);
+        cursor: pointer;
+        text-decoration: underline;
+        font-family: inherit;
+      }
+      .forgot-password-link:hover {
+        opacity: 0.85;
+      }
 
-    .forgot-modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgb(0 0 0 / 0.5);
-      backdrop-filter: blur(4px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 50;
-      padding: var(--space-4);
-    }
-    .forgot-modal-card {
-      width: 100%;
-      max-width: 26rem;
-      background: var(--color-surface-elevated);
-      border-radius: var(--radius-xl);
-      padding: var(--space-6);
-      box-shadow: var(--shadow-xl);
-      border: 1px solid var(--color-border);
-      position: relative;
-    }
-    .forgot-modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: var(--space-3);
-    }
-    .forgot-modal-title {
-      font-size: var(--font-size-xl);
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-primary);
-      margin: 0;
-    }
-    .forgot-modal-close {
-      background: transparent;
-      border: 0;
-      cursor: pointer;
-      color: var(--color-text-secondary);
-      padding: var(--space-1);
-      display: inline-flex;
-      border-radius: var(--radius-sm);
-    }
-    .forgot-modal-close:hover {
-      background: var(--color-neutral-light);
-    }
-    .forgot-modal-subtitle {
-      font-size: var(--font-size-sm);
-      color: var(--color-text-secondary);
-      margin-bottom: var(--space-4);
-      line-height: 1.4;
-    }
+      .forgot-modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: var(--color-modal-backdrop);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 50;
+        padding: var(--space-4);
+      }
+      .forgot-modal-card {
+        width: 100%;
+        max-width: 26rem;
+        background: var(--color-surface-elevated);
+        border-radius: var(--radius-xl);
+        padding: var(--space-6);
+        box-shadow: var(--shadow-xl);
+        border: 1px solid var(--color-border);
+        position: relative;
+      }
+      .forgot-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: var(--space-3);
+      }
+      .forgot-modal-title {
+        font-size: var(--font-size-xl);
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+        margin: 0;
+      }
+      .forgot-modal-close {
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+        color: var(--color-text-secondary);
+        padding: var(--space-1);
+        display: inline-flex;
+        border-radius: var(--radius-sm);
+      }
+      .forgot-modal-close:hover {
+        background: var(--color-neutral-light);
+      }
+      .forgot-modal-subtitle {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        margin-bottom: var(--space-4);
+        line-height: 1.4;
+      }
 
-    .login-theme-toggle {
-      position: fixed;
-      top: var(--space-4);
-      right: var(--space-4);
-      z-index: 40;
-      width: 44px;
-      height: 44px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: transparent;
-      border: 0;
-      border-radius: var(--radius-md);
-      cursor: pointer;
-      color: var(--color-text-primary);
-    }
-    .login-theme-toggle:hover { background: var(--color-neutral-light); }
+      .login-theme-toggle {
+        position: fixed;
+        top: var(--space-4);
+        right: var(--space-4);
+        z-index: 40;
+        width: 44px;
+        height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: 0;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        color: var(--color-text-primary);
+      }
+      .login-theme-toggle:hover {
+        background: var(--color-neutral-light);
+      }
 
-    .password-toggle {
-      display: inline-flex;
-      align-items: center;
-      background: transparent;
-      border: 0;
-      cursor: pointer;
-      color: var(--color-text-muted);
-      padding: 0;
-    }
-    .back-icon {
-      display: inline-flex;
-      transform: rotate(180deg);
-    }
+      .password-toggle {
+        display: inline-flex;
+        align-items: center;
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+        color: var(--color-text-muted);
+        padding: 0;
+      }
+      .back-icon {
+        display: inline-flex;
+        transform: rotate(180deg);
+      }
 
-    .login-error {
-      padding: var(--space-3) var(--space-4);
-      background: var(--color-danger-light);
-      border: 1px solid color-mix(in oklch, var(--color-danger) 30%, transparent);
-      border-radius: var(--radius-md);
-      color: var(--color-danger);
-      font-size: var(--font-size-sm);
-      display: flex;
-      align-items: flex-start;
-      gap: var(--space-2);
-      font-weight: var(--font-weight-medium);
-      margin-bottom: var(--space-4);
-    }
+      .login-error {
+        padding: var(--space-3) var(--space-4);
+        background: var(--color-danger-light);
+        border: 1px solid color-mix(in oklch, var(--color-danger) 30%, transparent);
+        border-radius: var(--radius-md);
+        color: var(--color-danger);
+        font-size: var(--font-size-sm);
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-2);
+        font-weight: var(--font-weight-medium);
+        margin-bottom: var(--space-4);
+      }
 
-    .tenant-picker-section {
-      margin-top: var(--space-4);
-    }
-    .tenant-picker-label {
-      font-size: var(--font-size-sm);
-      color: var(--color-text-secondary);
-      margin-bottom: var(--space-3);
-    }
-    .tenant-picker-grid {
-      display: grid;
-      gap: var(--space-3);
-    }
-    @media (min-width: 640px) {
-      .tenant-picker-grid { grid-template-columns: 1fr 1fr; }
-    }
-    .tenant-card {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-lg);
-      padding: var(--space-4);
-      cursor: pointer;
-      text-align: left;
-      font-family: inherit;
-      transition: transform var(--duration-fast), box-shadow var(--duration-fast), border-color var(--duration-fast);
-    }
-    .tenant-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-md);
-      border-color: var(--color-primary);
-    }
-    .tenant-card-name {
-      font-weight: var(--font-weight-semibold);
-      color: var(--color-text-primary);
-      margin-bottom: var(--space-1);
-    }
-    .tenant-card-slug {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-secondary);
-    }
+      .tenant-picker-section {
+        margin-top: var(--space-4);
+      }
+      .tenant-picker-label {
+        font-size: var(--font-size-sm);
+        color: var(--color-text-secondary);
+        margin-bottom: var(--space-3);
+      }
+      .tenant-picker-grid {
+        display: grid;
+        gap: var(--space-3);
+      }
+      @media (min-width: 640px) {
+        .tenant-picker-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      .tenant-card {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-lg);
+        padding: var(--space-4);
+        cursor: pointer;
+        text-align: left;
+        font-family: inherit;
+        transition:
+          transform var(--duration-fast),
+          box-shadow var(--duration-fast),
+          border-color var(--duration-fast);
+      }
+      .tenant-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+        border-color: var(--color-primary);
+      }
+      .tenant-card-name {
+        font-weight: var(--font-weight-semibold);
+        color: var(--color-text-primary);
+        margin-bottom: var(--space-1);
+      }
+      .tenant-card-slug {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+      }
 
-    .tenant-hint {
-      text-align: center;
-    }
+      .tenant-hint {
+        text-align: center;
+      }
 
-    .text-secondary { color: var(--color-text-secondary); }
-    .text-xs { font-size: var(--font-size-xs); }
+      .text-secondary {
+        color: var(--color-text-secondary);
+      }
+      .text-xs {
+        font-size: var(--font-size-xs);
+      }
 
-    .demo-shortcuts {
-      margin-top: var(--space-5);
-      padding-top: var(--space-4);
-      border-top: 1px solid var(--color-border);
-    }
-    .demo-shortcuts summary {
-      cursor: pointer;
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
-      color: var(--color-primary);
-    }
-    .demo-shortcuts-hint {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-secondary);
-      margin: var(--space-2) 0 var(--space-3);
-    }
-    .demo-shortcuts-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-2);
-    }
-    .demo-shortcut-btn { flex: 1 1 calc(50% - var(--space-2)); min-width: 8rem; }
+      .demo-shortcuts {
+        margin-top: var(--space-5);
+        padding-top: var(--space-4);
+        border-top: 1px solid var(--color-border);
+      }
+      .demo-shortcuts summary {
+        cursor: pointer;
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-primary);
+      }
+      .demo-shortcuts-hint {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        margin: var(--space-2) 0 var(--space-3);
+      }
+      .demo-shortcuts-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-2);
+      }
+      .demo-shortcut-btn {
+        flex: 1 1 calc(50% - var(--space-2));
+        min-width: 8rem;
+      }
 
-    .bootstrap-shortcuts {
-      margin-top: var(--space-5);
-      padding-top: var(--space-4);
-      border-top: 1px solid var(--color-border);
-    }
-    .bootstrap-shortcuts summary {
-      cursor: pointer;
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
-      color: var(--color-primary);
-    }
-    .bootstrap-shortcuts-hint {
-      font-size: var(--font-size-xs);
-      color: var(--color-text-secondary);
-      margin: var(--space-2) 0 var(--space-3);
-    }
-    .bootstrap-shortcut-btn { width: 100%; }
-  `],
+      .bootstrap-shortcuts {
+        margin-top: var(--space-5);
+        padding-top: var(--space-4);
+        border-top: 1px solid var(--color-border);
+      }
+      .bootstrap-shortcuts summary {
+        cursor: pointer;
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        color: var(--color-primary);
+      }
+      .bootstrap-shortcuts-hint {
+        font-size: var(--font-size-xs);
+        color: var(--color-text-secondary);
+        margin: var(--space-2) 0 var(--space-3);
+      }
+      .bootstrap-shortcut-btn {
+        width: 100%;
+      }
+    `,
+  ],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginPage implements OnDestroy {
@@ -525,37 +595,38 @@ export class LoginPage implements OnDestroy {
       this.applyBootstrapCredentials();
     }
 
-    this.emailChange$.pipe(
-      debounceTime(400),
-      distinctUntilChanged(),
-      switchMap((email) => {
-        if (!email || !this.isValidEmail(email)) {
-          this.tenantHint.set(null);
-          return [];
-        }
-        return this.authService.lookupTenants(email);
-      }),
-      takeUntil(this.destroy$),
-    ).subscribe({
-      next: (tenants) => {
-        if (tenants.length > 0) {
-          this.tenantHint.set(`${tenants.length} condominium${tenants.length > 1 ? 's' : ''} found for this email.`);
-        } else {
-          this.tenantHint.set(null);
-        }
-      },
-      error: () => this.tenantHint.set(null),
-    });
+    this.emailChange$
+      .pipe(
+        debounceTime(400),
+        distinctUntilChanged(),
+        switchMap((email) => {
+          if (!email || !this.isValidEmail(email)) {
+            this.tenantHint.set(null);
+            return [];
+          }
+          return this.authService.lookupTenants(email);
+        }),
+        takeUntil(this.destroy$),
+      )
+      .subscribe({
+        next: (tenants) => {
+          if (tenants.length > 0) {
+            this.tenantHint.set(`${tenants.length} condominium${tenants.length > 1 ? 's' : ''} found for this email.`);
+          } else {
+            this.tenantHint.set(null);
+          }
+        },
+        error: () => this.tenantHint.set(null),
+      });
 
-    this.loginForm.get('email')?.valueChanges.pipe(
-      debounceTime(400),
-      distinctUntilChanged(),
-      takeUntil(this.destroy$),
-    ).subscribe((email) => {
-      if (email && this.isValidEmail(email)) {
-        this.emailChange$.next(email);
-      }
-    });
+    this.loginForm
+      .get('email')
+      ?.valueChanges.pipe(debounceTime(400), distinctUntilChanged(), takeUntil(this.destroy$))
+      .subscribe((email) => {
+        if (email && this.isValidEmail(email)) {
+          this.emailChange$.next(email);
+        }
+      });
   }
 
   emailError(): string | null {

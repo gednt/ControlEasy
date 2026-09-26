@@ -32,7 +32,7 @@ describe('CeCardComponent', () => {
     expect(card.classList.contains('accent-primary')).toBe(false);
   });
 
-  ['primary', 'success', 'warning', 'danger', 'info'].forEach(accent => {
+  ['primary', 'success', 'warning', 'danger', 'info'].forEach((accent) => {
     it(`should render accent-${accent} class`, () => {
       fixture.componentRef.setInput('accent', accent as any);
       fixture.detectChanges();

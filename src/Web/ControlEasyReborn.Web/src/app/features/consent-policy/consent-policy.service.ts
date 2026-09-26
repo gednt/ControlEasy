@@ -39,17 +39,10 @@ export class ConsentPolicyService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = '/api/v1/consent-policy';
 
-  private readonly allCategories: SubjectCategory[] = [
-    'dwellers',
-    'visitors',
-    'service-providers',
-    'vehicles',
-  ];
+  private readonly allCategories: SubjectCategory[] = ['dwellers', 'visitors', 'service-providers', 'vehicles'];
 
   getByCategory(category: SubjectCategory): Observable<ConsentPolicyResponse | null> {
-    return this.http
-      .get<ConsentPolicyResponse>(`${this.baseUrl}/${category}`)
-      .pipe(catchError(() => of(null)));
+    return this.http.get<ConsentPolicyResponse>(`${this.baseUrl}/${category}`).pipe(catchError(() => of(null)));
   }
 
   /**
@@ -59,11 +52,7 @@ export class ConsentPolicyService {
    */
   getAll(): Observable<ConsentPolicyResponse[]> {
     const requests = this.allCategories.map((cat) => this.getByCategory(cat));
-    return forkJoin(requests).pipe(
-      map((results) =>
-        results.filter((r): r is ConsentPolicyResponse => r !== null),
-      ),
-    );
+    return forkJoin(requests).pipe(map((results) => results.filter((r): r is ConsentPolicyResponse => r !== null)));
   }
 
   update(request: UpdateConsentPolicyRequest): Observable<ConsentPolicyResponse> {
@@ -75,9 +64,7 @@ export class ConsentPolicyService {
    * When the backend grows a `PUT /api/v1/consent-policy/bulk` endpoint, swap
    * the implementation here without changing call-sites.
    */
-  updateAll(
-    policies: UpdateConsentPolicyRequest[],
-  ): Observable<ConsentPolicyResponse[]> {
+  updateAll(policies: UpdateConsentPolicyRequest[]): Observable<ConsentPolicyResponse[]> {
     if (policies.length === 0) {
       return of([]);
     }

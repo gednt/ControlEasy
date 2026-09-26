@@ -1,10 +1,4 @@
-import {
-  Component,
-  ChangeDetectionStrategy,
-  computed,
-  input,
-  output,
-} from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, input, output } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { CeEntryStateBadgeComponent } from '../entry-state-badge/entry-state-badge.component';
 import { CePhotoComponent } from '../photo/photo.component';
@@ -24,7 +18,7 @@ import type { EntryLogResponse } from '../../../features/entry-log/entry-log.ser
   template: `
     <tr [class.override-row]="entry().entryState === 'entered_override'">
       <td class="cell-time">
-        {{ entry().recordedAt | date:'yyyy-MM-dd HH:mm:ss.SSS' }}
+        {{ entry().recordedAt | date: 'yyyy-MM-dd HH:mm:ss.SSS' }}
       </td>
       <td>
         <ce-entry-state-badge [state]="entry().entryState" />
@@ -33,11 +27,7 @@ import type { EntryLogResponse } from '../../../features/entry-log/entry-log.ser
       <td>{{ entry().subjectName || '—' }}</td>
       <td class="cell-photo">
         @if (entry().photoId) {
-          <ce-photo
-            [photoId]="entry().photoId!"
-            [pixelSize]="64"
-            (photoClicked)="photoClicked.emit(entry().id)"
-          />
+          <ce-photo [photoId]="entry().photoId!" [pixelSize]="64" (photoClicked)="photoClicked.emit(entry().id)" />
         } @else {
           <span class="no-photo">—</span>
         }
@@ -48,34 +38,38 @@ import type { EntryLogResponse } from '../../../features/entry-log/entry-log.ser
   `,
   styles: [
     `
-      :host { display: contents; }
+      :host {
+        display: contents;
+      }
       tr td {
         padding: var(--space-3, 12px) var(--space-2, 8px);
         font-size: var(--font-size-sm, 14px);
-        color: var(--color-text-primary, #111827);
+        color: var(--color-text-primary);
         vertical-align: middle;
       }
       tr.override-row td:first-child {
-        border-left: 4px solid var(--color-danger, #991b1b);
+        border-left: 4px solid var(--color-danger);
         padding-left: calc(var(--space-2, 8px) - 4px);
       }
       .cell-time {
         font-family: var(--font-family-mono, monospace);
         white-space: nowrap;
-        color: var(--color-text-secondary, #4b5563);
+        color: var(--color-text-secondary);
       }
       .cell-subject {
         text-transform: capitalize;
-        color: var(--color-text-secondary, #4b5563);
+        color: var(--color-text-secondary);
       }
-      .cell-photo { width: 64px; }
+      .cell-photo {
+        width: 64px;
+      }
       .no-photo {
-        color: var(--color-text-muted, #9ca3af);
+        color: var(--color-text-muted);
         opacity: 0.6;
       }
       .cell-porteiro {
         font-size: var(--font-size-sm, 14px);
-        color: var(--color-text-secondary, #4b5563);
+        color: var(--color-text-secondary);
         word-break: break-word;
       }
     `,

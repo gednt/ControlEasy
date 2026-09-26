@@ -89,12 +89,12 @@ import { CeButtonComponent, CeModalComponent } from '../../../design-system';
 
       .pass-card {
         background: #ffffff;
-        border: 2px solid var(--color-border, #e2e8f0);
+        border: 2px solid var(--color-border);
         border-radius: var(--radius-lg, 12px);
         padding: var(--space-4, 16px);
         width: 100%;
         max-width: 340px;
-        box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+        box-shadow: var(--shadow-md);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -107,7 +107,7 @@ import { CeButtonComponent, CeModalComponent } from '../../../design-system';
         justify-content: space-between;
         align-items: center;
         width: 100%;
-        border-bottom: 1px solid var(--color-border, #e2e8f0);
+        border-bottom: 1px solid var(--color-border);
         padding-bottom: var(--space-2, 8px);
         margin-bottom: var(--space-3, 12px);
       }
@@ -115,14 +115,14 @@ import { CeButtonComponent, CeModalComponent } from '../../../design-system';
       .pass-condo-title {
         font-weight: 700;
         font-size: 0.85rem;
-        color: var(--color-primary, #2c5cdc);
+        color: var(--color-primary);
         text-transform: uppercase;
         letter-spacing: 0.05em;
       }
 
       .pass-type-badge {
-        background: rgba(44, 92, 220, 0.12);
-        color: var(--color-primary, #2c5cdc);
+        background: color-mix(in oklch, var(--color-primary) 14%, transparent);
+        color: var(--color-primary);
         padding: 2px 8px;
         border-radius: 9999px;
         font-size: 0.75rem;
@@ -148,7 +148,7 @@ import { CeButtonComponent, CeModalComponent } from '../../../design-system';
       }
 
       .no-payload-hint {
-        color: var(--color-text-secondary, #64748b);
+        color: var(--color-text-secondary);
         font-size: 0.85rem;
       }
 
@@ -158,7 +158,7 @@ import { CeButtonComponent, CeModalComponent } from '../../../design-system';
         flex-direction: column;
         gap: var(--space-1, 4px);
         margin-top: var(--space-3, 12px);
-        border-top: 1px dashed var(--color-border, #e2e8f0);
+        border-top: 1px dashed var(--color-border);
         padding-top: var(--space-2, 8px);
         font-size: 0.85rem;
       }
@@ -171,11 +171,11 @@ import { CeButtonComponent, CeModalComponent } from '../../../design-system';
       }
 
       .detail-label {
-        color: var(--color-text-secondary, #64748b);
+        color: var(--color-text-secondary);
       }
 
       .detail-value {
-        color: var(--color-text-primary, #1e293b);
+        color: var(--color-text-primary);
       }
 
       .token-box {
@@ -183,8 +183,8 @@ import { CeButtonComponent, CeModalComponent } from '../../../design-system';
         align-items: center;
         justify-content: space-between;
         width: 100%;
-        background: var(--color-surface-subtle, #f8fafc);
-        border: 1px solid var(--color-border, #e2e8f0);
+        background: var(--color-surface-subtle);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-sm, 6px);
         padding: 4px 8px;
         margin-top: var(--space-3, 12px);
@@ -192,13 +192,13 @@ import { CeButtonComponent, CeModalComponent } from '../../../design-system';
       }
 
       .token-label {
-        color: var(--color-text-secondary, #64748b);
+        color: var(--color-text-secondary);
         font-weight: 600;
       }
 
       .token-value {
         font-family: monospace;
-        color: var(--color-text-muted, #475569);
+        color: var(--color-text-muted);
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -212,12 +212,12 @@ import { CeButtonComponent, CeModalComponent } from '../../../design-system';
       }
 
       .security-banner {
-        background: rgba(245, 158, 11, 0.1);
-        border-left: 3px solid #f59e0b;
+        background: color-mix(in oklch, var(--color-warning) 14%, transparent);
+        border-left: 3px solid var(--color-warning);
         padding: var(--space-2, 8px) var(--space-3, 12px);
         border-radius: var(--radius-sm, 4px);
         font-size: 0.8rem;
-        color: #92400e;
+        color: var(--color-warning);
         width: 100%;
         box-sizing: border-box;
       }

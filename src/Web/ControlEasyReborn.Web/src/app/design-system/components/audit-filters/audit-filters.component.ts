@@ -91,8 +91,8 @@ const STATE_OPTIONS: DropdownOption[] = [
         display: flex;
         gap: var(--space-3, 12px);
         padding: var(--space-3, 12px);
-        background: var(--color-surface, #fff);
-        border: 1px solid var(--color-border, #e5e7eb);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-lg, 8px);
         align-items: flex-end;
         flex-wrap: wrap;
@@ -107,22 +107,22 @@ const STATE_OPTIONS: DropdownOption[] = [
       .field-label {
         font-size: var(--font-size-xs, 12px);
         font-weight: var(--font-weight-medium, 500);
-        color: var(--color-text-secondary, #6b7280);
+        color: var(--color-text-secondary);
       }
       .ce-input {
         padding: var(--space-2, 8px) var(--space-3, 12px);
-        border: 1px solid var(--color-border, #e5e7eb);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-md, 6px);
         font-family: inherit;
         font-size: var(--font-size-sm, 14px);
-        background: var(--color-surface-elevated, #fff);
-        color: var(--color-text-primary, #111827);
+        background: var(--color-surface-elevated);
+        color: var(--color-text-primary);
         min-height: 2.25rem;
       }
       .ce-input:focus-visible {
-        outline: 2px solid var(--color-primary, #0066cc);
+        outline: 2px solid var(--color-primary);
         outline-offset: 1px;
-        border-color: var(--color-primary, #0066cc);
+        border-color: var(--color-primary);
       }
       .reset-wrap {
         margin-left: auto;

@@ -11,25 +11,17 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { firstValueFrom } from 'rxjs';
+import { CeButtonComponent } from '../button/button.component';
+import { CeIconComponent } from '../icon/icon.component';
+import { CeModalComponent } from '../modal/modal.component';
+import { CePhotoCaptureComponent } from './photo-capture.component';
+import { CePhotoGalleryComponent } from './photo-gallery.component';
+import { ToastService } from '../toast/toast.component';
 import {
-  CeButtonComponent,
-} from '../button/button.component';
-import {
-  CeIconComponent,
-} from '../icon/icon.component';
-import {
-  CeModalComponent,
-} from '../modal/modal.component';
-import {
-  CePhotoCaptureComponent,
-} from './photo-capture.component';
-import {
-  CePhotoGalleryComponent,
-} from './photo-gallery.component';
-import {
-  ToastService,
-} from '../toast/toast.component';
-import { PhotosApiService, type PhotoEntityType, type PhotoResponse } from '../../../features/photos/photos-api.service';
+  PhotosApiService,
+  type PhotoEntityType,
+  type PhotoResponse,
+} from '../../../features/photos/photos-api.service';
 import { PhotoEventsService } from '../../../features/photos/photo-events.service';
 import { getApiErrorMessage } from '../../../core/utils/api-error.util';
 
@@ -46,13 +38,7 @@ export interface PhotoPanelEntity {
 @Component({
   selector: 'ce-photo-panel',
   standalone: true,
-  imports: [
-    CeButtonComponent,
-    CeIconComponent,
-    CeModalComponent,
-    CePhotoCaptureComponent,
-    CePhotoGalleryComponent,
-  ],
+  imports: [CeButtonComponent, CeIconComponent, CeModalComponent, CePhotoCaptureComponent, CePhotoGalleryComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="photo-panel">

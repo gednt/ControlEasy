@@ -13,8 +13,8 @@ import { AuthService } from '../../core/services/auth.service';
       <section class="card" aria-labelledby="access-denied-title">
         <h1 id="access-denied-title">Access denied</h1>
         <p class="message">
-          You don't have permission to use this feature. Ask your administrator
-          to grant the required access for your account.
+          You don't have permission to use this feature. Ask your administrator to grant the required access for your
+          account.
         </p>
         <div class="actions">
           <a class="ce-button variant-primary size-md" [routerLink]="returnLink()">Back</a>
@@ -25,7 +25,11 @@ import { AuthService } from '../../core/services/auth.service';
   `,
   styles: [
     `
-      :host { display: block; min-height: 100vh; background: var(--color-surface-muted, #f6f7fb); }
+      :host {
+        display: block;
+        min-height: 100vh;
+        background: var(--color-background);
+      }
       .access-denied {
         display: flex;
         align-items: center;
@@ -34,16 +38,27 @@ import { AuthService } from '../../core/services/auth.service';
         padding: var(--space-6, 24px);
       }
       .card {
-        background: var(--color-surface, #fff);
+        background: var(--color-surface);
+        border-top: 4px solid var(--color-sidebar-bg);
         border-radius: var(--radius-md, 8px);
         padding: var(--space-6, 24px);
         max-width: 480px;
-        box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
+        box-shadow: var(--shadow-md);
         text-align: center;
       }
-      h1 { margin: 0 0 var(--space-3, 12px); font-size: 1.5rem; }
-      .message { color: var(--color-text-secondary, #555); margin: 0 0 var(--space-4, 16px); }
-      .actions { display: flex; justify-content: center; gap: var(--space-3, 12px); }
+      h1 {
+        margin: 0 0 var(--space-3, 12px);
+        font-size: 1.5rem;
+      }
+      .message {
+        color: var(--color-text-secondary);
+        margin: 0 0 var(--space-4, 16px);
+      }
+      .actions {
+        display: flex;
+        justify-content: center;
+        gap: var(--space-3, 12px);
+      }
       .ce-button {
         display: inline-flex;
         align-items: center;
@@ -54,15 +69,16 @@ import { AuthService } from '../../core/services/auth.service';
         font-weight: var(--font-weight-semibold, 600);
         cursor: pointer;
         border: none;
+        font-family: inherit;
       }
       .ce-button.variant-primary {
-        background: var(--color-primary, #2c5cdc);
-        color: var(--color-text-on-primary, #fff);
+        background: var(--color-primary);
+        color: var(--color-text-on-primary);
       }
       .ce-button.variant-secondary {
-        background: var(--color-surface-muted, #f1f5f9);
-        color: var(--color-text-primary, #1e293b);
-        border: 1px solid var(--color-border, #cbd5e1);
+        background: var(--color-surface-muted);
+        color: var(--color-text-primary);
+        border: 1px solid var(--color-border);
       }
     `,
   ],

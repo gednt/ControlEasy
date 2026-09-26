@@ -46,9 +46,7 @@ export class VehiclesApiService {
   private readonly baseUrl = '/api/v1/vehicles';
 
   list(search?: string, skip = 0, take = 50): Observable<VehicleResponse[]> {
-    let params = new HttpParams()
-      .set('skip', skip.toString())
-      .set('take', take.toString());
+    let params = new HttpParams().set('skip', skip.toString()).set('take', take.toString());
     if (search) {
       params = params.set('search', search);
     }

@@ -1,10 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { CeAuditFiltersComponent, type PorteiroOption } from './audit-filters.component';
-import type {
-  AuditFilters,
-  EntryState,
-  SubjectType,
-} from '../../../features/entry-log/entry-log.service';
+import type { AuditFilters, EntryState, SubjectType } from '../../../features/entry-log/entry-log.service';
 
 describe('CeAuditFiltersComponent', () => {
   let fixture: ComponentFixture<CeAuditFiltersComponent>;
@@ -34,8 +30,7 @@ describe('CeAuditFiltersComponent', () => {
     let emitted: AuditFilters | undefined;
     component.filtersChanged.subscribe((f) => (emitted = f));
 
-    const categorySelect =
-      fixture.nativeElement.querySelectorAll('select')[0] as HTMLSelectElement;
+    const categorySelect = fixture.nativeElement.querySelectorAll('select')[0] as HTMLSelectElement;
     categorySelect.value = 'visitor';
     categorySelect.dispatchEvent(new Event('change'));
 
@@ -48,8 +43,7 @@ describe('CeAuditFiltersComponent', () => {
     let emitted: AuditFilters | undefined;
     component.filtersChanged.subscribe((f) => (emitted = f));
 
-    const stateSelect =
-      fixture.nativeElement.querySelectorAll('select')[1] as HTMLSelectElement;
+    const stateSelect = fixture.nativeElement.querySelectorAll('select')[1] as HTMLSelectElement;
     stateSelect.value = 'entered_override';
     stateSelect.dispatchEvent(new Event('change'));
 
@@ -102,8 +96,7 @@ describe('CeAuditFiltersComponent', () => {
     let emitted: AuditFilters | undefined;
     component.filtersChanged.subscribe((f) => (emitted = f));
 
-    const dateInputs =
-      fixture.nativeElement.querySelectorAll('input[type=date]');
+    const dateInputs = fixture.nativeElement.querySelectorAll('input[type=date]');
     const fromInput = dateInputs[0] as HTMLInputElement;
     fromInput.value = '2026-01-15';
     fromInput.dispatchEvent(new Event('change'));
@@ -117,9 +110,7 @@ describe('CeAuditFiltersComponent', () => {
     let emitted: AuditFilters | undefined;
     component.filtersChanged.subscribe((f) => (emitted = f));
 
-    const resetBtn = fixture.nativeElement.querySelector(
-      'button',
-    ) as HTMLButtonElement;
+    const resetBtn = fixture.nativeElement.querySelector('button') as HTMLButtonElement;
     resetBtn.click();
 
     expect(emitted).toBeDefined();

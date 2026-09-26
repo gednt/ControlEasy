@@ -1,5 +1,18 @@
 # Milestones
 
+## v2.2 UI Parity & Operational Closeout (Shipped: 2026-09-26)
+
+**Phases completed:** 4 phases, 15 plans, 0 tasks
+
+**Key accomplishments:**
+
+- 22-01 — visits/vehicles component adoption + visual/a11y regression specs for login/dashboard/visits/vehicles (UI-01)
+- 22-02 — Forgot-password toast parity + login 401/busy unit tests (UI-02)
+- 22-03 — Rewrite gatehouse-workflow E2E + fix module-pages stale labels (TEST-01)
+- 22-04 — Finalize 22-VALIDATION.md + cross-phase audit (TEST-02)
+
+---
+
 ## v2.5 Real Vendor Hardware Integration — Control iD, Intelbras, Hikvision (Defined: 2026-09-23)
 
 **Phases:** 31, 32, 33, 34

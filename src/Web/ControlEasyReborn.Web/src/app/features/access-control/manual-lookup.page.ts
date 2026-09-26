@@ -2,18 +2,8 @@ import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GatewayControlService } from './gateway-control.service';
-import {
-  LookupResponse,
-  ManualLookupResult,
-  ManualLookupType,
-  ScanResult,
-  SubjectKind,
-} from './access-control.types';
-import {
-  AccessDirection,
-  getSavedAccessDirection,
-  saveAccessDirection,
-} from './direction-storage';
+import { LookupResponse, ManualLookupResult, ManualLookupType, ScanResult, SubjectKind } from './access-control.types';
+import { AccessDirection, getSavedAccessDirection, saveAccessDirection } from './direction-storage';
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
 import { AccessScanResultComponent } from './components/access-scan-result.component';
 import { ToastService } from '../../design-system/components/toast/toast.component';
@@ -336,11 +326,11 @@ const initialState = (): UiState => ({
       .results,
       .confirm,
       .recorded {
-        background: var(--color-surface, #fff);
+        background: var(--color-surface);
         border-radius: var(--radius-md, 8px);
         padding: var(--space-4, 16px);
         margin-top: var(--space-4, 16px);
-        box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
+        box-shadow: var(--shadow-sm);
       }
       .field {
         display: flex;
@@ -353,13 +343,13 @@ const initialState = (): UiState => ({
         font-size: 0.85rem;
       }
       .field-hint {
-        color: var(--color-text-secondary, #555);
+        color: var(--color-text-secondary);
         font-size: 0.75rem;
       }
       .ce-input {
         padding: var(--space-2, 8px);
         border-radius: var(--radius-sm, 4px);
-        border: 1px solid var(--color-border, #ccc);
+        border: 1px solid var(--color-border);
       }
       .field-row {
         display: flex;
@@ -371,13 +361,13 @@ const initialState = (): UiState => ({
       .criterion-tabs {
         display: flex;
         gap: 0;
-        border-bottom: 1px solid var(--color-border, #ccc);
+        border-bottom: 1px solid var(--color-border);
       }
       .criterion-tab {
         padding: var(--space-2, 8px) var(--space-3, 12px);
         border: 0;
         background: transparent;
-        color: var(--color-text-secondary, #555);
+        color: var(--color-text-secondary);
         font-size: var(--font-size-sm, 0.875rem);
         font-weight: var(--font-weight-medium, 500);
         cursor: pointer;
@@ -385,8 +375,8 @@ const initialState = (): UiState => ({
         font-family: inherit;
       }
       .criterion-tab.active {
-        color: var(--color-primary, #2c5cdc);
-        border-bottom-color: var(--color-primary, #2c5cdc);
+        color: var(--color-primary);
+        border-bottom-color: var(--color-primary);
       }
       .criterion-tab:disabled {
         opacity: 0.55;
@@ -399,16 +389,16 @@ const initialState = (): UiState => ({
       }
       .direction-chip {
         padding: var(--space-2, 8px) var(--space-3, 12px);
-        border: 1px solid var(--color-border, #ccc);
+        border: 1px solid var(--color-border);
         background: transparent;
         border-radius: var(--radius-sm, 4px);
         cursor: pointer;
         font-family: inherit;
       }
       .direction-chip.active {
-        background: var(--color-primary, #2c5cdc);
-        color: var(--color-text-on-primary, #fff);
-        border-color: var(--color-primary, #2c5cdc);
+        background: var(--color-primary);
+        color: var(--color-text-on-primary);
+        border-color: var(--color-primary);
       }
       .actions {
         display: flex;
@@ -420,10 +410,10 @@ const initialState = (): UiState => ({
         font-size: 0.85rem;
       }
       .lookup-message.error {
-        color: var(--color-danger, #b42318);
+        color: var(--color-danger);
       }
       .hint {
-        color: var(--color-text-secondary, #555);
+        color: var(--color-text-secondary);
         font-size: 0.85rem;
       }
       .result-list {
@@ -435,7 +425,7 @@ const initialState = (): UiState => ({
         width: 100%;
         text-align: left;
         background: transparent;
-        border: 1px solid var(--color-border, #ccc);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-sm, 4px);
         padding: var(--space-3, 12px);
         margin-bottom: var(--space-2, 8px);
@@ -443,21 +433,21 @@ const initialState = (): UiState => ({
         font-family: inherit;
       }
       .result-item[aria-selected='true'] {
-        border-color: var(--color-primary, #2c5cdc);
-        background: rgba(44, 92, 220, 0.08);
+        border-color: var(--color-primary);
+        background: color-mix(in oklch, var(--color-primary) 10%, transparent);
       }
       .result-meta {
         display: flex;
         gap: var(--space-2, 8px);
         font-size: 0.8rem;
-        color: var(--color-text-secondary, #555);
+        color: var(--color-text-secondary);
         margin-top: var(--space-1, 4px);
       }
       .subject-type {
         font-style: italic;
       }
       .confirm-card {
-        background: rgba(44, 92, 220, 0.05);
+        background: color-mix(in oklch, var(--color-primary) 8%, transparent);
         border-radius: var(--radius-sm, 4px);
         padding: var(--space-3, 12px);
       }

@@ -16,7 +16,14 @@ type ProviderStatusFilter = 'all' | 'active' | 'inactive';
 @Component({
   selector: 'ce-service-providers-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, CeButtonComponent, CeModalComponent, CePhotoPanelComponent, CePhotoThumbComponent],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    CeButtonComponent,
+    CeModalComponent,
+    CePhotoPanelComponent,
+    CePhotoThumbComponent,
+  ],
   template: `
     <header class="page-header">
       <div class="page-title-block">

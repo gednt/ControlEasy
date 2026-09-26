@@ -51,12 +51,7 @@ const STATUS_LABEL: Record<Status, string> = {
 @Component({
   selector: 'ce-photo-capture',
   standalone: true,
-  imports: [
-    CeModalComponent,
-    CeButtonComponent,
-    CeIconComponent,
-    CeSpinnerComponent,
-  ],
+  imports: [CeModalComponent, CeButtonComponent, CeIconComponent, CeSpinnerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <ce-modal [open]="open()" [title]="title()" size="md" (closed)="close()">
@@ -85,11 +80,7 @@ const STATUS_LABEL: Record<Status, string> = {
           >
             @if (selectedFile(); as file) {
               <img [src]="previewUrl()" alt="Selected photo preview" />
-              <button
-                type="button"
-                class="remove-link"
-                (click)="removeFile($event)"
-              >Remove</button>
+              <button type="button" class="remove-link" (click)="removeFile($event)">Remove</button>
             } @else {
               <ce-icon name="upload" [size]="32" />
               <p class="upload-zone-text">Drag photo here or click to browse</p>
@@ -130,9 +121,7 @@ const STATUS_LABEL: Record<Status, string> = {
           >
             <ce-icon name="camera" [size]="28" />
           </button>
-          <ce-button variant="ghost" size="sm" (click)="switchMode('upload')">
-            Or upload from device
-          </ce-button>
+          <ce-button variant="ghost" size="sm" (click)="switchMode('upload')"> Or upload from device </ce-button>
         } @else {
           <ce-button variant="ghost" size="sm" (click)="close()">Cancel</ce-button>
           <ce-button
@@ -177,7 +166,9 @@ const STATUS_LABEL: Record<Status, string> = {
         animation: ce-photo-flash 200ms ease-out forwards;
       }
       @keyframes ce-photo-flash {
-        to { opacity: 0; }
+        to {
+          opacity: 0;
+        }
       }
       .camera-status {
         position: absolute;
@@ -193,7 +184,7 @@ const STATUS_LABEL: Record<Status, string> = {
       }
       .upload-zone {
         min-height: 240px;
-        border: 2px dashed var(--color-border, #ccc);
+        border: 2px dashed var(--color-border);
         border-radius: var(--radius-md, 4px);
         display: flex;
         flex-direction: column;
@@ -202,10 +193,10 @@ const STATUS_LABEL: Record<Status, string> = {
         gap: var(--space-2, 8px);
         cursor: pointer;
         padding: var(--space-4, 16px);
-        color: var(--color-text-muted, #666);
+        color: var(--color-text-muted);
       }
       .upload-zone:focus-visible {
-        outline: 2px solid var(--color-primary, #0066cc);
+        outline: 2px solid var(--color-primary);
         outline-offset: 2px;
       }
       .upload-zone img {
@@ -217,11 +208,11 @@ const STATUS_LABEL: Record<Status, string> = {
         margin: 0;
       }
       .upload-zone-hint {
-        color: var(--color-text-muted, #888);
+        color: var(--color-text-muted);
         font-size: var(--font-size-xs, 12px);
       }
       .remove-link {
-        color: var(--color-danger, #cc0000);
+        color: var(--color-danger);
         background: none;
         border: 0;
         cursor: pointer;
@@ -239,11 +230,11 @@ const STATUS_LABEL: Record<Status, string> = {
         width: 64px;
         height: 64px;
         border-radius: var(--radius-full, 50%);
-        background: var(--color-primary, #0066cc);
-        color: white;
+        background: var(--color-primary);
+        color: var(--color-text-on-primary);
         border: 0;
         cursor: pointer;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 4px 12px rgb(0 0 0 / 0.2);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -258,12 +249,14 @@ const STATUS_LABEL: Record<Status, string> = {
         align-items: center;
         gap: var(--space-2, 8px);
         padding: var(--space-2, 8px);
-        background: var(--color-surface-alt, #f4f4f4);
+        background: var(--color-surface-muted);
         border-radius: var(--radius-md, 4px);
         font-size: var(--font-size-sm, 14px);
       }
       @media (prefers-reduced-motion: reduce) {
-        .shutter-flash { animation: none; }
+        .shutter-flash {
+          animation: none;
+        }
       }
     `,
   ],
@@ -300,9 +293,7 @@ export class CePhotoCaptureComponent implements AfterViewInit, OnDestroy {
   previewUrl = computed(() => this.previewObjectUrl() ?? '');
   title = computed(() => (this.effectiveMode() === 'camera' ? 'Take photo' : 'Upload photo'));
   cameraStatusLabel = computed(() => STATUS_LABEL[this.status()]);
-  isWorking = computed(
-    () => this.status() === 'uploading' || this.status() === 'compressing',
-  );
+  isWorking = computed(() => this.status() === 'uploading' || this.status() === 'compressing');
 
   private videoElement: HTMLVideoElement | null = null;
   private stream: MediaStream | null = null;
@@ -356,8 +347,7 @@ export class CePhotoCaptureComponent implements AfterViewInit, OnDestroy {
         audio: false,
       });
       const videoEl =
-        this.videoRef()?.nativeElement ??
-        (document.querySelector('.video-container video') as HTMLVideoElement | null);
+        this.videoRef()?.nativeElement ?? (document.querySelector('.video-container video') as HTMLVideoElement | null);
       if (videoEl) {
         videoEl.srcObject = this.stream;
         this.videoElement = videoEl;
@@ -408,9 +398,10 @@ export class CePhotoCaptureComponent implements AfterViewInit, OnDestroy {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     return new Promise<File>((resolve, reject) => {
       canvas.toBlob(
-        (blob) => blob
-          ? resolve(new File([blob], this.fileName(), { type: 'image/jpeg', lastModified: Date.now() }))
-          : reject(new Error('CANVAS_TO_BLOB_FAILED')),
+        (blob) =>
+          blob
+            ? resolve(new File([blob], this.fileName(), { type: 'image/jpeg', lastModified: Date.now() }))
+            : reject(new Error('CANVAS_TO_BLOB_FAILED')),
         'image/jpeg',
         0.95,
       );
@@ -444,7 +435,14 @@ export class CePhotoCaptureComponent implements AfterViewInit, OnDestroy {
     // Some browsers omit the type for HEIC; fall back to extension sniff.
     if (file.type && ACCEPTED_MIME_TYPES.includes(file.type)) return true;
     const name = file.name.toLowerCase();
-    return name.endsWith('.jpg') || name.endsWith('.jpeg') || name.endsWith('.png') || name.endsWith('.heic') || name.endsWith('.heif') || name.endsWith('.webp');
+    return (
+      name.endsWith('.jpg') ||
+      name.endsWith('.jpeg') ||
+      name.endsWith('.png') ||
+      name.endsWith('.heic') ||
+      name.endsWith('.heif') ||
+      name.endsWith('.webp')
+    );
   }
 
   private acceptFile(file: File): void {
@@ -485,9 +483,10 @@ export class CePhotoCaptureComponent implements AfterViewInit, OnDestroy {
     try {
       compressed = await compressImage(blob, DEFAULT_COMPRESSION);
     } catch (err) {
-      const msg = err instanceof Error && err.message === 'FILE_TOO_LARGE_AFTER_COMPRESSION'
-        ? 'Photo too large to upload. Try a smaller photo.'
-        : 'Failed to compress photo.';
+      const msg =
+        err instanceof Error && err.message === 'FILE_TOO_LARGE_AFTER_COMPRESSION'
+          ? 'Photo too large to upload. Try a smaller photo.'
+          : 'Failed to compress photo.';
       this.toast.error(msg);
       this.status.set('error');
       return;

@@ -31,9 +31,7 @@ export class VisitsApiService {
   private readonly baseUrl = '/api/v1/visits';
 
   list(status?: string, skip = 0, take = 50): Observable<VisitResponse[]> {
-    let params = new HttpParams()
-      .set('skip', skip.toString())
-      .set('take', take.toString());
+    let params = new HttpParams().set('skip', skip.toString()).set('take', take.toString());
     if (status) {
       params = params.set('status', status);
     }

@@ -20,7 +20,9 @@ class FakeIntersectionObserver {
     this.callback = callback;
     this.rootMargin = options?.rootMargin ?? '';
     this.thresholds = options?.threshold
-      ? (Array.isArray(options.threshold) ? options.threshold : [options.threshold])
+      ? Array.isArray(options.threshold)
+        ? options.threshold
+        : [options.threshold]
       : [0];
     FakeIntersectionObserver.instances.push(this);
   }
@@ -78,12 +80,19 @@ describe('CePhotoThumbComponent', () => {
   let component: CePhotoThumbComponent;
   let photosApiListSpy: jasmine.Spy;
   let photoEvents: PhotoEventsService;
-  let changesSubject: Subject<{ entityType: 'resident' | 'visitor' | 'vehicle' | 'service-provider'; entityId: string; kind: 'upload' | 'delete' }>;
+  let changesSubject: Subject<{
+    entityType: 'resident' | 'visitor' | 'vehicle' | 'service-provider';
+    entityId: string;
+    kind: 'upload' | 'delete';
+  }>;
 
   beforeEach(async () => {
     photosApiListSpy = jasmine.createSpy('list').and.returnValue(of([basePhoto]));
     changesSubject = new Subject();
-    photoEvents = { notifyChange: () => undefined, changes$: changesSubject.asObservable() } as unknown as PhotoEventsService;
+    photoEvents = {
+      notifyChange: () => undefined,
+      changes$: changesSubject.asObservable(),
+    } as unknown as PhotoEventsService;
 
     (globalThis as unknown as { IntersectionObserver: unknown }).IntersectionObserver =
       FakeIntersectionObserver as unknown as typeof IntersectionObserver;

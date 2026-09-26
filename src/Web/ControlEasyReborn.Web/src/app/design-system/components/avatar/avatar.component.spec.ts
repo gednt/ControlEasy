@@ -59,11 +59,12 @@ describe('CeAvatarComponent', () => {
     expect(img.alt).toBe('Joao');
   });
 
-  ['xs', 'sm', 'md', 'lg', 'xl'].forEach(size => {
+  ['xs', 'sm', 'md', 'lg', 'xl'].forEach((size) => {
     it(`should render size-${size} class`, () => {
       fixture.componentRef.setInput('size', size as any);
       fixture.detectChanges();
-      const el: HTMLElement = fixture.nativeElement.querySelector('.ce-avatar-initials') ||
+      const el: HTMLElement =
+        fixture.nativeElement.querySelector('.ce-avatar-initials') ||
         fixture.nativeElement.querySelector('.ce-avatar-img');
       expect(el.classList.contains(`size-${size}`)).toBe(true);
     });

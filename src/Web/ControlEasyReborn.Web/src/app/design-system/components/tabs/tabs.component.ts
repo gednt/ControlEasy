@@ -1,4 +1,14 @@
-import { Component, input, output, ChangeDetectionStrategy, signal, ContentChildren, QueryList, AfterContentInit, TemplateRef } from '@angular/core';
+import {
+  Component,
+  input,
+  output,
+  ChangeDetectionStrategy,
+  signal,
+  ContentChildren,
+  QueryList,
+  AfterContentInit,
+  TemplateRef,
+} from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 
 @Component({
@@ -27,7 +37,8 @@ export class CeTabComponent {
             [attr.aria-selected]="activeIndex() === $index"
             [attr.tabindex]="activeIndex() === $index ? 0 : -1"
             (click)="selectTab($index)"
-            (keydown)="onKeydown($event, $index)">
+            (keydown)="onKeydown($event, $index)"
+          >
             {{ tab.label() }}
           </button>
         }
@@ -41,32 +52,40 @@ export class CeTabComponent {
       }
     </div>
   `,
-  styles: [`
-    .ce-tabs-list {
-      display: flex;
-      border-bottom: 1px solid var(--color-border);
-      gap: 0;
-      position: relative;
-    }
-    .ce-tab {
-      padding: var(--space-3) var(--space-4);
-      border: 0;
-      background: transparent;
-      color: var(--color-text-secondary);
-      font-size: var(--font-size-sm);
-      font-weight: var(--font-weight-medium);
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      font-family: inherit;
-      transition: color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out);
-    }
-    .ce-tab[aria-selected="true"] {
-      color: var(--color-primary);
-      border-bottom-color: var(--color-primary);
-    }
-    .ce-tab:hover { color: var(--color-text-primary); }
-    :host ::ng-deep .ce-tabs-panels { padding: var(--space-4) 0; }
-  `],
+  styles: [
+    `
+      .ce-tabs-list {
+        display: flex;
+        border-bottom: 1px solid var(--color-border);
+        gap: 0;
+        position: relative;
+      }
+      .ce-tab {
+        padding: var(--space-3) var(--space-4);
+        border: 0;
+        background: transparent;
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
+        font-weight: var(--font-weight-medium);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        font-family: inherit;
+        transition:
+          color var(--duration-fast) var(--ease-out),
+          border-color var(--duration-fast) var(--ease-out);
+      }
+      .ce-tab[aria-selected='true'] {
+        color: var(--color-primary);
+        border-bottom-color: var(--color-primary);
+      }
+      .ce-tab:hover {
+        color: var(--color-text-primary);
+      }
+      :host ::ng-deep .ce-tabs-panels {
+        padding: var(--space-4) 0;
+      }
+    `,
+  ],
 })
 export class CeTabsComponent implements AfterContentInit {
   @ContentChildren(CeTabComponent) tabQuery!: QueryList<CeTabComponent>;

@@ -88,7 +88,11 @@ export class PhotosApiService {
   /**
    * Returns the photos attached to an entity in the current tenant.
    */
-  list(_skip = 0, _take = 50, _filter?: { entityType?: PhotoEntityType; entityId?: string }): Observable<PhotoResponse[]> {
+  list(
+    _skip = 0,
+    _take = 50,
+    _filter?: { entityType?: PhotoEntityType; entityId?: string },
+  ): Observable<PhotoResponse[]> {
     let params = new HttpParams().set('skip', _skip.toString()).set('take', _take.toString());
     if (_filter?.entityType) params = params.set('entityType', _filter.entityType);
     if (_filter?.entityId) params = params.set('entityId', _filter.entityId);

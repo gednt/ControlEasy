@@ -22,10 +22,7 @@ export function getRuntimeTimeZone(): string {
   }
 }
 
-export function formatRuntimeDate(
-  value: string | number | Date,
-  options: Intl.DateTimeFormatOptions = {},
-): string {
+export function formatRuntimeDate(value: string | number | Date, options: Intl.DateTimeFormatOptions = {}): string {
   return new Intl.DateTimeFormat(undefined, {
     ...options,
     timeZone: getRuntimeTimeZone(),

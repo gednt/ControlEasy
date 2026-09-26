@@ -43,7 +43,9 @@ type StatusFilter = 'all' | 'Pending' | 'CheckedIn';
       <div>
         <h1 class="page-title">Visit register (administrative)</h1>
         <p class="page-subtitle">
-          Administrative pre-registration, scheduled arrivals, and visit history ({{ visits().length }} records). For immediate walk-in access and gate control, use the <a routerLink="/gatehouse" class="inline-link">Gatehouse operator panel</a>.
+          Administrative pre-registration, scheduled arrivals, and visit history ({{ visits().length }} records). For
+          immediate walk-in access and gate control, use the
+          <a routerLink="/gatehouse" class="inline-link">Gatehouse operator panel</a>.
         </p>
       </div>
       <ce-button variant="primary" size="md" (click)="openCreate()">
@@ -94,7 +96,11 @@ type StatusFilter = 'all' | 'Pending' | 'CheckedIn';
                 <td>{{ visit.visitorDocument }}</td>
                 <td>{{ getApartmentLabel(visit.apartmentId) }}</td>
                 <td>
-                  <ce-badge [tone]="getStatusBadgeTone(visit.status)" size="sm" [content]="getStatusLabel(visit.status)" />
+                  <ce-badge
+                    [tone]="getStatusBadgeTone(visit.status)"
+                    size="sm"
+                    [content]="getStatusLabel(visit.status)"
+                  />
                 </td>
                 <td>{{ visit.checkedInAtUtc ? (visit.checkedInAtUtc | date: 'short') : '—' }}</td>
                 <td>{{ visit.checkedOutAtUtc ? (visit.checkedOutAtUtc | date: 'short') : '—' }}</td>

@@ -55,20 +55,20 @@ const STATE_META: Record<EntryState, EntryStateMeta> = {
         white-space: nowrap;
       }
       .ce-entry-state-badge[data-tone='success'] {
-        background: var(--color-success-light, #d1fae5);
-        color: var(--color-success, #065f46);
+        background: var(--color-success-light);
+        color: var(--color-success);
       }
       .ce-entry-state-badge[data-tone='warning'] {
-        background: var(--color-warning-light, #fef3c7);
-        color: var(--color-warning, #92400e);
+        background: var(--color-warning-light);
+        color: var(--color-warning);
       }
       .ce-entry-state-badge[data-tone='danger'] {
-        background: var(--color-danger-light, #fee2e2);
-        color: var(--color-danger, #991b1b);
+        background: var(--color-danger-light);
+        color: var(--color-danger);
       }
       .ce-entry-state-badge[data-tone='neutral'] {
-        background: var(--color-neutral-light, #e5e7eb);
-        color: var(--color-text-secondary, #4b5563);
+        background: var(--color-neutral-light);
+        color: var(--color-text-secondary);
       }
       .label {
         line-height: 1;

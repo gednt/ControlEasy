@@ -238,7 +238,8 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
                 <option value="">-- Choose resident --</option>
                 @for (r of residents(); track r.id) {
                   <option [value]="r.id">
-                    {{ r.name }} {{ r.apartmentId ? '— Apt: ' + getApartmentLabel(r.apartmentId) : '— (No apartment linked)' }}
+                    {{ r.name }}
+                    {{ r.apartmentId ? '— Apt: ' + getApartmentLabel(r.apartmentId) : '— (No apartment linked)' }}
                   </option>
                 }
               </select>
@@ -470,7 +471,11 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
                     </div>
                     <div class="summary-header-text">
                       <h4 class="summary-subject-title font-mono">
-                        {{ newVehicleForm.get('plate')?.value ? (newVehicleForm.get('plate')?.value | uppercase) : 'PLATE PENDING' }}
+                        {{
+                          newVehicleForm.get('plate')?.value
+                            ? (newVehicleForm.get('plate')?.value | uppercase)
+                            : 'PLATE PENDING'
+                        }}
                       </h4>
                       <span class="summary-badge-type">
                         {{ newVehicleForm.get('model')?.value || 'New Vehicle' }}
@@ -522,11 +527,7 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
 
               <label class="field">
                 <span class="field-label">Destination Apartment</span>
-                <select
-                  class="ce-input"
-                  [value]="selectedApartmentId()"
-                  (change)="onApartmentSelect($event)"
-                >
+                <select class="ce-input" [value]="selectedApartmentId()" (change)="onApartmentSelect($event)">
                   <option value="">-- Choose destination apartment --</option>
                   @for (apt of apartments(); track apt.id) {
                     <option [value]="apt.id">Block {{ apt.block }}, Unit {{ apt.unit }}</option>
@@ -614,13 +615,7 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
 
       <div ce-modal-footer>
         <ce-button variant="ghost" size="sm" type="button" (click)="closeIssueModal()">Cancel</ce-button>
-        <ce-button
-          variant="primary"
-          size="sm"
-          type="button"
-          (click)="submitIssue()"
-          [disabled]="isSubmitDisabled()"
-        >
+        <ce-button variant="primary" size="sm" type="button" (click)="submitIssue()" [disabled]="isSubmitDisabled()">
           {{ issuing() ? 'Generating…' : 'Generate QR pass' }}
         </ce-button>
       </div>
@@ -650,7 +645,7 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
         margin: 0;
       }
       .page-subtitle {
-        color: var(--color-text-secondary, #64748b);
+        color: var(--color-text-secondary);
         font-size: var(--font-size-sm, 0.875rem);
       }
       .filter-tabs {
@@ -659,8 +654,8 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
         margin-bottom: var(--space-4, 16px);
       }
       .filter-tab {
-        border: 1px solid var(--color-border, #cbd5e1);
-        background: var(--color-surface, #ffffff);
+        border: 1px solid var(--color-border);
+        background: var(--color-surface);
         border-radius: var(--radius-lg, 8px);
         padding: var(--space-2, 8px) var(--space-4, 16px);
         cursor: pointer;
@@ -669,21 +664,21 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
         transition: all 0.15s ease;
       }
       .filter-tab.active {
-        background: var(--color-primary, #2c5cdc);
-        color: var(--color-text-on-primary, #ffffff);
-        border-color: var(--color-primary, #2c5cdc);
+        background: var(--color-primary);
+        color: var(--color-text-on-primary);
+        border-color: var(--color-primary);
       }
       .page-error {
         margin-bottom: var(--space-4, 16px);
         padding: var(--space-3, 12px);
         border-radius: var(--radius-lg, 8px);
-        background: var(--color-danger-light, #fee2e2);
-        color: var(--color-danger, #b91c1c);
+        background: var(--color-danger-light);
+        color: var(--color-danger);
         font-size: var(--font-size-sm, 0.875rem);
       }
       .ce-card {
-        background: var(--color-surface, #ffffff);
-        border: 1px solid var(--color-border, #e2e8f0);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-xl, 12px);
         overflow: hidden;
       }
@@ -695,12 +690,12 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
       .ce-table th,
       .ce-table td {
         padding: var(--space-3, 12px) var(--space-4, 16px);
-        border-bottom: 1px solid var(--color-border, #e2e8f0);
+        border-bottom: 1px solid var(--color-border);
         text-align: left;
         vertical-align: middle;
       }
       .ce-table thead {
-        background: var(--color-neutral-light, #f8fafc);
+        background: var(--color-neutral-light);
       }
       .empty-cell {
         text-align: center;
@@ -715,16 +710,16 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
         align-items: center;
       }
       .tag-resident {
-        background: #e0e7ff;
-        color: #3730a3;
+        background: var(--color-info-light);
+        color: var(--color-info);
       }
       .tag-visitor {
-        background: #fef3c7;
-        color: #92400e;
+        background: var(--color-warning-light);
+        color: var(--color-warning);
       }
       .tag-vehicle {
-        background: #d1fae5;
-        color: #065f46;
+        background: var(--color-success-light);
+        color: var(--color-success);
       }
       .subject-cell {
         display: flex;
@@ -737,32 +732,32 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
         gap: 6px;
       }
       .subject-name {
-        color: var(--color-text-primary, #0f172a);
+        color: var(--color-text-primary);
         font-size: 0.875rem;
       }
       .apt-badge {
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        background: #f1f5f9;
-        color: #1e293b;
+        background: var(--color-neutral-light);
+        color: var(--color-text-primary);
         padding: 3px 8px;
         border-radius: 6px;
         font-weight: 600;
         font-size: 0.8rem;
-        border: 1px solid #e2e8f0;
+        border: 1px solid var(--color-border);
       }
       .method-tag {
         font-weight: 700;
         font-size: 0.75rem;
-        background: #f1f5f9;
+        background: var(--color-neutral-light);
         padding: 2px 6px;
         border-radius: 4px;
       }
       .uuid-label {
         font-family: monospace;
         font-size: 0.75rem;
-        color: var(--color-text-secondary, #64748b);
+        color: var(--color-text-secondary);
       }
       .ce-badge {
         padding: 2px 8px;
@@ -772,29 +767,29 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
         text-transform: capitalize;
       }
       .badge-active {
-        background: #dcfce7;
-        color: #15803d;
+        background: var(--color-success-light);
+        color: var(--color-success);
       }
       .badge-replaced {
-        background: #e2e8f0;
-        color: #475569;
+        background: var(--color-neutral-light);
+        color: var(--color-text-secondary);
       }
       .badge-revoked {
-        background: #fee2e2;
-        color: #b91c1c;
+        background: var(--color-danger-light);
+        color: var(--color-danger);
       }
       .badge-expired {
-        background: #fef2f2;
-        color: #991b1b;
+        background: var(--color-danger-light);
+        color: var(--color-danger);
       }
       .action-cell {
         display: flex;
         gap: var(--space-2, 8px);
       }
       .ce-button.variant-danger {
-        background: #fee2e2;
-        color: #b91c1c;
-        border: 1px solid #fca5a5;
+        background: var(--color-danger-light);
+        color: var(--color-danger);
+        border: 1px solid color-mix(in oklch, var(--color-danger) 45%, transparent);
       }
       .issue-form {
         display: flex;
@@ -813,24 +808,24 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
         justify-content: center;
         gap: 6px;
         padding: 12px 8px;
-        border: 2px solid var(--color-border, #cbd5e1);
+        border: 2px solid var(--color-border);
         border-radius: var(--radius-lg, 10px);
-        background: var(--color-surface, #ffffff);
-        color: var(--color-text-secondary, #475569);
+        background: var(--color-surface);
+        color: var(--color-text-secondary);
         font-weight: 600;
         font-size: 0.85rem;
         cursor: pointer;
         transition: all 0.2s ease;
       }
       .type-btn:hover {
-        border-color: #94a3b8;
-        background: #f8fafc;
+        border-color: var(--color-border-strong);
+        background: var(--color-surface-muted);
       }
       .type-btn.active {
-        border-color: var(--color-primary, #2c5cdc);
-        background: #eff6ff;
-        color: var(--color-primary, #2c5cdc);
-        box-shadow: 0 0 0 1px var(--color-primary, #2c5cdc);
+        border-color: var(--color-primary);
+        background: color-mix(in oklch, var(--color-primary) 12%, transparent);
+        color: var(--color-primary);
+        box-shadow: 0 0 0 1px var(--color-primary);
       }
       .subject-flow-container {
         display: flex;
@@ -847,12 +842,12 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
         font-size: 0.85rem;
       }
       .field-hint {
-        color: var(--color-text-secondary, #64748b);
+        color: var(--color-text-secondary);
         font-size: 0.75rem;
       }
       .ce-input {
         padding: var(--space-2, 8px) var(--space-3, 12px);
-        border: 1px solid var(--color-border, #cbd5e1);
+        border: 1px solid var(--color-border);
         border-radius: var(--radius-md, 6px);
         font-family: inherit;
         font-size: 0.875rem;
@@ -861,8 +856,8 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
       }
       .ce-input:focus {
         outline: none;
-        border-color: var(--color-primary, #2c5cdc);
-        box-shadow: 0 0 0 2px rgba(44, 92, 220, 0.15);
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 2px color-mix(in oklch, var(--color-primary) 28%, transparent);
       }
       .uppercase {
         text-transform: uppercase;
@@ -888,8 +883,8 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
         margin-bottom: var(--space-3, 12px);
         padding: var(--space-3, 12px);
         border-radius: var(--radius-lg, 8px);
-        color: var(--color-danger, #b91c1c);
-        background: var(--color-danger-light, #fee2e2);
+        color: var(--color-danger);
+        background: var(--color-danger-light);
       }
 
       /* Explicit Summary Card */
@@ -903,16 +898,16 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
         transition: all 0.2s ease;
       }
       .resident-theme {
-        background: linear-gradient(135deg, #f8faff 0%, #eef2ff 100%);
-        border: 1px solid #c7d2fe;
+        background: var(--color-info-light);
+        border: 1px solid color-mix(in oklch, var(--color-info) 35%, transparent);
       }
       .vehicle-theme {
-        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-        border: 1px solid #bbf7d0;
+        background: var(--color-success-light);
+        border: 1px solid color-mix(in oklch, var(--color-success) 35%, transparent);
       }
       .visitor-theme {
-        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-        border: 1px solid #fde68a;
+        background: var(--color-warning-light);
+        border: 1px solid color-mix(in oklch, var(--color-warning) 35%, transparent);
       }
       .summary-card-header {
         display: flex;
@@ -928,16 +923,16 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
         justify-content: center;
       }
       .resident-avatar {
-        background: #e0e7ff;
-        color: #3730a3;
+        background: var(--color-info-light);
+        color: var(--color-info);
       }
       .vehicle-avatar {
-        background: #d1fae5;
-        color: #065f46;
+        background: var(--color-success-light);
+        color: var(--color-success);
       }
       .visitor-avatar {
-        background: #fef3c7;
-        color: #92400e;
+        background: var(--color-warning-light);
+        color: var(--color-warning);
       }
       .summary-header-text {
         display: flex;
@@ -947,21 +942,21 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
         margin: 0;
         font-size: 1.05rem;
         font-weight: 700;
-        color: #0f172a;
+        color: var(--color-text-primary);
       }
       .summary-badge-type {
         font-size: 0.75rem;
         font-weight: 600;
-        color: #64748b;
+        color: var(--color-text-secondary);
       }
       .summary-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 10px;
-        background: rgba(255, 255, 255, 0.7);
+        background: color-mix(in oklch, var(--color-surface) 70%, transparent);
         padding: 10px 12px;
         border-radius: 8px;
-        border: 1px solid rgba(0, 0, 0, 0.05);
+        border: 1px solid var(--color-border);
       }
       .summary-cell {
         display: flex;
@@ -972,14 +967,14 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
         grid-column: 1 / -1;
       }
       .highlight-cell .cell-main-val {
-        color: #0f172a;
+        color: var(--color-text-primary);
         font-size: 0.95rem;
       }
       .cell-label {
         font-size: 0.68rem;
         font-weight: 700;
         letter-spacing: 0.05em;
-        color: #64748b;
+        color: var(--color-text-secondary);
       }
       .cell-value-group {
         display: flex;
@@ -991,23 +986,23 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
       }
       .cell-sub-val {
         font-size: 0.85rem;
-        color: #334155;
+        color: var(--color-text-secondary);
       }
       .cell-uuid {
         font-size: 0.75rem;
-        color: #64748b;
+        color: var(--color-text-muted);
         word-break: break-all;
       }
       .unlinked-alert {
         display: flex;
         align-items: flex-start;
         gap: 8px;
-        background: #fffbeb;
-        border: 1px solid #fde68a;
+        background: var(--color-warning-light);
+        border: 1px solid color-mix(in oklch, var(--color-warning) 35%, transparent);
         border-radius: 8px;
         padding: 10px 12px;
         font-size: 0.8rem;
-        color: #92400e;
+        color: var(--color-warning);
       }
       .unlinked-content {
         display: flex;
@@ -1016,7 +1011,7 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
         width: 100%;
       }
       .inline-apt-select {
-        background: #ffffff;
+        background: var(--color-surface);
       }
 
       /* Vehicle Mode Toggles */
@@ -1031,26 +1026,26 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
         justify-content: center;
         gap: 6px;
         padding: 8px 12px;
-        border: 1px solid #cbd5e1;
-        background: #ffffff;
+        border: 1px solid var(--color-border);
+        background: var(--color-surface);
         border-radius: 8px;
         font-size: 0.8rem;
         font-weight: 600;
         cursor: pointer;
-        color: #475569;
+        color: var(--color-text-secondary);
         transition: all 0.15s ease;
       }
       .mode-toggle-btn.active {
-        background: #ecfdf5;
-        border-color: #10b981;
-        color: #065f46;
+        background: var(--color-success-light);
+        border-color: var(--color-success);
+        color: var(--color-success);
       }
       .empty-vehicles-banner {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        background: #f8fafc;
-        border: 1px dashed #cbd5e1;
+        background: var(--color-surface-muted);
+        border: 1px dashed var(--color-border-strong);
         padding: 12px 16px;
         border-radius: 8px;
         gap: 12px;
@@ -1062,8 +1057,8 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
         display: flex;
         flex-direction: column;
         gap: 12px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        background: var(--color-surface-muted);
+        border: 1px solid var(--color-border);
         padding: 14px;
         border-radius: 10px;
       }
@@ -1073,7 +1068,7 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
         gap: 8px;
         margin: 0;
         font-size: 0.9rem;
-        color: #1e293b;
+        color: var(--color-text-primary);
       }
       .form-row-2col {
         display: grid;
@@ -1094,24 +1089,24 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
         gap: 6px;
       }
       .preset-chip {
-        background: #f1f5f9;
-        border: 1px solid #e2e8f0;
+        background: var(--color-neutral-light);
+        border: 1px solid var(--color-border);
         border-radius: 9999px;
         padding: 2px 8px;
         font-size: 0.72rem;
         font-weight: 600;
-        color: #475569;
+        color: var(--color-text-secondary);
         cursor: pointer;
         transition: all 0.15s ease;
       }
       .preset-chip:hover {
-        background: #e2e8f0;
-        color: #0f172a;
+        background: var(--color-surface-muted);
+        color: var(--color-text-primary);
       }
 
       /* Technical Details */
       .technical-details {
-        border-top: 1px solid #e2e8f0;
+        border-top: 1px solid var(--color-border);
         padding-top: 10px;
       }
       .technical-summary {
@@ -1119,28 +1114,28 @@ type CredentialStatusFilter = 'all' | 'active' | 'revoked' | 'replaced' | 'expir
         align-items: center;
         gap: 6px;
         cursor: pointer;
-        color: #64748b;
+        color: var(--color-text-secondary);
         font-size: 0.75rem;
         font-weight: 600;
         user-select: none;
       }
       .technical-summary:hover {
-        color: #334155;
+        color: var(--color-text-primary);
       }
       .mt-2 {
         margin-top: 8px;
       }
       .text-indigo {
-        color: #4f46e5;
+        color: var(--color-info);
       }
       .text-emerald {
-        color: #059669;
+        color: var(--color-success);
       }
       .text-amber {
-        color: #d97706;
+        color: var(--color-warning);
       }
       .text-danger {
-        color: #dc2626;
+        color: var(--color-danger);
       }
     `,
   ],
@@ -1364,8 +1359,11 @@ export class AccessCredentialsPage implements OnInit {
   }
 
   getVehicleOwnerAndAptLabel(v: VehicleResponse): string {
-    const owner = v.ownerName || (v.ownerResidentId ? this.residentMap().get(v.ownerResidentId)?.name : null) || 'Owner';
-    const apt = this.getApartmentLabel(v.apartmentId) || (v.ownerResidentId ? this.getApartmentLabel(this.residentMap().get(v.ownerResidentId)?.apartmentId) : '');
+    const owner =
+      v.ownerName || (v.ownerResidentId ? this.residentMap().get(v.ownerResidentId)?.name : null) || 'Owner';
+    const apt =
+      this.getApartmentLabel(v.apartmentId) ||
+      (v.ownerResidentId ? this.getApartmentLabel(this.residentMap().get(v.ownerResidentId)?.apartmentId) : '');
     return apt ? `${owner} • ${apt}` : owner;
   }
 
@@ -1632,13 +1630,7 @@ export class AccessCredentialsPage implements OnInit {
           const aptLabel = this.getApartmentLabel(createdVehicle.apartmentId);
           const displayName = `${createdVehicle.plate}${createdVehicle.ownerName ? ' • ' + createdVehicle.ownerName : ''}`;
 
-          this.executeIssue(
-            'vehicle',
-            createdVehicle.id,
-            val.expiresAtUtc,
-            displayName,
-            aptLabel
-          );
+          this.executeIssue('vehicle', createdVehicle.id, val.expiresAtUtc, displayName, aptLabel);
         },
         error: (err) => {
           this.issuing.set(false);
@@ -1665,7 +1657,9 @@ export class AccessCredentialsPage implements OnInit {
       if (veh) {
         const owner = veh.ownerName || (veh.ownerResidentId ? this.residentMap().get(veh.ownerResidentId)?.name : null);
         displayName = `${veh.plate}${owner ? ' • ' + owner : ''}`;
-        destination = this.getApartmentLabel(veh.apartmentId) || (veh.ownerResidentId ? this.getApartmentLabel(this.residentMap().get(veh.ownerResidentId)?.apartmentId) : '');
+        destination =
+          this.getApartmentLabel(veh.apartmentId) ||
+          (veh.ownerResidentId ? this.getApartmentLabel(this.residentMap().get(veh.ownerResidentId)?.apartmentId) : '');
       }
     } else if (subjectType === 'visitor') {
       if (this.visitorName().trim()) {
@@ -1686,7 +1680,7 @@ export class AccessCredentialsPage implements OnInit {
     subjectId: string,
     expiresAtUtcStr: string | null | undefined,
     displayName: string,
-    destination: string
+    destination: string,
   ): void {
     const req: IssueCredentialRequest = {
       subjectType,

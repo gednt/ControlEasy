@@ -21,9 +21,7 @@ describe('compressImage', () => {
 
   beforeEach(() => {
     decodeSpy = spyOn(HTMLImageElement.prototype, 'decode').and.callFake(async () => undefined);
-    getContextSpy = spyOn(HTMLCanvasElement.prototype, 'getContext').and.callFake(
-      (() => fakeContext()) as never,
-    );
+    getContextSpy = spyOn(HTMLCanvasElement.prototype, 'getContext').and.callFake((() => fakeContext()) as never);
   });
 
   afterEach(() => {
@@ -33,9 +31,8 @@ describe('compressImage', () => {
   });
 
   it('honours the initial 0.8 quality', async () => {
-    toBlobSpy = spyOn(HTMLCanvasElement.prototype, 'toBlob').and.callFake(
-      ((cb: (b: Blob | null) => void) => cb(new Blob([new Uint8Array(100)], { type: 'image/jpeg' }))) as any,
-    );
+    toBlobSpy = spyOn(HTMLCanvasElement.prototype, 'toBlob').and.callFake(((cb: (b: Blob | null) => void) =>
+      cb(new Blob([new Uint8Array(100)], { type: 'image/jpeg' }))) as any);
     const blob = new Blob([new Uint8Array(10)], { type: 'image/jpeg' });
     await compressImage(blob);
     expect(toBlobSpy.calls.mostRecent().args[2]).toBe(DEFAULT_COMPRESSION.initialQuality);
@@ -43,24 +40,26 @@ describe('compressImage', () => {
 
   it('throws FILE_TOO_LARGE_AFTER_COMPRESSION when floor quality still exceeds the budget', async () => {
     const huge = new Blob([new Uint8Array(1024 * 1024)], { type: 'image/jpeg' });
-    toBlobSpy = spyOn(HTMLCanvasElement.prototype, 'toBlob').and.callFake(
-      ((cb: (b: Blob | null) => void) => cb(huge)) as any,
+    toBlobSpy = spyOn(HTMLCanvasElement.prototype, 'toBlob').and.callFake(((cb: (b: Blob | null) => void) =>
+      cb(huge)) as any);
+    await expectAsync(compressImage(new Blob([new Uint8Array(10)], { type: 'image/jpeg' }))).toBeRejectedWithError(
+      'FILE_TOO_LARGE_AFTER_COMPRESSION',
     );
-    await expectAsync(compressImage(new Blob([new Uint8Array(10)], { type: 'image/jpeg' })))
-      .toBeRejectedWithError('FILE_TOO_LARGE_AFTER_COMPRESSION');
   });
 
   it('retries at fallback quality when initial exceeds maxBytes', async () => {
     const calls: number[] = [];
     let callIndex = 0;
-    toBlobSpy = spyOn(HTMLCanvasElement.prototype, 'toBlob').and.callFake(
-      ((cb: (b: Blob | null) => void, _mime?: string, q?: number) => {
-        callIndex++;
-        calls.push(q ?? -1);
-        const size = callIndex === 1 ? DEFAULT_COMPRESSION.maxBytes + 1 : 1024;
-        cb(new Blob([new Uint8Array(size)], { type: 'image/jpeg' }));
-      }) as any,
-    );
+    toBlobSpy = spyOn(HTMLCanvasElement.prototype, 'toBlob').and.callFake(((
+      cb: (b: Blob | null) => void,
+      _mime?: string,
+      q?: number,
+    ) => {
+      callIndex++;
+      calls.push(q ?? -1);
+      const size = callIndex === 1 ? DEFAULT_COMPRESSION.maxBytes + 1 : 1024;
+      cb(new Blob([new Uint8Array(size)], { type: 'image/jpeg' }));
+    }) as any);
     const result = await compressImage(new Blob([new Uint8Array(10)], { type: 'image/jpeg' }));
     expect(calls).toContain(DEFAULT_COMPRESSION.initialQuality);
     expect(calls).toContain(DEFAULT_COMPRESSION.fallbackQuality);
@@ -89,9 +88,7 @@ describe('uploadWithRetry', () => {
 
   it('throws after exhausting all attempts', async () => {
     const obs = () => throwError(() => new Error('persistent'));
-    await expectAsync(
-      uploadWithRetry(obs, { maxAttempts: 2, delays: [1, 1] }),
-    ).toBeRejectedWithError('persistent');
+    await expectAsync(uploadWithRetry(obs, { maxAttempts: 2, delays: [1, 1] })).toBeRejectedWithError('persistent');
   });
 
   it('awaits each retry delay before the next attempt', async () => {

@@ -16,11 +16,7 @@ import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
 import { GatewayControlService } from './gateway-control.service';
 import { AccessScanResultComponent } from './components/access-scan-result.component';
 import { ScanResult, ScanRefusal } from './access-control.types';
-import {
-  AccessDirection,
-  getSavedAccessDirection,
-  saveAccessDirection,
-} from './direction-storage';
+import { AccessDirection, getSavedAccessDirection, saveAccessDirection } from './direction-storage';
 
 interface UiState {
   qrPayload: string;
@@ -135,7 +131,9 @@ function getSavedCameraFacingMode(): CameraFacingMode {
         gap: 4px;
         backdrop-filter: blur(4px);
         font-weight: 500;
-        transition: background 0.15s ease, border-color 0.15s ease;
+        transition:
+          background 0.15s ease,
+          border-color 0.15s ease;
       }
       .camera-flip-btn:hover {
         background: rgba(0, 0, 0, 0.85);
@@ -161,15 +159,15 @@ function getSavedCameraFacingMode(): CameraFacingMode {
         font-size: 0.95rem;
       }
       .qr-scan-page .error {
-        color: #b00020;
-        background: #fdecea;
+        color: var(--color-danger);
+        background: var(--color-danger-light);
         padding: 0.5rem 0.75rem;
         border-radius: 6px;
         margin: 0.5rem 0;
       }
       .qr-scan-page .busy-hint {
         font-size: 0.85rem;
-        color: #666;
+        color: var(--color-text-secondary);
         margin: 0.25rem 0;
       }
       .scan-form {
@@ -188,13 +186,13 @@ function getSavedCameraFacingMode(): CameraFacingMode {
       }
       .field-help {
         font-size: 0.75rem;
-        color: #64748b;
+        color: var(--color-text-secondary);
       }
       .manual-fallback-hint {
         margin-top: 0.75rem;
         padding: 0.5rem 0.75rem;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        background: var(--color-surface-muted);
+        border: 1px solid var(--color-border);
         border-radius: 6px;
         font-size: 0.85rem;
         display: flex;
@@ -202,7 +200,7 @@ function getSavedCameraFacingMode(): CameraFacingMode {
         gap: 0.5rem;
       }
       .manual-lookup-link {
-        color: #2c5cdc;
+        color: var(--color-primary);
         font-weight: 600;
         text-decoration: underline;
       }
@@ -225,7 +223,9 @@ function getSavedCameraFacingMode(): CameraFacingMode {
             class="camera-flip-btn"
             (click)="toggleCameraFacingMode()"
             [title]="facingMode() === 'environment' ? 'Switch to user camera' : 'Switch to environment camera'"
-            [attr.aria-label]="facingMode() === 'environment' ? 'Switch to user camera' : 'Switch to environment camera'"
+            [attr.aria-label]="
+              facingMode() === 'environment' ? 'Switch to user camera' : 'Switch to environment camera'
+            "
             data-testid="camera-flip-btn"
           >
             ⇄ Flip camera ({{ facingMode() === 'environment' ? 'Back' : 'Front' }})

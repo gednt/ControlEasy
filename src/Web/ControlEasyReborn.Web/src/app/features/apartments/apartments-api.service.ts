@@ -33,9 +33,7 @@ export class ApartmentsApiService {
   private readonly baseUrl = '/api/v1/apartments';
 
   list(search?: string, skip = 0, take = 200): Observable<ApartmentResponse[]> {
-    let params = new HttpParams()
-      .set('skip', skip.toString())
-      .set('take', take.toString());
+    let params = new HttpParams().set('skip', skip.toString()).set('take', take.toString());
 
     if (search) {
       params = params.set('search', search);

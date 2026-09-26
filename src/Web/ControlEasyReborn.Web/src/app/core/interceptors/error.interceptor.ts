@@ -92,11 +92,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       }
 
       if (error.status === 403) {
-        if (
-          !isRedirectingToAccessDenied
-          && authService.isAuthenticated()
-          && router.url !== '/access-denied'
-        ) {
+        if (!isRedirectingToAccessDenied && authService.isAuthenticated() && router.url !== '/access-denied') {
           isRedirectingToAccessDenied = true;
           void router.navigate(['/access-denied']);
         }
