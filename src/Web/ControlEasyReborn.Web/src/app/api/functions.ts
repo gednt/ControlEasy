@@ -109,6 +109,8 @@ export type { ApiV1SecurityUsersPost$Params as ApiV1SecurityUsersPost$Params } f
 export { apiV1SecurityUsersPost as apiV1SecurityUsersPost } from './fn/security/api-v-1-security-users-post';
 export type { ApiV1SecurityUsersUserIdResetPasswordPost$Params as ApiV1SecurityUsersUserIdResetPasswordPost$Params } from './fn/security/api-v-1-security-users-user-id-reset-password-post';
 export { apiV1SecurityUsersUserIdResetPasswordPost as apiV1SecurityUsersUserIdResetPasswordPost } from './fn/security/api-v-1-security-users-user-id-reset-password-post';
+export type { ApiV1SecurityStaffGet$Params as ApiV1SecurityStaffGet$Params } from './fn/security/api-v-1-security-staff-get';
+export { apiV1SecurityStaffGet as apiV1SecurityStaffGet } from './fn/security/api-v-1-security-staff-get';
 export type { ApiV1SecurityTenantSwitchPost$Params as ApiV1SecurityTenantSwitchPost$Params } from './fn/security/api-v-1-security-tenant-switch-post';
 export { apiV1SecurityTenantSwitchPost as apiV1SecurityTenantSwitchPost } from './fn/security/api-v-1-security-tenant-switch-post';
 export type { ApiV1SecuritySessionGet$Params as ApiV1SecuritySessionGet$Params } from './fn/security/api-v-1-security-session-get';

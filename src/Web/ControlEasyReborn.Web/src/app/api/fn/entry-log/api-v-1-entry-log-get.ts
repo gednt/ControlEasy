@@ -13,6 +13,7 @@ export interface ApiV1EntryLogGet$Params {
   subjectType?: string;
   fromUtc?: string;
   toUtc?: string;
+  porteiro?: string;
   skip?: number;
   take?: number;
 }
@@ -24,6 +25,7 @@ export function apiV1EntryLogGet(http: HttpClient, rootUrl: string, params?: Api
     rb.query('subjectType', params.subjectType, {});
     rb.query('fromUtc', params.fromUtc, {});
     rb.query('toUtc', params.toUtc, {});
+    rb.query('porteiro', params.porteiro, {});
     rb.query('skip', params.skip, {});
     rb.query('take', params.take, {});
   }

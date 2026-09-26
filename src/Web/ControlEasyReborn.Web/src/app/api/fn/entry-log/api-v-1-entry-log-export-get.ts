@@ -13,6 +13,7 @@ export interface ApiV1EntryLogExportGet$Params {
   subjectType?: string;
   fromUtc?: string;
   toUtc?: string;
+  porteiro?: string;
 }
 
 export function apiV1EntryLogExportGet(http: HttpClient, rootUrl: string, params?: ApiV1EntryLogExportGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
@@ -22,6 +23,7 @@ export function apiV1EntryLogExportGet(http: HttpClient, rootUrl: string, params
     rb.query('subjectType', params.subjectType, {});
     rb.query('fromUtc', params.fromUtc, {});
     rb.query('toUtc', params.toUtc, {});
+    rb.query('porteiro', params.porteiro, {});
   }
 
   return http.request(

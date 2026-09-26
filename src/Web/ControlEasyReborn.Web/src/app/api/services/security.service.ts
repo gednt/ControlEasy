@@ -42,6 +42,8 @@ import { apiV1SecurityShiftsGet } from '../fn/security/api-v-1-security-shifts-g
 import { ApiV1SecurityShiftsGet$Params } from '../fn/security/api-v-1-security-shifts-get';
 import { apiV1SecurityShiftsPost } from '../fn/security/api-v-1-security-shifts-post';
 import { ApiV1SecurityShiftsPost$Params } from '../fn/security/api-v-1-security-shifts-post';
+import { apiV1SecurityStaffGet } from '../fn/security/api-v-1-security-staff-get';
+import { ApiV1SecurityStaffGet$Params } from '../fn/security/api-v-1-security-staff-get';
 import { apiV1SecurityTenantsGet } from '../fn/security/api-v-1-security-tenants-get';
 import { ApiV1SecurityTenantsGet$Params } from '../fn/security/api-v-1-security-tenants-get';
 import { apiV1SecurityTenantSwitchPost } from '../fn/security/api-v-1-security-tenant-switch-post';
@@ -268,6 +270,33 @@ export class SecurityService extends BaseService {
    */
   apiV1SecurityUsersUserIdResetPasswordPost(params: ApiV1SecurityUsersUserIdResetPasswordPost$Params, context?: HttpContext): Observable<void> {
     const resp = this.apiV1SecurityUsersUserIdResetPasswordPost$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1SecurityStaffGet()` */
+  static readonly ApiV1SecurityStaffGetPath = '/api/v1/security/staff';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecurityStaffGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecurityStaffGet$Response(params?: ApiV1SecurityStaffGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = apiV1SecurityStaffGet(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecurityStaffGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1SecurityStaffGet(params?: ApiV1SecurityStaffGet$Params, context?: HttpContext): Observable<void> {
+    const resp = this.apiV1SecurityStaffGet$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<void>): void => r.body)
     );
