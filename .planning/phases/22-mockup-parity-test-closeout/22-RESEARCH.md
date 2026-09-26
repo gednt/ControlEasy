@@ -387,24 +387,28 @@ The GSD Nyquist contract (`templates/VALIDATION.md`) requires, per phase: `Test 
 | A5 | `lucide-angular` migration to `@lucide/angular` is out of scope and safe to defer. | Package Legitimacy | Low — the deprecated package still works and is pinned. |
 | A6 | Phase 22's own `*-VALIDATION.md` can be authored during planning as a Wave 0 artifact (rather than post-hoc). | Validation coverage | Low — this matches the template's "Wave 0 Requirements" section. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Visual-parity acceptance thresholds for dashboard/visits/vehicles.**
+   - **RESOLVED (plan 22-01, objective "Surface" block):** Parity for dashboard/visits/vehicles = design-system conformance (component/icon + tokens + index.html stat grid); the shipped "Shift ledger" is preserved (no layout redesign) and the ledger-vs-stat-grid divergence is surfaced for a human decision.
    - What we know: `.specs/mockup-visual-parity/design.md` defines parity as "pixel-comparable at 375/768/1440 × light/dark" and prescribes Playwright snapshots with `maxDiffPixelRatio: 0.001` for login/residents/dashboard. `[CITED: design.md]`
    - What's unclear: The current dashboard is a "Shift ledger", not the mockup's stat grid — does "parity" mean *restyle the ledger to match the stat-grid preview*, or *accept the ledger as the shipped product and only ensure component/icon conformance*?
    - Recommendation: Default to **component/icon conformance** (no layout redesign) and surface the dashboard-vs-mockup divergence as a human decision; the plan should not unilaterally redesign the shipped ledger.
 
 2. **Does the real backend implement the mockup's rate-limit (429) and "multi" tenant-picker contract?**
+   - **RESOLVED (plan 22-02, objective "Surface" block):** The Angular side mirrors whatever the backend actually returns; no client-side 15s 429 cooldown is invented — if the backend does not emit 429 for login, no cooldown is added. 429 detail (if any) flows through the existing enumeration-safe error path.
    - What we know: The login page already handles `status === 401` → "Invalid email or password." and delegates multi-tenant via `lookupTenants(email).length > 1`. `[VERIFIED: login.page.ts]`
    - What's unclear: Whether a 429 "Too many attempts" path exists server-side and needs a cooldown UI.
    - Recommendation: Mirror backend behavior; do not build a mockup-only cooldown. Verify against the Security module auth endpoint during planning.
 
 3. **Refresh vs. delete for `gatehouse-workflow.spec.ts`.**
+   - **RESOLVED (plan 22-03, objective "Scope decision" block):** Refresh. The gatehouse portion is rewritten against the current tabbed panel; the still-valuable audit-review + consent-policy portions are retained in the same spec; only the removed FAB/tile assertions are deleted.
    - What we know: TEST-01 leaves refresh-vs-remove to the agent's discretion; the spec's gatehouse/audit/policy flows are still valuable coverage (audit review, CSV export, consent policy editor all still exist as routes). `[VERIFIED: routes + audit.page.ts + consent-policy-editor.page.ts]`
    - What's unclear: Whether the audit/consent-policy portions should be split into their own spec.
    - Recommendation: Rewrite the gatehouse portion against the tabbed panel, keep/relocate the audit + consent-policy portions (they test still-present UI), and delete the removed-tile assertions.
 
 4. **Whether Phase 22 should also backfill `*-VALIDATION.md` for v2.0 phases 11/12/13.**
+   - **RESOLVED (plan 22-04, objective "Scope decision" block):** Out of scope for Phase 22 — TEST-02 is strictly milestone phases 19–22. The audit records 11/12/13 (and 16/17/18) as uncovered as a surfaced note, with backfill deferred as a separate human decision.
    - What we know: TEST-02 scopes to "v2.2 phases (19–22)"; but v2.0 phases 11/12/13 also lack VALIDATION.md. `[VERIFIED: ls v2.0-phases]`
    - What's unclear: Whether the human wants those backfilled too.
    - Recommendation: Out of scope for Phase 22 (deferred/backlog); note in the audit that 11/12/13 remain uncovered.
