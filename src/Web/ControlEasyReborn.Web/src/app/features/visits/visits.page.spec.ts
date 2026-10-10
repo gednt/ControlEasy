@@ -48,8 +48,10 @@ describe('VisitsPage', () => {
 
   function flushPhotoRequest(visitorId: string): void {
     const expected = `/api/v1/photos?skip=0&take=1&entityType=visitor&entityId=${visitorId}`;
-    const photoReq = httpMock.expectOne(expected);
-    photoReq.flush([]);
+    const photoReqs = httpMock.match(expected);
+    for (const req of photoReqs) {
+      req.flush([]);
+    }
   }
 
   it('renders visits and shows QR pass button for pending visits', () => {

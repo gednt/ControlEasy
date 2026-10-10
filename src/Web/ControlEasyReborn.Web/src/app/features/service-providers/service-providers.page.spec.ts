@@ -50,8 +50,10 @@ describe('ServiceProvidersPage', () => {
 
   function flushPhotoRequest(entityId: string): void {
     const expected = `/api/v1/photos?skip=0&take=1&entityType=service-provider&entityId=${entityId}`;
-    const photoReq = httpMock.expectOne(expected);
-    photoReq.flush([]);
+    const photoReqs = httpMock.match(expected);
+    for (const req of photoReqs) {
+      req.flush([]);
+    }
   }
 
   function loadProviders(): void {
