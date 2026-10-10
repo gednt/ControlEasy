@@ -1,6 +1,6 @@
 ---
 description: "ControlEasy Reborn — condominium access-control platform. ASP.NET Core 8 + Angular 18 + MySQL 8 + Docker Compose. Load this file once per session; load AGENTS.POLICY.md, AGENTS.WORKTREES.md, AGENTS.STACK.md, or skill overlays only when the task touches the corresponding domain."
-allowed-tools: [Read, Grep, Glob, Bash(docker compose *), Bash(git status *), Bash(git log *), Bash(git diff *), Bash(git worktree list *), Bash(make *), Bash(scripts/verify-ci-local*)]
+allowed-tools: [Read, Grep, Glob, Bash(docker compose *), Bash(git status *), Bash(git log *), Bash(git diff *), Bash(git worktree list *), Bash(make *), Bash(scripts/verify-ci-local*), Bash(npm ci --legacy-peer-deps), Bash(npm run lint), Bash(npm test *), Bash(npx playwright install *), Bash(npx ng *)]
 mode: primary
 ---
 
