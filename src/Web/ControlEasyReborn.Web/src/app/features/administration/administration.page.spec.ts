@@ -270,7 +270,7 @@ describe('AdministrationPage', () => {
     expect(rendered).not.toContain('TempPassword');
   });
 
-  it('should disable the row button while resetting and re-enable after completion', () => {
+  it('should disable the row button while resetting and re-enable after completion', async () => {
     const inFlight = new Subject<{ userId: string; mustChangePassword: boolean; deliveryState: string }>();
     authMock.resetUserPassword.and.returnValue(inFlight);
     authMock.listStaff.and.returnValue(
