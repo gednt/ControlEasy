@@ -304,7 +304,9 @@ describe('AdministrationPage', () => {
     fixture.detectChanges();
 
     expect(component.resettingUserId()).toBe('u-2');
-    let button = fixture.nativeElement.querySelector('button.ce-button.variant-secondary') as HTMLButtonElement | null;
+    const staffRow = fixture.nativeElement.querySelector('table tbody tr') as HTMLElement | null;
+    expect(staffRow).not.toBeNull();
+    let button = staffRow!.querySelector('button.ce-button.variant-secondary') as HTMLButtonElement | null;
     expect(button?.disabled).toBe(true);
 
     inFlight.next({ userId: 'u-2', mustChangePassword: true, deliveryState: 'Sent' });
@@ -312,7 +314,7 @@ describe('AdministrationPage', () => {
     fixture.detectChanges();
 
     expect(component.resettingUserId()).toBeNull();
-    button = fixture.nativeElement.querySelector('button.ce-button.variant-secondary') as HTMLButtonElement | null;
+    button = staffRow!.querySelector('button.ce-button.variant-secondary') as HTMLButtonElement | null;
     expect(button?.disabled).toBe(false);
   });
 

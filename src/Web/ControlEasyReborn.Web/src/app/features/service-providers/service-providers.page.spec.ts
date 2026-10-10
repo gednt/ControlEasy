@@ -48,11 +48,18 @@ describe('ServiceProvidersPage', () => {
 
   afterEach(() => httpMock.verify());
 
+  function flushPhotoRequest(entityId: string): void {
+    const expected = `/api/v1/photos?skip=0&take=1&entityType=service-provider&entityId=${entityId}`;
+    const photoReq = httpMock.expectOne(expected);
+    photoReq.flush([]);
+  }
+
   function loadProviders(): void {
     fixture.detectChanges();
     const request = httpMock.expectOne('/api/v1/service-providers?skip=0&take=50');
     request.flush([provider]);
     fixture.detectChanges();
+    flushPhotoRequest(provider.id);
   }
 
   it('prefills the edit form and saves all editable provider details', () => {
@@ -75,8 +82,10 @@ describe('ServiceProvidersPage', () => {
     expect(request.request.method).toBe('PUT');
     expect(request.request.body.phone).toBe('11888880000');
     request.flush({ ...provider, phone: '11888880000' });
+    fixture.detectChanges();
 
     expect(component.providers()[0]!.phone).toBe('11888880000');
+    flushPhotoRequest(provider.id);
   });
 
   it('requires confirmation and then disables an active provider', () => {
@@ -89,8 +98,10 @@ describe('ServiceProvidersPage', () => {
     const request = httpMock.expectOne(`/api/v1/service-providers/${provider.id}/deactivate`);
     expect(request.request.method).toBe('POST');
     request.flush({ ...provider, active: false });
+    fixture.detectChanges();
 
     expect(component.providers()[0]!.active).toBeFalse();
     expect(component.disableTarget()).toBeNull();
+    flushPhotoRequest(provider.id);
   });
 });
