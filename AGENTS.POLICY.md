@@ -34,36 +34,69 @@ gate. **The fast and full gates above are necessary but not sufficient
 for changes under `src/Web/ControlEasyReborn.Web/`.**
 
 Mandatory **Web SPA gate** on every change to `src/Web/ControlEasyReborn.Web/**`,
-regardless of which agent environment is in use (devcontainer, Linux host,
-macOS, Windows with WSL, Windows with Git-for-Windows bash). No commit,
-push, or "done" claim is valid until this gate is green on the final state:
+regardless of which agent environment is in use. No commit, push, or
+"done" claim is valid until this gate is green on the final state.
 
-1. `npm ci --legacy-peer-deps` from `src/Web/ControlEasyReborn.Web` (idempotent,
-   honors `package-lock.json`).
-2. `npm run lint` from the same directory (ESLint over `src/**/*.ts`).
-3. `npx playwright install chromium` once per fresh environment, if not
-   already cached.
-4. `CHROME_BIN="$(node -e "console.log(require('@playwright/test').chromium.executablePath())")"`
-   `npm test -- --no-watch --browsers=ChromeHeadlessNoSandbox` from the same
-   directory. The full Karma + Jasmine suite must report 0 failures and the
-   expected total.
+**Canonical recipe — run in the exact same container the Gitea runner
+uses, `docker.gitea.com/runner-images:ubuntu-latest` (no host-side
+node/npm/Chrome dependency).** Bit-for-bit parity with the `lint` job;
+this is the only recipe that has actually proven the fix on a real
+runner image. From the repo root:
 
-Platform handling:
+```bash
+cat > /tmp/ci-lint.sh <<'SH'
+#!/bin/sh
+set -eu
+cd /workspace/src/Web/ControlEasyReborn.Web
+echo "===NPM_CI==="
+npm ci --legacy-peer-deps 2>&1 | tail -5
+echo "===LINT==="
+npm run lint 2>&1 | tail -5
+echo "===PLAYWRIGHT_INSTALL==="
+npx playwright install --with-deps chromium 2>&1 | tail -5
+echo "===SET_CHROME_BIN==="
+export CHROME_BIN="$(node -e "console.log(require('@playwright/test').chromium.executablePath())")"
+echo "CHROME_BIN=$CHROME_BIN"
+echo "===TEST==="
+npm test -- --no-watch --browsers=ChromeHeadlessNoSandbox 2>&1 | tee /tmp/karma.log | tail -3
+echo "===KPI==="
+grep -E "TOTAL:" /tmp/karma.log
+SH
 
-- **devcontainer / Linux host**: invoke the commands above directly.
-- **Windows host with broken WSL**: use `& "C:\Program Files\Git\bin\bash.exe" -c "…"`
-  with `MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'`, then run the same
-  commands. PowerShell's `bash.exe` shim is the WSL launcher and will fail;
-  Git-for-Windows's `bash.exe` is a real bash.
-- **If `playwright` reports no `chromium.executablePath()`** (e.g. package
-  missing in a minimal checkout), fall back to `npx ng test
-  --browsers=ChromeHeadlessNoSandbox` and ensure a Chrome/Chromium binary
-  is on `PATH` or set via `CHROME_BIN` to the Playwright-bundled
-  `chrome-win64\chrome.exe` under `%LOCALAPPDATA%\ms-playwright\`.
-- **If the host cannot serve a headless browser at all** (e.g. sandboxed
-  runner, no network for Playwright download), the agent MUST say so
-  explicitly, run the gate inside the devcontainer, and stop. Do not
-  claim "done" with the gate unverified.
+docker run --rm \
+  -v "$PWD:/workspace" \
+  -v /tmp/ci-lint.sh:/tmp/ci-lint.sh:ro \
+  docker.gitea.com/runner-images:ubuntu-latest \
+  bash /tmp/ci-lint.sh
+```
+
+Pass condition: `TOTAL: N SUCCESS` (no `FAILED`) for every grep match
+in `/tmp/karma.log`, npm lint exits 0, npm ci exits 0, playwright
+install exits 0.
+
+**Fallback recipes** (use only when the canonical recipe cannot run on
+the host — e.g. no Docker, sandboxed runner):
+
+- **devcontainer / Linux host with `node:20`, `playwright`, Chrome on
+  `PATH`**: invoke the four npm/npx commands directly from
+  `src/Web/ControlEasyReborn.Web`, then `export CHROME_BIN=…` and run
+  `npm test`.
+- **Windows host with broken WSL, no Docker**: use
+  `& "C:\Program Files\Git\bin\bash.exe" -c "…"` with
+  `MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'`, then run the four
+  commands. PowerShell's `bash.exe` shim is the WSL launcher and will
+  fail; Git-for-Windows's `bash.exe` is a real bash. Heads-up: the
+  host-side Karma run is *not* bit-for-bit equivalent to the Gitea
+  runner — `IntersectionObserver` intersection behavior can diverge
+  between Linux and Windows Chromium, so a passing host run does not
+  prove a passing CI run. Always run the canonical Docker recipe
+  before pushing.
+
+- **If the host cannot serve a headless browser at all** (e.g.
+  sandboxed runner, no network for Playwright download, no Docker):
+  the agent MUST say so explicitly, run the gate inside the
+  devcontainer, and stop. Do not claim "done" with the gate
+  unverified.
 
 Rationale: the original CI failure on `lint` job task 546 (5 Karma test
 failures) shipped because no agent run had exercised the Angular suite
