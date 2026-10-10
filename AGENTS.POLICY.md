@@ -26,6 +26,50 @@ state.**
    (`Testcontainers MySQL`, Angular Docker web build) MUST NOT run inside
    Docker unless this is the final gate.
 
+### Web SPA gate (Angular `npm test` + `npm run lint`)
+
+`scripts/verify-ci-local.sh` does not exercise the Angular test suite or
+ESLint — both run only inside the Gitea `lint` job, never in the local
+gate. **The fast and full gates above are necessary but not sufficient
+for changes under `src/Web/ControlEasyReborn.Web/`.**
+
+Mandatory **Web SPA gate** on every change to `src/Web/ControlEasyReborn.Web/**`,
+regardless of which agent environment is in use (devcontainer, Linux host,
+macOS, Windows with WSL, Windows with Git-for-Windows bash). No commit,
+push, or "done" claim is valid until this gate is green on the final state:
+
+1. `npm ci --legacy-peer-deps` from `src/Web/ControlEasyReborn.Web` (idempotent,
+   honors `package-lock.json`).
+2. `npm run lint` from the same directory (ESLint over `src/**/*.ts`).
+3. `npx playwright install chromium` once per fresh environment, if not
+   already cached.
+4. `CHROME_BIN="$(node -e "console.log(require('@playwright/test').chromium.executablePath())")"`
+   `npm test -- --no-watch --browsers=ChromeHeadlessNoSandbox` from the same
+   directory. The full Karma + Jasmine suite must report 0 failures and the
+   expected total.
+
+Platform handling:
+
+- **devcontainer / Linux host**: invoke the commands above directly.
+- **Windows host with broken WSL**: use `& "C:\Program Files\Git\bin\bash.exe" -c "…"`
+  with `MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'`, then run the same
+  commands. PowerShell's `bash.exe` shim is the WSL launcher and will fail;
+  Git-for-Windows's `bash.exe` is a real bash.
+- **If `playwright` reports no `chromium.executablePath()`** (e.g. package
+  missing in a minimal checkout), fall back to `npx ng test
+  --browsers=ChromeHeadlessNoSandbox` and ensure a Chrome/Chromium binary
+  is on `PATH` or set via `CHROME_BIN` to the Playwright-bundled
+  `chrome-win64\chrome.exe` under `%LOCALAPPDATA%\ms-playwright\`.
+- **If the host cannot serve a headless browser at all** (e.g. sandboxed
+  runner, no network for Playwright download), the agent MUST say so
+  explicitly, run the gate inside the devcontainer, and stop. Do not
+  claim "done" with the gate unverified.
+
+Rationale: the original CI failure on `lint` job task 546 (5 Karma test
+failures) shipped because no agent run had exercised the Angular suite
+locally before push. Closing this gap is the single highest-leverage
+change to the agent workflow for this repo.
+
 Claiming completion, checking off tasks, or pushing code without the full
 local CI suite passing on the final state is a strict constitutional
 violation. Stop hooks in `.agents/hooks.json`, `.agent/hooks.json`,

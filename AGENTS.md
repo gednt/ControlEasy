@@ -144,7 +144,8 @@ their own onboarding/refresh skill.
 
 Read each pointer only when the task touches that overlay's domain.
 
-- **AGENTS.POLICY.md** — Hard policy (CI gate, platform-aware exec,
+- **AGENTS.POLICY.md** — Hard policy (CI gate, **Web SPA gate** for any
+  change under `src/Web/ControlEasyReborn.Web/**`, platform-aware exec,
   prohibitions, workflow ownership). Load before any non-trivial change.
 - **AGENTS.WORKTREES.md** — Mandatory Git worktree rule + naming
   convention. Load before any commit, branch, or merge.
