@@ -1,3 +1,4 @@
+using ControlEasyReborn.Infrastructure.KeyDerivation;
 using ControlEasyReborn.Infrastructure.MultiTenancy;
 using ControlEasyReborn.SharedKernel.Bootstrap;
 using ControlEasyReborn.SharedKernel.Demo;
@@ -18,6 +19,13 @@ public static class BootstrapHostingExtensions
         services.Configure<BootstrapOptions>(configuration.GetSection(BootstrapOptions.SectionName));
         services.AddSingleton<IBootstrapCredentialsStore, BootstrapCredentialsStore>();
         services.AddScoped<BootstrapInfoHandler>();
+
+        // Per-tenant key derivation — registers the master-key provider (env-driven)
+        // and the HKDF-based deriver. Modules that need per-tenant derived keys
+        // resolve IPerTenantKeyDeriver and call DeriveKey(tenantId, purpose).
+        services.AddSingleton<ITenantMasterKeyProvider, EnvironmentTenantMasterKeyProvider>();
+        services.AddSingleton<IPerTenantKeyDeriver, PerTenantKeyDeriver>();
+
         return services;
     }
 

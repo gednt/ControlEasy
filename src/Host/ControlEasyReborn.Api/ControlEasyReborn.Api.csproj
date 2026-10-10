@@ -40,6 +40,9 @@
     <ProjectReference Include="..\..\Modules\AccessControl\ControlEasyReborn.Modules.AccessControl.Api\ControlEasyReborn.Modules.AccessControl.Api.csproj" />
     <ProjectReference Include="..\..\Modules\AccessControl\ControlEasyReborn.Modules.AccessControl.Application\ControlEasyReborn.Modules.AccessControl.Application.csproj" />
     <ProjectReference Include="..\..\Modules\AccessControl\ControlEasyReborn.Modules.AccessControl.Infrastructure\ControlEasyReborn.Modules.AccessControl.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Modules\Devices\ControlEasyReborn.Modules.Devices.Api\ControlEasyReborn.Modules.Devices.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\Devices\ControlEasyReborn.Modules.Devices.Application\ControlEasyReborn.Modules.Devices.Application.csproj" />
+    <ProjectReference Include="..\..\Modules\Devices\ControlEasyReborn.Modules.Devices.Infrastructure\ControlEasyReborn.Modules.Devices.Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />

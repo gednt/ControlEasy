@@ -35,6 +35,8 @@ using ControlEasyReborn.Modules.Photos.Api.Endpoints;
 using ControlEasyReborn.Modules.Photos.Infrastructure.DI;
 using ControlEasyReborn.Modules.AccessControl.Api.Endpoints;
 using ControlEasyReborn.Modules.AccessControl.Infrastructure.DI;
+using ControlEasyReborn.Modules.Devices.Api.Endpoints;
+using ControlEasyReborn.Modules.Devices.Infrastructure.DI;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
@@ -152,6 +154,8 @@ try
     builder.Services.AddReportsModule();
     builder.Services.AddPhotosModule();
     builder.Services.AddAccessControlModule();
+    builder.Services.AddDevicesModule();
+    builder.Services.AddDevicesSimulatorInspector();
 
     builder.Services.AddControlEasyDemo(builder.Configuration);
     builder.Services.AddControlEasyBootstrap(builder.Configuration);
@@ -265,6 +269,8 @@ try
     app.MapAdministrationApi();
     app.MapPhotosApi();
     app.MapAccessControlApi();
+    app.MapDevicesEndpoints();
+    app.MapSimulatorInspectorEndpoints();
 
     app.Run();
 }

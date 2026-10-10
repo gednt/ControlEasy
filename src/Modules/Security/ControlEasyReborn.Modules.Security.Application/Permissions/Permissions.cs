@@ -22,6 +22,8 @@ public static class Permissions
     public const string AccessControlRevoke = "Access.Control.Revoke";
     public const string AccessOperate = "Access.Access.Operate";
     public const string AccessRead = "Access.Read";
+    public const string DevicesUnlock = "devices.unlock";
+    public const string DevicesRead = "devices.read";
 
     public static readonly string[] All =
     [
@@ -44,6 +46,8 @@ public static class Permissions
         AccessControlReplace,
         AccessControlRevoke,
         AccessOperate,
-        AccessRead
+        AccessRead,
+        DevicesUnlock,
+        DevicesRead
     ];
 }

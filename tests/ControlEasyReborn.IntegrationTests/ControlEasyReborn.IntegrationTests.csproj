@@ -41,5 +41,9 @@
     <ProjectReference Include="..\..\src\Modules\AccessControl\ControlEasyReborn.Modules.AccessControl.Application\ControlEasyReborn.Modules.AccessControl.Application.csproj" />
     <ProjectReference Include="..\..\src\Modules\AccessControl\ControlEasyReborn.Modules.AccessControl.Domain\ControlEasyReborn.Modules.AccessControl.Domain.csproj" />
     <ProjectReference Include="..\..\src\Modules\AccessControl\ControlEasyReborn.Modules.AccessControl.Infrastructure\ControlEasyReborn.Modules.AccessControl.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Devices\ControlEasyReborn.Modules.Devices.Application\ControlEasyReborn.Modules.Devices.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Devices\ControlEasyReborn.Modules.Devices.Domain\ControlEasyReborn.Modules.Devices.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Devices\ControlEasyReborn.Modules.Devices.Infrastructure\ControlEasyReborn.Modules.Devices.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Devices\ControlEasyReborn.Modules.Devices.Api\ControlEasyReborn.Modules.Devices.Api.csproj" />
   </ItemGroup>
 </Project>
