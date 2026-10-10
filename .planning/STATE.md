@@ -1,46 +1,47 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.2
-milestone_name: UI Parity & Operational Closeout
-status: Awaiting next milestone
-stopped_at: Milestone v2.5 (Real Vendor Hardware Integration — Control iD, Intelbras, Hikvision) requirements + roadmap created on `feat/planning-lineage-unification`; MILESTONES.md, REQUIREMENTS.md (v2.4 file frontmatter), v2.3-REQUIREMENTS.md DOOR-R1..R3 pointers, ROADMAP.md, PROJECT.md, STATE.md updated. Planning artifacts only — no code changes.
-last_updated: "2026-09-26T18:35:26.568Z"
-last_activity: 2026-09-26
-last_activity_desc: Milestone v2.2 completed and archived
+milestone: v2.3
+milestone_name: Door Integration & Hardware Access (Simulator-First)
+status: planning
+stopped_at: Milestone v2.3 (Door Integration & Hardware Access — Simulator-First) started on `feat/milestone-v2.3`; PROJECT.md Current Milestone flipped to v2.3, STATE.md reset for new milestone, v2.4/v2.5 remain planned for after v2.3 ships. Planning artifacts only — no code changes.
+last_updated: "2026-10-10T00:00:00.000Z"
+last_activity: 2026-10-10
+last_activity_desc: Milestone v2.3 started
 state_head: 71bca5dd573226673e760c13fa8d7ffde13a8a3d
 progress:
   total_phases: 4
-  completed_phases: 1
-  total_plans: 15
-  completed_plans: 15
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 current_phase: 23
-current_phase_name: v2.4 milestone entry (Phase 23+ planned per
+current_phase_name: v2.3 milestone entry (Phase 23+ planned per
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-23)
+See: .planning/PROJECT.md (updated 2026-10-10)
 
 **Core value:** Gatehouse staff can reliably register and control access through a fast, tenant-isolated web UI.
-**Current focus:** v2.4 Resident Self-Service & Visitor Experience — roadmap created (Phases 27–30); ready for `/gsd-plan-phase 27`. Next milestone v2.5 (Real Vendor Hardware Integration — Control iD, Intelbras, Hikvision; Phases 31–34) defined 2026-09-23, executes after v2.3 ships.
+**Current focus:** v2.3 Door Integration & Hardware Access (Simulator-First) — requirements + roadmap defined 2026-09-22 on `feat/planning-lineage-unification` (15 DOOR-* requirements, Phases 23–26 with success criteria in `.planning/ROADMAP.md`); ready for `/gsd-discuss-phase 23` or `/gsd-plan-phase 23`. Next milestones v2.4 (Phases 27–30) and v2.5 (Phases 31–34) remain planned.
 
 ## Current Position
 
-Phase: Milestone v2.2 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-09-26 — Milestone v2.2 completed and archived
+Status: Defining requirements
+Last activity: 2026-10-10 — Milestone v2.3 started
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed (cumulative): 32 (11 v1.0 + 1 v1.1 + 3 v2.0 + 9 v2.1 + 15 v2.2 Phases 19/20/21/22 — 19: 4 plans, 20: 4 plans, 21: 3 plans, 22: 4 plans)
+- Total plans completed (cumulative): 47 (11 v1.0 + 1 v1.1 + 3 v2.0 + 9 v2.1 + 15 v2.2 Phases 19/20/21/22 + 8 from v2.0 photo-capture/consent shipped via `.specs/photo-capture/` + `.specs/consent-gatehouse/`)
 - v2.1 milestone: 9 plans, 9 summaries, 3 verifications, full local CI verification passing
 - v2.2 milestone: 15 plans across Phases 19/20/21/22 (4 + 4 + 3 + 4); all four phases have `*-VALIDATION.md` + `*-VERIFICATION.md`; full local CI verification passing on the final state
 - Average duration per plan: ~5-15 min (autonomous execution)
+- v2.3 milestone: 0 plans, 0 summaries, 0 verifications — planning artifacts only (started 2026-10-10, requirements + roadmap defined 2026-09-22 on `feat/planning-lineage-unification`)
 
 **Per-Plan Metrics:**
 
@@ -112,8 +113,8 @@ Last activity: 2026-09-26 — Milestone v2.2 completed and archived
 
 ## Session Continuity
 
-Last session: 2026-09-23
-Stopped at: Milestone v2.5 (Real Vendor Hardware Integration — Control iD, Intelbras, Hikvision) requirements + roadmap created on `feat/planning-lineage-unification`; MILESTONES.md, REQUIREMENTS.md (v2.4 file frontmatter), v2.3-REQUIREMENTS.md DOOR-R1..R3 pointers, ROADMAP.md, PROJECT.md, STATE.md updated. Planning artifacts only — no code changes.
+Last session: 2026-10-10
+Stopped at: Milestone v2.3 (Door Integration & Hardware Access — Simulator-First) started on `feat/milestone-v2.3`; PROJECT.md Current Milestone flipped to v2.3, STATE.md reset for new milestone, v2.4/v2.5 remain planned for after v2.3 ships. Planning artifacts only — no code changes.
 Resume file: None
 
 ## Operator Next Steps

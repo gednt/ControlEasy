@@ -28,22 +28,19 @@ Gatehouse staff can reliably register and control access for residents, visitors
 
 ## Current Milestone
 
-**v2.4 — Resident Self-Service & Visitor Experience** (planning started 2026-09-23)
+**v2.3 — Door Integration & Hardware Access (Simulator-First)** (started 2026-10-10)
 
-**Next milestone:** **v2.5 — Real Vendor Hardware Integration (Control iD, Intelbras, Hikvision)** (defined 2026-09-23; Phases 31–34; executes after v2.3's simulator foundation ships) — three first-party vendor drivers implementing the v2.3 `IDoorController`/`IDeviceHandler` abstractions, the edge agent (outbound-only WSS on-site runtime, forced into scope by the two we-dial-them vendors), vendor contract-test simulators with zero physical hardware in CI, security-bar parity, and the on-site pilot (DOOR-R3). See `.planning/milestones/v2.5-REQUIREMENTS.md`.
+**Next milestones:** **v2.4 — Resident Self-Service & Visitor Experience** (planned 2026-09-23; Phases 27–30; executes after v2.3 ships) — turn the resident from a row in someone else's table into a first-class portal user with apartment-scoped pre-registrations, visitor self check-in through the unified `VisitorArrivalHandler` write path, and arrival notifications. **v2.5 — Real Vendor Hardware Integration (Control iD, Intelbras, Hikvision)** (defined 2026-09-23; Phases 31–34; executes after v2.3's simulator foundation ships) — three first-party vendor drivers implementing the v2.3 `IDoorController`/`IDeviceHandler` abstractions, the edge agent (outbound-only WSS on-site runtime, forced into scope by the two we-dial-them vendors), vendor contract-test simulators with zero physical hardware in CI, security-bar parity, and the on-site pilot (DOOR-R3). See `.planning/milestones/v2.5-REQUIREMENTS.md`.
 
-**Goal:** Turn the resident from a row in someone else's table into a first-class platform user — pre-registering expected visitors, viewing their apartment's visit history, receiving arrival notifications — while visitors self check-in through the same unified write path and the gatehouse prints badges for pre-authorized arrivals.
+**Goal:** Deliver the complete hardware-independent portion of door integration — `IDoorController`/`IDeviceHandler` abstractions, full security machinery (HMAC-SHA256 unlock, nonce+timestamp replay window, rate limiting, append-only tamper-evident audit, AES-256-GCM connection params), device-event normalization feeding the ledger, device health monitoring, and admin/porteiro UI — all integration-tested against a simulated/loopback device adapter. Real vendor drivers stay out until hardware exists (DOOR-R1..R3 concretized as v2.5).
 
 **Target features:**
-- Resident portal access: new resident credential class, apartment-scoped authorization and data isolation
-- Visitor pre-registration: resident creates visitor authorizations (identity, purpose, validity window) and can cancel/revoke them before use
-- Document (CPF) matching: arriving visitors match pending pre-registrations by document number
-- Visitor self check-in via pre-authorization code, riding the unified `VisitorArrivalHandler` write path
-- Resident visit history view (read-only, honest — same data the porteiro sees)
-- In-app arrival notifications to the resident's portal
-- Badge printing for pre-authorized visitors at check-in (browser print, no printer hardware)
+- Device abstractions & secure unlock: `IDoorController`/`IDeviceHandler`, simulated device adapter, `devices` table with AES-256-GCM-encrypted connection params, HMAC-SHA256 unlock endpoint with replay window + rate limiting, tamper-evident audit log (DOOR-01..04, DOOR-07, DOOR-15)
+- Device administration: per-tenant `door_integration_enabled` opt-in flag, device register/edit/activate/remove UI, plaintext-never-displayed connection params (DOOR-05, DOOR-06)
+- Reader events & ledger integration: `device_events` table, normalized `DeviceEvent` model, card-match → ledger (post-cleanup entry-log contract), idempotent event replay on reconnect (DOOR-08..11)
+- Device health monitoring: `device_heartbeats` with per-device thresholds, health dashboard UI, offline alert toast in porteiro UI (DOOR-12..14)
 
-**Key context:** Planned autonomously in BMAD party-mode session 6 (2026-09-23); scope sourced from the v2.1 deferred requirements pool (CPF pre-reg matching, purpose codes, resident visit history, visitor self check-in, badge printing). Continues the parallel-milestone pattern: v2.2 (Phases 19–22) and v2.3 (Phases 23–26) are planned but not yet executed; v2.4 phases continue from 27. Planning lineage for v2.2/v2.3/v2.4 unified 2026-09-23 on `feat/planning-lineage-unification`. Security bar carried into requirements: resident auth is the second-biggest credential-surface addition (after door unlock) — BCrypt ≥ 11, enumeration-safe flows, apartment-scoped isolation integration tests mandatory, and self check-in MUST reuse `VisitorArrivalHandler` (no second write path into the Visits data model).
+**Key context:** Requirements + roadmap fully defined 2026-09-22 on `feat/planning-lineage-unification` (`.planning/milestones/v2.3-REQUIREMENTS.md` — 15 DOOR-* requirements, 15/15 mapped to Phases 23–26). The original 2026-08-23 door-integration spec (`.specs/door-integration/`) assumed real condominium hardware that does not exist; v2.3 simulator-first re-scope keeps the entire hardware-independent surface (abstractions, security, event/ledger integration, health, UI) and proves the security bar without a vendor driver. Real vendor driver work (DOOR-R1..R3) concretized as v2.5 — Control iD first (DOOR-R1, Phase 32), Intelbras second to prove the abstraction (DOOR-R2, Phase 33), Hikvision behind VLAN isolation (DOOR-R3, Phase 34) + on-site pilot. Builds on the post-cleanup entry-log contract (PR #11 `7a5eb35` + PR #10 `0d8f96a` landed on `main` 2026-09-26). Full constitutional security bar applies throughout — HMAC-SHA256 per-tenant keys, AES-256-GCM-encrypted connection params, append-only tamper-evident audit, ProblemDetails RFC 7807, `ITenantAwareLinqFactory` everywhere, no EF Core, no MediatR, minimal API endpoints only, Serilog structured logging.
 
 Fast-cycle (no milestone): multi-arch Docker/CI (`ARCH-01`, `ARCH-02`).
 
@@ -90,7 +87,7 @@ Fast-cycle (no milestone): multi-arch Docker/CI (`ARCH-01`, `ARCH-02`).
 - [~] Consent gatehouse workflow UI (v2.0, Phase 13) — `CONSENT-03` — backend done; audit review UI pending — `.specs/consent-gatehouse/` — v2.2 target
 - [~] TenantAdmin password reset UI (v2.1 PASS-03 partial) — backend done; UI surface pending — v2.2 target
 - [ ] Ledger polish (v2.1 carryover) — day-bucketing INFRA-02, inert status filter options, search scope, condominium-level package-drop trigger, X-Total-Count exposure — v2.2 target
-- [~] Door integration (v2.3, simulator-first; renumbered from v2.2 on 2026-09-22) — `.specs/door-integration/` — requirements re-scoped for v2.3; phases 23+
+- [~] Door integration (v2.3, simulator-first; renumbered from v2.2 on 2026-09-22) — `.specs/door-integration/` — `DOOR-01..15` — started 2026-10-10; phases 23–26
 - [ ] Resident self-service & visitor experience (v2.4) — CPF pre-registration matching, purpose codes, resident visit history, visitor self check-in, badge printing, arrival notifications (deferred pool from v2.1 REQUIREMENTS.md) — planning started 2026-09-23
 - [ ] Real vendor hardware integration (v2.5) — Control iD, Intelbras, Hikvision drivers + edge agent + vendor simulators + on-site pilot (DOOR-R1..R3 concretized) — defined 2026-09-23, `.planning/milestones/v2.5-REQUIREMENTS.md`
 - [ ] Multi-arch Docker/CI (fast-cycle) — `.specs/1 - modernization-roadmap-arm64/`
@@ -181,4 +178,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-09-23 — planning lineage for v2.2/v2.3/v2.4 unified on `feat/planning-lineage-unification`; all three milestones planned, unexecuted*
+*Last updated: 2026-10-10 — milestone v2.3 (Door Integration simulator-first) started on `feat/milestone-v2.3`; v2.4 and v2.5 remain planned for after v2.3 ships*
