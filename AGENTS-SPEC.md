@@ -1,6 +1,6 @@
-<!-- agents-spec-schema 1.2 -->
+<!-- agents-spec-schema 1.3 -->
 
-# AGENTS-SPEC.md — Reader Contract for `AGENTS.md` (v1.2)
+# AGENTS-SPEC.md — Reader Contract for `AGENTS.md` (v1.3)
 
 > The authoritative specification for how agents read and obey `AGENTS.md` files written against the `agents-template-schema` family. The template (`AGENTS-TEMPLATE.md`) and any `AGENTS.md` written from it MUST conform to this spec. When the two conflict, this spec wins.
 
@@ -121,6 +121,7 @@ Rules:
 | ---------- | --------- | --------------------------------- | -------------------- |
 | `bmad`     | BMAD      | Architecture, planning artifacts  | `verified <sha>`     |
 | `gsd`      | GSD-core  | Phase state, atomic-commit ceremony | `verified <sha>`   |
+| `spec-kit` | spec-kit  | Per-feature specs, constitutional memory | `verified <sha>` |
 
 ---
 
@@ -283,5 +284,6 @@ An agent MUST treat a non-conformant file as a best-effort input: it parses what
 - **v1** (initial) — five-section schema, workflow blocks, skill overlays, freshness stamps, extension protocol.
 - **v1.1** — added Onboarding section. Overlays may now ship skills (not just point at sibling files); the agents-template overlay is registered with three pointers (template, spec, `agents-init` skill); conformance rule 5 generalized from "files" to "files or directories."
 - **v1.2** — added Distribution section. Documented the vendor-wrapper convention, the full vendor matrix, and the installer scripts. Added Antigravity to the priority vendor list.
+- **v1.3** — registered `spec-kit` as a supported workflow (third entry in the Supported workflows table). Empty `<!-- owner:spec-kit -->` blocks are now conformant per rule 4.
 
-<!-- agents-spec-schema 1.2 -->
+<!-- agents-spec-schema 1.3 -->
