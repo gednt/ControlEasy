@@ -270,7 +270,7 @@ describe('AdministrationPage', () => {
     expect(rendered).not.toContain('TempPassword');
   });
 
-  it('should disable the row button while resetting and re-enable after completion', () => {
+  it('should disable the row button while resetting and re-enable after completion', async () => {
     const inFlight = new Subject<{ userId: string; mustChangePassword: boolean; deliveryState: string }>();
     authMock.resetUserPassword.and.returnValue(inFlight);
     authMock.listStaff.and.returnValue(
@@ -286,7 +286,6 @@ describe('AdministrationPage', () => {
       ] as StaffMemberResponse[]),
     );
 
-    component.setTab('staff');
     component.staff.set([
       {
         userId: 'u-2',
@@ -297,6 +296,8 @@ describe('AdministrationPage', () => {
         active: true,
       },
     ]);
+    component.setTab('staff');
+    await fixture.whenStable();
     fixture.detectChanges();
     spyOn(window, 'confirm').and.returnValue(true);
 
@@ -304,7 +305,9 @@ describe('AdministrationPage', () => {
     fixture.detectChanges();
 
     expect(component.resettingUserId()).toBe('u-2');
-    let button = fixture.nativeElement.querySelector('button.ce-button.variant-secondary') as HTMLButtonElement | null;
+    const staffRow = fixture.nativeElement.querySelector('table tbody tr') as HTMLElement | null;
+    expect(staffRow).not.toBeNull();
+    let button = staffRow!.querySelector('button.ce-button.variant-secondary') as HTMLButtonElement | null;
     expect(button?.disabled).toBe(true);
 
     inFlight.next({ userId: 'u-2', mustChangePassword: true, deliveryState: 'Sent' });
@@ -312,7 +315,7 @@ describe('AdministrationPage', () => {
     fixture.detectChanges();
 
     expect(component.resettingUserId()).toBeNull();
-    button = fixture.nativeElement.querySelector('button.ce-button.variant-secondary') as HTMLButtonElement | null;
+    button = staffRow!.querySelector('button.ce-button.variant-secondary') as HTMLButtonElement | null;
     expect(button?.disabled).toBe(false);
   });
 

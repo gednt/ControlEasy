@@ -46,29 +46,37 @@ describe('VisitsPage', () => {
     }
   }
 
+  function flushPhotoRequest(visitorId: string): void {
+    const expected = `/api/v1/photos?skip=0&take=1&entityType=visitor&entityId=${visitorId}`;
+    const photoReqs = httpMock.match(expected);
+    for (const req of photoReqs) {
+      req.flush([]);
+    }
+  }
+
   it('renders visits and shows QR pass button for pending visits', () => {
     fixture.detectChanges();
 
     flushApartmentRequests();
 
     const visitsReq = httpMock.expectOne('/api/v1/visits?skip=0&take=50');
-    visitsReq.flush([
-      {
-        id: '00000000-0000-0000-0000-000000000010',
-        tenantId: '00000000-0000-0000-0000-000000000001',
-        visitorName: 'Maria Santos',
-        visitorDocument: '12345678900',
-        visitorPhone: '1199999999',
-        apartmentId: null,
-        purpose: 'Delivery',
-        status: 'Pending',
-        checkedInAtUtc: null,
-        checkedOutAtUtc: null,
-        createdAtUtc: '2026-09-18T10:00:00Z',
-      },
-    ]);
-
+    const mockVisit = {
+      id: '00000000-0000-0000-0000-000000000010',
+      tenantId: '00000000-0000-0000-0000-000000000001',
+      visitorName: 'Maria Santos',
+      visitorDocument: '12345678900',
+      visitorPhone: '1199999999',
+      apartmentId: null,
+      purpose: 'Delivery',
+      status: 'Pending',
+      checkedInAtUtc: null,
+      checkedOutAtUtc: null,
+      createdAtUtc: '2026-09-18T10:00:00Z',
+    };
+    visitsReq.flush([mockVisit]);
     fixture.detectChanges();
+    flushPhotoRequest(mockVisit.id);
+
     const html = (fixture.nativeElement as HTMLElement).innerHTML;
     expect(html).toContain('Maria Santos');
     expect(html).toContain('QR Pass');
@@ -95,6 +103,7 @@ describe('VisitsPage', () => {
     };
     visitsReq.flush([mockVisit]);
     fixture.detectChanges();
+    flushPhotoRequest(mockVisit.id);
 
     component.onGenerateQrPass(mockVisit);
 

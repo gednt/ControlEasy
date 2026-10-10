@@ -38,7 +38,28 @@ jobs:
           path: ${{ env.WEB_DIR }}/node_modules
           key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
       - run: dotnet restore src/ControlEasyReborn.sln
-      - run: dotnet format src/ControlEasyReborn.sln --verify-no-changes --no-restore
+      - name: Detect C# changes
+        id: cs
+        # Skip the (relatively expensive) `dotnet format` step when the
+        # PR touches only Web/.ts files. The format check is still
+        # enforced by `scripts/verify-ci-local.sh` (Stage 1) for local
+        # agents. C# formatting on push-to-main is also covered by
+        # developers running that script before pushing.
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.base_ref }}"
+            git fetch --depth=1 origin "$BASE" 2>/dev/null || git fetch --depth=1 origin "$BASE:$BASE" || true
+          else
+            BASE="HEAD~1"
+          fi
+          if git diff --name-only "$BASE"...HEAD 2>/dev/null | grep -qE '\.cs$'; then
+            echo "has_cs_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_cs_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Check C# format
+        if: steps.cs.outputs.has_cs_changes == 'true'
+        run: dotnet format src/ControlEasyReborn.sln --verify-no-changes --no-restore
       - run: npm ci --legacy-peer-deps
         working-directory: ${{ env.WEB_DIR }}
       - run: npm run lint

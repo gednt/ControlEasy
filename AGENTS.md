@@ -1,6 +1,6 @@
 ---
 description: "ControlEasy Reborn — condominium access-control platform. ASP.NET Core 8 + Angular 18 + MySQL 8 + Docker Compose. Load this file once per session; load AGENTS.POLICY.md, AGENTS.WORKTREES.md, AGENTS.STACK.md, or skill overlays only when the task touches the corresponding domain."
-allowed-tools: [Read, Grep, Glob, Bash(docker compose *), Bash(git status *), Bash(git log *), Bash(git diff *), Bash(git worktree list *), Bash(make *), Bash(scripts/verify-ci-local*)]
+allowed-tools: [Read, Grep, Glob, Bash(docker compose *), Bash(git status *), Bash(git log *), Bash(git diff *), Bash(git worktree list *), Bash(make *), Bash(scripts/verify-ci-local*), Bash(npm ci --legacy-peer-deps), Bash(npm run lint), Bash(npm test *), Bash(npx playwright install *), Bash(npx ng *)]
 mode: primary
 ---
 
@@ -144,7 +144,8 @@ their own onboarding/refresh skill.
 
 Read each pointer only when the task touches that overlay's domain.
 
-- **AGENTS.POLICY.md** — Hard policy (CI gate, platform-aware exec,
+- **AGENTS.POLICY.md** — Hard policy (CI gate, **Web SPA gate** for any
+  change under `src/Web/ControlEasyReborn.Web/**`, platform-aware exec,
   prohibitions, workflow ownership). Load before any non-trivial change.
 - **AGENTS.WORKTREES.md** — Mandatory Git worktree rule + naming
   convention. Load before any commit, branch, or merge.
