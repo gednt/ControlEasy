@@ -286,7 +286,6 @@ describe('AdministrationPage', () => {
       ] as StaffMemberResponse[]),
     );
 
-    component.setTab('staff');
     component.staff.set([
       {
         userId: 'u-2',
@@ -297,6 +296,8 @@ describe('AdministrationPage', () => {
         active: true,
       },
     ]);
+    component.setTab('staff');
+    await fixture.whenStable();
     fixture.detectChanges();
     spyOn(window, 'confirm').and.returnValue(true);
 
