@@ -110,3 +110,61 @@ export interface TenantDoorIntegrationDto {
   doorIntegrationChangedAtUtc: string | null;
   doorIntegrationChangedByProfileId: string | null;
 }
+
+// Phase 25 — reader-event ingestion (DOOR-08..11).
+// Mirrors the C# DTOs in
+// src/Modules/Devices/ControlEasyReborn.Modules.Devices.Application/Contracts/
+// and the DeviceEventResultCode enum in
+// src/Modules/Devices/ControlEasyReborn.Modules.Devices.Domain/Enums/.
+
+export type DeviceEventType =
+  | 'card_read'
+  | 'card_denied'
+  | 'tamper'
+  | 'door_forced'
+  | 'reader_reconnected'
+  | 'heartbeat';
+
+export type DeviceEventOutcome =
+  | 'created_visit'
+  | 'advanced_visit'
+  | 'matched_dweller'
+  | 'denied_attempt'
+  | 'replay_duplicate'
+  | 'device_inactive'
+  | 'tenant_flag_off'
+  | 'sequence_conflict'
+  | 'reader_reconnected';
+
+export interface DeviceEventPayload {
+  eventType: DeviceEventType;
+  occurredAtUtc: string;
+  sequenceNumber: number;
+  externalEventId: string | null;
+  opaqueToken?: string | null;
+  payloadJson?: string | null;
+}
+
+export interface DeviceEventIngestionDto {
+  outcome: DeviceEventOutcome;
+  existingEventId: string | null;
+  visitId: string | null;
+  accessEventId: string | null;
+  refusedScanAttemptId: string | null;
+  occurredAtUtc: string;
+  processedAtUtc: string;
+}
+
+export interface DeviceEventListItem {
+  id: string;
+  deviceId: string;
+  eventType: DeviceEventType;
+  occurredAtUtc: string;
+  processedAtUtc: string;
+  sequenceNumber: number;
+  resultCode: DeviceEventOutcome;
+  failureCode: string | null;
+  visitId: string | null;
+  accessEventId: string | null;
+  refusedScanAttemptId: string | null;
+}

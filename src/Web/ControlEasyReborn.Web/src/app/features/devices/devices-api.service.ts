@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   DoorUnlockRequest,
@@ -11,12 +11,17 @@ import {
   SetDeviceActivationRequest,
   ToggleDoorIntegrationRequest,
   TenantDoorIntegrationDto,
+  DeviceEventPayload,
+  DeviceEventIngestionDto,
+  DeviceEventListItem,
 } from './door-unlock.types';
 
 // Thin Angular wrapper around the Devices API. Phase 23 ships the service
 // shell with unlock/list/get; Phase 24 adds the admin endpoints
 // (toggleDoorIntegration, register, update, setActivation, remove) so the
-// /administration page can manage devices.
+// /administration page can manage devices; Phase 25 adds the reader-event
+// ingestion surface (ingestEvent, listEvents, getEvent) used by the
+// integration tests and by future admin pages.
 //
 // The canonical signature scheme is documented in
 // .planning/phases/23-device-foundation-simulator-harness/23-CONTEXT.md
@@ -64,5 +69,28 @@ export class DevicesApiService {
       '/api/v1/tenants/current/door-integration',
       body
     );
+  }
+
+  // Phase 25: reader-event ingestion (DOOR-08..11). The future admin
+  // "device events log" page (deferred out of v2.3) will consume these.
+  ingestEvent(deviceId: string, payload: DeviceEventPayload): Observable<DeviceEventIngestionDto> {
+    return this.http.post<DeviceEventIngestionDto>(
+      `/api/v1/devices/${deviceId}/events`,
+      payload
+    );
+  }
+
+  listEvents(deviceId: string, since: string | null, limit: number | null): Observable<DeviceEventListItem[]> {
+    let params = new HttpParams();
+    if (since) params = params.set('since', since);
+    if (limit != null) params = params.set('limit', String(limit));
+    return this.http.get<DeviceEventListItem[]>(
+      `/api/v1/devices/${deviceId}/events`,
+      { params }
+    );
+  }
+
+  getEvent(deviceId: string, eventId: string): Observable<DeviceEventListItem> {
+    return this.http.get<DeviceEventListItem>(`/api/v1/devices/${deviceId}/events/${eventId}`);
   }
 }
