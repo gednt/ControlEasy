@@ -5,6 +5,10 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\ControlEasyReborn.Modules.Devices.Domain\ControlEasyReborn.Modules.Devices.Domain.csproj" />
+    <!-- Phase 25 reader-event ingestion: single-write-path through the canonical
+         AccessControl scan/refusal handlers and the Visits arrival handler. -->
+    <ProjectReference Include="..\..\AccessControl\ControlEasyReborn.Modules.AccessControl.Application\ControlEasyReborn.Modules.AccessControl.Application.csproj" />
+    <ProjectReference Include="..\..\Visits\ControlEasyReborn.Modules.Visits.Application\ControlEasyReborn.Modules.Visits.Application.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FluentValidation" />

@@ -278,6 +278,7 @@ try
     app.MapDevicesEndpoints();
     app.MapTenantDoorIntegrationEndpoints();
     app.MapSimulatorInspectorEndpoints();
+    app.MapDeviceEventEndpoints();
 
     app.Run();
 }

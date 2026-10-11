@@ -19,3 +19,11 @@ public sealed class ConflictException : Exception
 {
     public ConflictException(string message) : base(message) { }
 }
+
+// Phase 25 - raised by DeviceEventRepository.InsertAsync when the MySQL
+// UNIQUE constraint uq_device_events_idempotent fires (errno 1062).
+// The IngestDeviceEventHandler catches this as the idempotency-race signal.
+public sealed class DuplicateIdempotencyKeyException : Exception
+{
+    public DuplicateIdempotencyKeyException(string message) : base(message) { }
+}
