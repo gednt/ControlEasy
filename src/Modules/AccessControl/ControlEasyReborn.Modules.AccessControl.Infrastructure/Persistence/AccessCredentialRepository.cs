@@ -52,6 +52,19 @@ public sealed class AccessCredentialRepository : IAccessCredentialRepository
         return MapFirstOrDefault(rows);
     }
 
+    public async Task<AccessCredential?> FindByHashAsync(Guid tenantId, byte[] sha256Hash, CancellationToken ct)
+    {
+        if (sha256Hash is null || sha256Hash.Length == 0) return null;
+        var db = _factory.Create(_ctx);
+        var rows = await db.SelectAsync(
+            fields: Fields,
+            table: TableName,
+            whereClause: "SecretVerifier = @param0 AND tenant_id = @param1 AND Status = @param2",
+            parameters: new object[] { sha256Hash, tenantId, (int)CredentialStatus.Active },
+            ct: ct);
+        return MapFirstOrDefault(rows);
+    }
+
     public async Task<IReadOnlyList<AccessCredential>> ListAllAsync(Guid tenantId, CancellationToken ct)
     {
         var db = _factory.Create(_ctx);

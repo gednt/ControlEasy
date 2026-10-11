@@ -136,6 +136,12 @@ public static class RefusalCodes
     public const string SearchTooBroad = "search_too_broad";
     public const string ManualEventOrphanLookupId = "manual_event_orphan_lookup_id";
 
+    // Phase 25 — Devices module reader-event ingestion (DOOR-10).
+    public const string UnknownCard = "unknown_card";
+    public const string CredentialExpired = "credential_expired";
+    public const string TamperDetected = "tamper_detected";
+    public const string CredentialMissingDestination = "credential_missing_destination";
+
     public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.Ordinal)
     {
         InvalidCredential,
@@ -148,6 +154,10 @@ public static class RefusalCodes
         DuplicateConfirmationRequired,
         VehicleInactive,
         SearchTooBroad,
-        ManualEventOrphanLookupId
+        ManualEventOrphanLookupId,
+        UnknownCard,
+        CredentialExpired,
+        TamperDetected,
+        CredentialMissingDestination
     };
 }
