@@ -38,33 +38,118 @@ public static class DeviceEndpoints
         })
         .RequireAuthorization("Permission_devices.unlock");
 
-        // GET /api/v1/devices/{deviceId} — list with redacted connection params.
-        group.MapGet("/{deviceId:guid}", () =>
+        // GET /api/v1/devices — list (returns admin-managed devices).
+        group.MapGet("/", async (
+            ITenantContext tenantContext,
+            IDeviceRepository devices,
+            CancellationToken ct) =>
         {
-            return Results.NotFound();
+            var tenantId = tenantContext.TenantId
+                ?? throw new InvalidOperationException("Tenant context is not resolved.");
+            var rows = await devices.ListAsync(tenantId, ct);
+            var items = rows.Select(d => new DeviceListItemDto(
+                d.Id,
+                d.DeviceType,
+                d.Vendor,
+                d.GatehouseId,
+                d.IsActive,
+                d.CreatedAtUtc,
+                d.UpdatedAtUtc)).ToArray();
+            return Results.Ok(items);
         })
         .RequireAuthorization("Permission_devices.read");
 
-        // GET /api/v1/devices — list (returns empty in Phase 23; Phase 24 adds admin).
-        group.MapGet("/", () =>
+        // GET /api/v1/devices/{deviceId} — full detail (connection params always redacted).
+        group.MapGet("/{deviceId:guid}", async (
+            Guid deviceId,
+            ITenantContext tenantContext,
+            IDeviceRepository devices,
+            CancellationToken ct) =>
         {
-            return Results.Ok(Array.Empty<object>());
+            var tenantId = tenantContext.TenantId
+                ?? throw new InvalidOperationException("Tenant context is not resolved.");
+            var device = await devices.GetByIdAsync(tenantId, deviceId, ct);
+            if (device is null || device.IsRemoved)
+            {
+                return ProblemResults.NotFound(
+                    title: DeviceErrorTitles.DeviceNotFound,
+                    detail: $"Device {deviceId} not found.",
+                    type: DeviceErrorTypes.DeviceNotFound,
+                    failureCode: DeviceErrorCodes.DeviceNotFound);
+            }
+            return Results.Ok(RegisterDeviceHandler.ToDetail(device));
         })
         .RequireAuthorization("Permission_devices.read");
 
-        // POST /api/v1/devices — reserved for Phase 24 device registration. Returns
-        // 501 today; the route exists so OpenAPI generates a stable contract.
-        group.MapPost("/", () =>
+        // POST /api/v1/devices — register a new device (DOOR-06).
+        group.MapPost("/", async (
+            [FromBody] RegisterDeviceRequest request,
+            ITenantContext tenantContext,
+            RegisterDeviceHandler handler,
+            CancellationToken ct) =>
         {
-            return Results.Json(
-                new
-                {
-                    error = "not_implemented",
-                    message = "Device registration is delivered in Phase 24 (Device Administration)."
-                },
-                statusCode: StatusCodes.Status501NotImplemented);
+            var tenantId = tenantContext.TenantId
+                ?? throw new InvalidOperationException("Tenant context is not resolved.");
+            var profileId = tenantContext.ProfileId
+                ?? throw new InvalidOperationException("Actor profile is not resolved.");
+
+            var detail = await handler.HandleAsync(tenantId, request, profileId, ct);
+            return Results.Created($"/api/v1/devices/{detail.Id}", detail);
         })
-        .RequireAuthorization("Permission_devices.read");
+        .RequireAuthorization("Permission_devices.write");
+
+        // PATCH /api/v1/devices/{deviceId} — partial update (DOOR-06).
+        group.MapPatch("/{deviceId:guid}", async (
+            Guid deviceId,
+            [FromBody] EditDeviceRequest request,
+            ITenantContext tenantContext,
+            EditDeviceHandler handler,
+            CancellationToken ct) =>
+        {
+            var tenantId = tenantContext.TenantId
+                ?? throw new InvalidOperationException("Tenant context is not resolved.");
+            var profileId = tenantContext.ProfileId
+                ?? throw new InvalidOperationException("Actor profile is not resolved.");
+
+            var detail = await handler.HandleAsync(tenantId, deviceId, request, profileId, ct);
+            return Results.Ok(detail);
+        })
+        .RequireAuthorization("Permission_devices.write");
+
+        // PUT /api/v1/devices/{deviceId}/activation — toggle IsActive (DOOR-06).
+        group.MapPut("/{deviceId:guid}/activation", async (
+            Guid deviceId,
+            [FromBody] SetDeviceActivationRequest request,
+            ITenantContext tenantContext,
+            ActivateDeactivateDeviceHandler handler,
+            CancellationToken ct) =>
+        {
+            var tenantId = tenantContext.TenantId
+                ?? throw new InvalidOperationException("Tenant context is not resolved.");
+            var profileId = tenantContext.ProfileId
+                ?? throw new InvalidOperationException("Actor profile is not resolved.");
+
+            var detail = await handler.HandleAsync(tenantId, deviceId, request.IsActive, profileId, ct);
+            return Results.Ok(detail);
+        })
+        .RequireAuthorization("Permission_devices.write");
+
+        // DELETE /api/v1/devices/{deviceId} — soft-delete (DOOR-06).
+        group.MapDelete("/{deviceId:guid}", async (
+            Guid deviceId,
+            ITenantContext tenantContext,
+            RemoveDeviceHandler handler,
+            CancellationToken ct) =>
+        {
+            var tenantId = tenantContext.TenantId
+                ?? throw new InvalidOperationException("Tenant context is not resolved.");
+            var profileId = tenantContext.ProfileId
+                ?? throw new InvalidOperationException("Actor profile is not resolved.");
+
+            await handler.HandleAsync(tenantId, deviceId, profileId, ct);
+            return Results.NoContent();
+        })
+        .RequireAuthorization("Permission_devices.write");
 
         return app;
     }
@@ -93,22 +178,22 @@ public static class DeviceEndpoints
                 correlationId: result.CorrelationId),
 
             DoorUnlockResultKind.UnknownDevice => ProblemResults.NotFound(
-                title: "device-not-found",
+                title: DeviceErrorTitles.DeviceNotFound,
                 detail: result.FailureDetail ?? "Device not found.",
-                type: "https://errors.controleasy.app/devices/device-not-found",
-                failureCode: result.FailureCode ?? "device_not_found"),
+                type: DeviceErrorTypes.DeviceNotFound,
+                failureCode: result.FailureCode ?? DeviceErrorCodes.DeviceNotFound),
 
             DoorUnlockResultKind.DeviceInactive => ProblemResults.NotFound(
-                title: "device-inactive",
+                title: DeviceErrorTitles.DeviceInactive,
                 detail: result.FailureDetail ?? "Device is inactive.",
-                type: "https://errors.controleasy.app/devices/device-inactive",
-                failureCode: result.FailureCode ?? "device_inactive"),
+                type: DeviceErrorTypes.DeviceInactive,
+                failureCode: result.FailureCode ?? DeviceErrorCodes.DeviceInactive),
 
             DoorUnlockResultKind.UnknownTenantFlag => ProblemResults.NotFound(
-                title: "tenant-door-integration-disabled",
+                title: DeviceErrorTitles.TenantDoorIntegrationDisabled,
                 detail: result.FailureDetail ?? "Door integration is not enabled for this tenant.",
-                type: "https://errors.controleasy.app/devices/tenant-door-integration-disabled",
-                failureCode: result.FailureCode ?? "tenant_door_integration_disabled"),
+                type: DeviceErrorTypes.TenantDoorIntegrationDisabled,
+                failureCode: result.FailureCode ?? DeviceErrorCodes.TenantDoorIntegrationDisabled),
 
             DoorUnlockResultKind.DeviceOffline => ProblemResults.ServiceUnavailable(
                 title: "device-offline",
@@ -120,6 +205,33 @@ public static class DeviceEndpoints
             _ => ProblemResults.InternalError("Unexpected unlock outcome.")
         };
     }
+}
+
+internal static class DeviceErrorTitles
+{
+    public const string DeviceNotFound = "device-not-found";
+    public const string DeviceInactive = "device-inactive";
+    public const string TenantDoorIntegrationDisabled = "tenant-door-integration-disabled";
+    public const string GatehouseNotFound = "device-gatehouse-not-found";
+    public const string RemoveBlockedByRecentActivity = "device-remove-recent-activity";
+}
+
+internal static class DeviceErrorTypes
+{
+    public const string DeviceNotFound = "https://errors.controleasy.app/devices/device-not-found";
+    public const string DeviceInactive = "https://errors.controleasy.app/devices/device-inactive";
+    public const string TenantDoorIntegrationDisabled = "https://errors.controleasy.app/devices/tenant-door-integration-disabled";
+    public const string GatehouseNotFound = "https://errors.controleasy.app/devices/device-gatehouse-not-found";
+    public const string RemoveBlockedByRecentActivity = "https://errors.controleasy.app/devices/device-remove-recent-activity";
+}
+
+internal static class DeviceErrorCodes
+{
+    public const string DeviceNotFound = "device_not_found";
+    public const string DeviceInactive = "device_inactive";
+    public const string TenantDoorIntegrationDisabled = "tenant_door_integration_disabled";
+    public const string GatehouseNotFound = "gatehouse_not_found";
+    public const string RemoveBlockedByRecentActivity = "device_remove_recent_activity";
 }
 
 internal static class ProblemResults

@@ -143,6 +143,14 @@ public sealed class DevicesTestFixture : IAsyncLifetime
 
     public DoorUnlockRequest BuildSignedRequest(string? nonceBase64Url = null, DateTime? timestamp = null)
     {
+        return BuildSignedRequestForDevice(DeviceId, nonceBase64Url, timestamp);
+    }
+
+    public DoorUnlockRequest BuildSignedRequestForDevice(
+        Guid targetDeviceId,
+        string? nonceBase64Url = null,
+        DateTime? timestamp = null)
+    {
         var nonceBytes = RandomNumberGenerator.GetBytes(16);
         var nonce = nonceBase64Url ?? ToBase64Url(nonceBytes);
 
@@ -151,7 +159,7 @@ public sealed class DevicesTestFixture : IAsyncLifetime
 
         var bodyHash = new string('0', 64);
 
-        var canonical = $"POST\n{DeviceId:D}\n{timestampIso}\n{nonce}\n{bodyHash}";
+        var canonical = $"POST\n{targetDeviceId:D}\n{timestampIso}\n{nonce}\n{bodyHash}";
         var key = GetTenantHmacKey();
         using var hmac = new HMACSHA256(key);
         var sig = hmac.ComputeHash(Encoding.UTF8.GetBytes(canonical));

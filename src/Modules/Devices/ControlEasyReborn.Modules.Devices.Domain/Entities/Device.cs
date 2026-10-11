@@ -11,6 +11,7 @@ public sealed class Device
     public bool IsActive { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime? UpdatedAtUtc { get; private set; }
+    public DateTime? RemovedAtUtc { get; private set; }
     public Guid CreatedByProfileId { get; private set; }
 
     private Device() { }
@@ -25,7 +26,8 @@ public sealed class Device
         bool isActive,
         Guid createdByProfileId,
         DateTime createdAtUtc,
-        DateTime? updatedAtUtc = null)
+        DateTime? updatedAtUtc = null,
+        DateTime? removedAtUtc = null)
     {
         if (id == Guid.Empty) throw new InvalidOperationException("Device id is required.");
         if (tenantId == Guid.Empty) throw new InvalidOperationException("Tenant id is required.");
@@ -47,6 +49,7 @@ public sealed class Device
         CreatedByProfileId = createdByProfileId;
         CreatedAtUtc = createdAtUtc;
         UpdatedAtUtc = updatedAtUtc;
+        RemovedAtUtc = removedAtUtc;
     }
 
     public void Activate()
@@ -56,11 +59,23 @@ public sealed class Device
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
+    // Deactivate IS soft-delete. Sets IsActive=false AND RemovedAtUtc=now.
+    // Restoring requires a re-register (no undelete endpoint — see Phase 24
+    // CONTEXT.md "Soft-delete semantics").
     public void Deactivate()
     {
-        if (!IsActive) return;
+        if (!IsActive && RemovedAtUtc.HasValue) return;
         IsActive = false;
-        UpdatedAtUtc = DateTime.UtcNow;
+        var now = DateTime.UtcNow;
+        UpdatedAtUtc = now;
+        RemovedAtUtc = now;
+    }
+
+    public void Remove(DateTime nowUtc)
+    {
+        IsActive = false;
+        UpdatedAtUtc = nowUtc;
+        RemovedAtUtc = nowUtc;
     }
 
     public void RotateConnectionParams(byte[] newCiphertext)
@@ -71,5 +86,18 @@ public sealed class Device
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
+    public void UpdateMetadata(string? vendor, Guid? gatehouseId)
+    {
+        if (vendor is not null)
+        {
+            if (string.IsNullOrWhiteSpace(vendor)) throw new InvalidOperationException("Vendor cannot be empty.");
+            Vendor = vendor;
+        }
+        if (gatehouseId.HasValue) GatehouseId = gatehouseId;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
     public bool IsAccessibleTo(Guid tenantId) => TenantId == tenantId;
+
+    public bool IsRemoved => RemovedAtUtc.HasValue;
 }

@@ -11,7 +11,7 @@ public sealed class DeviceRepository : IDeviceRepository
 {
     private const string TableName = "Devices";
     private const string Fields =
-        "Id, TenantId, DeviceType, Vendor, ConnectionParams, GatehouseId, IsActive, CreatedAtUtc, UpdatedAtUtc, CreatedByProfileId";
+        "Id, TenantId, DeviceType, Vendor, ConnectionParams, GatehouseId, IsActive, CreatedAtUtc, UpdatedAtUtc, CreatedByProfileId, RemovedAtUtc";
 
     private readonly ITenantContext _ctx;
     private readonly ITenantAwareLinqFactory _factory;
@@ -34,25 +34,40 @@ public sealed class DeviceRepository : IDeviceRepository
         return MapFirstOrDefault(rows);
     }
 
-    public async Task<IReadOnlyList<Device>> ListAsync(Guid tenantId, bool? isActive, CancellationToken ct)
+    public async Task<IReadOnlyList<Device>> ListAsync(Guid tenantId, CancellationToken ct)
     {
         var db = _factory.Create(_ctx);
-        var parameters = new List<object>();
-        var where = "tenant_id = @param0";
-        parameters.Add(tenantId);
-        if (isActive.HasValue)
-        {
-            where += " AND IsActive = @param" + parameters.Count;
-            parameters.Add(isActive.Value ? 1 : 0);
-        }
-
         var rows = await db.SelectAsync(
             fields: Fields,
             table: TableName,
-            whereClause: where,
-            parameters: parameters.ToArray(),
+            whereClause: "tenant_id = @param0 AND RemovedAtUtc IS NULL",
+            parameters: new object[] { tenantId },
             ct: ct);
         return MapList(rows);
+    }
+
+    public async Task<IReadOnlyList<Device>> ListIncludingRemovedAsync(Guid tenantId, CancellationToken ct)
+    {
+        var db = _factory.Create(_ctx);
+        var rows = await db.SelectAsync(
+            fields: Fields,
+            table: TableName,
+            whereClause: "tenant_id = @param0",
+            parameters: new object[] { tenantId },
+            ct: ct);
+        return MapList(rows);
+    }
+
+    public async Task<bool> HasRecentUnlockAuditAsync(Guid tenantId, Guid deviceId, DateTime sinceUtc, CancellationToken ct)
+    {
+        var db = _factory.Create(_ctx, bypassTenantFilter: true);
+        var rows = await db.SelectAsync(
+            fields: "Id",
+            table: "DeviceUnlockAudit",
+            whereClause: "DeviceId = @param0 AND tenant_id = @param1 AND OccurredAtUtc >= @param2",
+            parameters: new object[] { deviceId, tenantId, sinceUtc },
+            ct: ct);
+        return rows is not null && rows.Rows.Count > 0;
     }
 
     public async Task InsertAsync(Device device, CancellationToken ct)
@@ -62,7 +77,7 @@ public sealed class DeviceRepository : IDeviceRepository
             new[]
             {
                 "Id", "TenantId", "DeviceType", "Vendor", "ConnectionParams", "GatehouseId",
-                "IsActive", "CreatedAtUtc", "UpdatedAtUtc", "CreatedByProfileId", "tenant_id"
+                "IsActive", "CreatedAtUtc", "UpdatedAtUtc", "CreatedByProfileId", "RemovedAtUtc", "tenant_id"
             },
             TableName,
             new object?[]
@@ -77,6 +92,7 @@ public sealed class DeviceRepository : IDeviceRepository
                 device.CreatedAtUtc,
                 (object?)device.UpdatedAtUtc ?? DBNull.Value,
                 device.CreatedByProfileId,
+                (object?)device.RemovedAtUtc ?? DBNull.Value,
                 device.TenantId
             },
             primaryKeyName: "Id",
@@ -84,23 +100,40 @@ public sealed class DeviceRepository : IDeviceRepository
             ct: ct);
     }
 
-    public async Task UpdateAsync(Device device, CancellationToken ct)
+    public async Task UpdateAsync(Device device, CancellationToken ct, bool rotateConnectionParams)
     {
+        var fields = new List<string>
+        {
+            "DeviceType", "Vendor", "GatehouseId", "IsActive", "UpdatedAtUtc", "RemovedAtUtc"
+        };
+        var values = new List<string?>
+        {
+            device.DeviceType,
+            device.Vendor,
+            device.GatehouseId?.ToString(),
+            device.IsActive ? "1" : "0",
+            FormatDateTime(device.UpdatedAtUtc),
+            FormatDateTime(device.RemovedAtUtc)
+        };
+
+        if (rotateConnectionParams)
+        {
+            // Insert the ConnectionParams column at index 2 (after Vendor)
+            // so the field ordering is: DeviceType, Vendor, ConnectionParams,
+            // GatehouseId, IsActive, UpdatedAtUtc, RemovedAtUtc. The DBTools
+            // update assigns @paramN matching the field index.
+            fields.Insert(2, "ConnectionParams");
+            values.Insert(2, Convert.ToBase64String(device.ConnectionParamsCiphertext));
+        }
+
+        var fieldCount = fields.Count;
         var db = _factory.Create(_ctx);
         var updated = await db.UpdateAsync(
-            new[] { "DeviceType", "Vendor", "ConnectionParams", "GatehouseId", "IsActive", "UpdatedAtUtc" },
+            fields.ToArray(),
             TableName,
-            new[]
-            {
-                device.DeviceType,
-                device.Vendor,
-                Convert.ToBase64String(device.ConnectionParamsCiphertext),
-                device.GatehouseId?.ToString() ?? string.Empty,
-                device.IsActive ? "1" : "0",
-                FormatDateTime(device.UpdatedAtUtc)!
-            },
-            "Id = @param0 AND tenant_id = @param1",
-            new object[] { device.Id, device.TenantId },
+            values.ToArray(),
+            $"Id = @param{fieldCount}",
+            new object[] { device.Id.ToString() },
             ct: ct);
 
         if (!updated || !string.IsNullOrEmpty(db.Error))
@@ -143,6 +176,7 @@ public sealed class DeviceRepository : IDeviceRepository
         if (string.IsNullOrEmpty(createdByStr)) return null;
 
         var updatedStr = r["UpdatedAtUtc"]?.ToString();
+        var removedStr = r.Table.Columns.Contains("RemovedAtUtc") ? r["RemovedAtUtc"]?.ToString() : null;
 
         return new Device(
             id: Guid.Parse(idStr),
@@ -154,6 +188,7 @@ public sealed class DeviceRepository : IDeviceRepository
             isActive: Convert.ToInt32(r["IsActive"]) == 1,
             createdByProfileId: Guid.Parse(createdByStr),
             createdAtUtc: Convert.ToDateTime(r["CreatedAtUtc"]),
-            updatedAtUtc: string.IsNullOrEmpty(updatedStr) ? null : DateTime.Parse(updatedStr, null, System.Globalization.DateTimeStyles.RoundtripKind));
+            updatedAtUtc: string.IsNullOrEmpty(updatedStr) ? null : DateTime.Parse(updatedStr, null, System.Globalization.DateTimeStyles.RoundtripKind),
+            removedAtUtc: string.IsNullOrEmpty(removedStr) ? null : DateTime.Parse(removedStr, null, System.Globalization.DateTimeStyles.RoundtripKind));
     }
 }

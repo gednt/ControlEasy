@@ -104,6 +104,12 @@ try
             options.AddPolicy("Permission_" + permission, policy =>
                 policy.Requirements.Add(new RequirePermissionRequirement(permission)));
         }
+
+        foreach (var permission in ControlEasyReborn.Modules.Devices.Application.Permissions.DevicePermissions.All)
+        {
+            options.AddPolicy("Permission_" + permission, policy =>
+                policy.Requirements.Add(new RequirePermissionRequirement(permission)));
+        }
     });
     builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, PlatformAdminAuthorizationHandler>();
     builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, RequirePermissionAuthorizationHandler>();
@@ -270,6 +276,7 @@ try
     app.MapPhotosApi();
     app.MapAccessControlApi();
     app.MapDevicesEndpoints();
+    app.MapTenantDoorIntegrationEndpoints();
     app.MapSimulatorInspectorEndpoints();
 
     app.Run();
@@ -327,6 +334,9 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
             ControlEasyReborn.Modules.AccessControl.Application.Errors.ValidationException => (StatusCodes.Status400BadRequest, "Validation failed"),
             ControlEasyReborn.Modules.AccessControl.Domain.Errors.CredentialAlreadyActiveException => (StatusCodes.Status409Conflict, "Credential already active"),
             ControlEasyReborn.Modules.AccessControl.Domain.Errors.CredentialLifecycleConflictException => (StatusCodes.Status409Conflict, "Credential lifecycle conflict"),
+            ControlEasyReborn.Modules.Devices.Application.Errors.NotFoundException => (StatusCodes.Status404NotFound, "Not found"),
+            ControlEasyReborn.Modules.Devices.Application.Errors.ConflictException => (StatusCodes.Status409Conflict, "Conflict"),
+            ControlEasyReborn.Modules.Devices.Application.Errors.ValidationException => (StatusCodes.Status400BadRequest, "Validation failed"),
             _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred")
         };
 
@@ -380,6 +390,10 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         else if (exception is ControlEasyReborn.Modules.AccessControl.Application.Errors.ValidationException acValEx)
         {
             problemDetails.Extensions["errors"] = acValEx.Errors;
+        }
+        else if (exception is ControlEasyReborn.Modules.Devices.Application.Errors.ValidationException devValEx)
+        {
+            problemDetails.Extensions["errors"] = devValEx.Errors;
         }
 
         httpContext.Response.StatusCode = status;

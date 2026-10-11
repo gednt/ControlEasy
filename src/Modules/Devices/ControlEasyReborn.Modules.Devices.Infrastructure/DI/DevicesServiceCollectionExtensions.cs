@@ -37,10 +37,19 @@ public static class DevicesServiceCollectionExtensions
         services.AddScoped<IDeviceRepository, DeviceRepository>();
         services.AddScoped<IDeviceUnlockAuditRepository, DeviceUnlockAuditRepository>();
         services.AddScoped<ITenantDoorIntegrationFlagLookup, TenantDoorIntegrationFlagLookup>();
+        services.AddScoped<ITenantDoorIntegrationRepository, TenantDoorIntegrationRepository>();
+        services.AddScoped<IGatehouseLookup, GatehouseLookup>();
 
         services.AddScoped<UnlockDeviceHandler>();
+        services.AddScoped<ToggleDoorIntegrationHandler>();
+        services.AddScoped<RegisterDeviceHandler>();
+        services.AddScoped<EditDeviceHandler>();
+        services.AddScoped<ActivateDeactivateDeviceHandler>();
+        services.AddScoped<RemoveDeviceHandler>();
 
         services.AddScoped<IValidator<DoorUnlockRequest>, UnlockDeviceValidator>();
+        services.AddScoped<IValidator<RegisterDeviceRequest>, RegisterDeviceValidator>();
+        services.AddScoped<IValidator<EditDeviceRequest>, EditDeviceValidator>();
 
         return services;
     }
