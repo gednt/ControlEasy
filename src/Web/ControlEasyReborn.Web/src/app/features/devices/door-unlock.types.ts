@@ -48,3 +48,65 @@ export const DOOR_UNLOCK_OUTCOMES: ReadonlyArray<DoorUnlockOutcome> = [
 export function isDoorUnlockOutcome(value: string): value is DoorUnlockOutcome {
   return (DOOR_UNLOCK_OUTCOMES as ReadonlyArray<string>).includes(value);
 }
+
+// Phase 24 — DOOR-05/06 device administration types.
+// Mirrors the C# DTOs in
+// src/Modules/Devices/ControlEasyReborn.Modules.Devices.Application/Contracts/
+
+export interface RedactedConnectionParams {
+  redacted: true;
+  last4: string;
+}
+
+export interface DeviceDetail {
+  id: string;
+  tenantId: string;
+  deviceType: 'reader' | 'controller';
+  vendor: string;
+  connectionParams: RedactedConnectionParams;
+  gatehouseId: string | null;
+  gatehouseName: string | null;
+  isActive: boolean;
+  createdAtUtc: string;
+  updatedAtUtc: string | null;
+  removedAtUtc: string | null;
+  createdByProfileId: string;
+}
+
+export interface DeviceListItem {
+  id: string;
+  deviceType: 'reader' | 'controller';
+  vendor: string;
+  gatehouseId: string | null;
+  isActive: boolean;
+  createdAtUtc: string;
+  updatedAtUtc: string | null;
+}
+
+export interface RegisterDeviceRequest {
+  deviceType: 'reader' | 'controller';
+  vendor: string;
+  gatehouseId?: string | null;
+  connectionParams: Record<string, unknown>;
+}
+
+export interface EditDeviceRequest {
+  vendor?: string;
+  gatehouseId?: string | null;
+  connectionParams?: Record<string, unknown>;
+}
+
+export interface SetDeviceActivationRequest {
+  isActive: boolean;
+}
+
+export interface ToggleDoorIntegrationRequest {
+  doorIntegrationEnabled: boolean;
+}
+
+export interface TenantDoorIntegrationDto {
+  tenantId: string;
+  doorIntegrationEnabled: boolean;
+  doorIntegrationChangedAtUtc: string | null;
+  doorIntegrationChangedByProfileId: string | null;
+}

@@ -4,11 +4,19 @@ import { Observable } from 'rxjs';
 import {
   DoorUnlockRequest,
   DoorUnlockResponse,
+  DeviceDetail,
+  DeviceListItem,
+  RegisterDeviceRequest,
+  EditDeviceRequest,
+  SetDeviceActivationRequest,
+  ToggleDoorIntegrationRequest,
+  TenantDoorIntegrationDto,
 } from './door-unlock.types';
 
 // Thin Angular wrapper around the Devices API. Phase 23 ships the service
-// shell only — no UI consumes it yet. Phase 24 (admin) and Phase 26 (porteiro)
-// wire this into the administration page and the porteiro unlock panel.
+// shell with unlock/list/get; Phase 24 adds the admin endpoints
+// (toggleDoorIntegration, register, update, setActivation, remove) so the
+// /administration page can manage devices.
 //
 // The canonical signature scheme is documented in
 // .planning/phases/23-device-foundation-simulator-harness/23-CONTEXT.md
@@ -25,11 +33,36 @@ export class DevicesApiService {
     return this.http.post<DoorUnlockResponse>(`/api/v1/devices/${deviceId}/unlock`, request);
   }
 
-  list(): Observable<unknown[]> {
-    return this.http.get<unknown[]>('/api/v1/devices');
+  list(): Observable<DeviceListItem[]> {
+    return this.http.get<DeviceListItem[]>('/api/v1/devices');
   }
 
-  get(deviceId: string): Observable<unknown> {
-    return this.http.get<unknown>(`/api/v1/devices/${deviceId}`);
+  get(deviceId: string): Observable<DeviceDetail> {
+    return this.http.get<DeviceDetail>(`/api/v1/devices/${deviceId}`);
+  }
+
+  register(request: RegisterDeviceRequest): Observable<DeviceDetail> {
+    return this.http.post<DeviceDetail>('/api/v1/devices', request);
+  }
+
+  update(deviceId: string, request: EditDeviceRequest): Observable<DeviceDetail> {
+    return this.http.patch<DeviceDetail>(`/api/v1/devices/${deviceId}`, request);
+  }
+
+  setActivation(deviceId: string, isActive: boolean): Observable<DeviceDetail> {
+    const body: SetDeviceActivationRequest = { isActive };
+    return this.http.put<DeviceDetail>(`/api/v1/devices/${deviceId}/activation`, body);
+  }
+
+  remove(deviceId: string): Observable<void> {
+    return this.http.delete<void>(`/api/v1/devices/${deviceId}`);
+  }
+
+  toggleDoorIntegration(enabled: boolean): Observable<TenantDoorIntegrationDto> {
+    const body: ToggleDoorIntegrationRequest = { doorIntegrationEnabled: enabled };
+    return this.http.put<TenantDoorIntegrationDto>(
+      '/api/v1/tenants/current/door-integration',
+      body
+    );
   }
 }

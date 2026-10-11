@@ -80,6 +80,13 @@ export interface CreateConfigurationRequest {
   description?: string | null;
 }
 
+export interface TenantDoorIntegrationFlagDto {
+  tenantId: string;
+  doorIntegrationEnabled: boolean;
+  doorIntegrationChangedAtUtc: string | null;
+  doorIntegrationChangedByProfileId: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdministrationApiService {
   private readonly http = inject(HttpClient);
@@ -119,5 +126,15 @@ export class AdministrationApiService {
 
   createConfiguration(request: CreateConfigurationRequest): Observable<ConfigurationResponse> {
     return this.http.post<ConfigurationResponse>(`${this.baseUrl}/configurations`, request);
+  }
+
+  // DOOR-05 — used by the administration page to render the Door Integration
+  // section's initial state. The toggle PUT endpoint is owned by
+  // DevicesApiService; this read endpoint is duplicated here for parity with
+  // the rest of the administration surface.
+  getDoorIntegration(): Observable<TenantDoorIntegrationFlagDto> {
+    return this.http.get<TenantDoorIntegrationFlagDto>(
+      '/api/v1/tenants/current/door-integration'
+    );
   }
 }

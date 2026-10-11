@@ -12,11 +12,12 @@ import { CeToggleComponent } from '../../design-system/components/toggle/toggle.
 import { AuthService } from '../../core/services/auth.service';
 import { type StaffMemberResponse } from '../../core/services/security-api.service';
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
+import { DoorIntegrationSectionComponent } from '../devices/components/door-integration-section.component';
 
 @Component({
   selector: 'ce-administration-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DatePipe, CeToggleComponent],
+  imports: [CommonModule, ReactiveFormsModule, DatePipe, CeToggleComponent, DoorIntegrationSectionComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="page-header">
@@ -444,6 +445,14 @@ import { getApiErrorMessage } from '../../core/utils/api-error.util';
         }
       </div>
     } @else if (activeTab() === 'staff' && isTenantAdmin()) {
+      <!-- Staff section above; Door Integration section appended below for admin tenants. -->
+    }
+
+    @if (isTenantAdmin() && activeTab() !== 'staff') {
+      <ce-door-integration-section [enabled]="true" />
+    }
+
+    @if (activeTab() === 'staff' && isTenantAdmin()) {
       <div class="staff-section">
         @if (staffLoading()) {
           <section class="empty-record" aria-live="polite">

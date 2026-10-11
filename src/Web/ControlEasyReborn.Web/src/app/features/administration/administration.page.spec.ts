@@ -1,9 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, Subject, throwError } from 'rxjs';
 import { signal } from '@angular/core';
+import { By } from '@angular/platform-browser';
+import { provideHttpClient } from '@angular/common/http';
 import { AdministrationPage } from './administration.page';
 import { AdministrationApiService, CondominiumSettingsDto, AuditLogResponse } from './administration-api.service';
 import { AuthService, type StaffMemberResponse } from '../../core/services/auth.service';
+import { DevicesApiService } from '../devices/devices-api.service';
+import { DoorIntegrationSectionComponent } from '../devices/components/door-integration-section.component';
 
 describe('AdministrationPage', () => {
   let component: AdministrationPage;
@@ -72,11 +76,20 @@ describe('AdministrationPage', () => {
       'updateSettings',
       'listAuditLogs',
       'getAuditLogById',
+      'getDoorIntegration',
     ]);
 
     apiMock.getSettings.and.returnValue(of(mockSettings));
     apiMock.listAuditLogs.and.returnValue(of(mockLogs));
     apiMock.updateSettings.and.returnValue(of({ ...mockSettings, visitDurationMinutes: 180 }));
+    apiMock.getDoorIntegration.and.returnValue(
+      of({
+        tenantId: 'test-tenant-id',
+        doorIntegrationEnabled: false,
+        doorIntegrationChangedAtUtc: null,
+        doorIntegrationChangedByProfileId: null,
+      })
+    );
 
     authMock = {
       isTenantAdmin: signal(true),
@@ -88,11 +101,34 @@ describe('AdministrationPage', () => {
         .and.returnValue(of({ userId: 'u-1', mustChangePassword: true, deliveryState: 'Sent' })),
     };
 
+    const devicesApiMock = jasmine.createSpyObj<DevicesApiService>('DevicesApiService', [
+      'list',
+      'get',
+      'register',
+      'update',
+      'setActivation',
+      'remove',
+      'toggleDoorIntegration',
+      'unlock',
+    ]);
+    devicesApiMock.list.and.returnValue(of([]));
+    devicesApiMock.get.and.returnValue(throwError(() => new Error('not used')));
+    devicesApiMock.toggleDoorIntegration.and.returnValue(
+      of({
+        tenantId: 'test-tenant-id',
+        doorIntegrationEnabled: true,
+        doorIntegrationChangedAtUtc: '2026-01-01T00:00:00.000Z',
+        doorIntegrationChangedByProfileId: 'profile-1',
+      })
+    );
+
     await TestBed.configureTestingModule({
       imports: [AdministrationPage],
       providers: [
         { provide: AdministrationApiService, useValue: apiMock },
         { provide: AuthService, useValue: authMock },
+        { provide: DevicesApiService, useValue: devicesApiMock },
+        provideHttpClient(),
       ],
     }).compileComponents();
 
@@ -337,5 +373,111 @@ describe('AdministrationPage', () => {
     const json = JSON.stringify(captured);
     expect(json).not.toContain('tempPassword');
     expect(json).not.toContain('TempPassword');
+  });
+
+  // Phase 24 — DOOR-05/06 Door Integration section visibility.
+
+  // The DoorIntegrationSectionComponent reads the door-integration flag ONCE
+  // during ngOnInit. The default beforeEach stub returns `enabled: false`, so
+  // tests that need `enabled: true` must re-trigger `loadDoorFlag()` on the
+  // section instance after overriding the spy — otherwise the section still
+  // renders the disabled state.
+  async function refreshDoorFlag(): Promise<void> {
+    const sectionDe = fixture.debugElement.query(By.directive(DoorIntegrationSectionComponent));
+    const section = sectionDe?.componentInstance as DoorIntegrationSectionComponent | undefined;
+    await section?.loadDoorFlag();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  }
+
+  it('DoorIntegrationSection_Disabled_ShowsOptInToggleOnly', async () => {
+    // Default beforeEach stub already returns enabled:false; the section's
+    // initial loadDoorFlag() during beforeEach captured that value.
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const section = fixture.nativeElement.querySelector('[data-test="door-integration"]') as HTMLElement | null;
+    expect(section).not.toBeNull();
+
+    const text = (section?.textContent ?? '').toLowerCase();
+    expect(text).toContain('opt-in toggle');
+    expect(text).not.toContain('register device');
+    expect(text).toContain('door integration is currently disabled');
+  });
+
+  it('DoorIntegrationSection_Enabled_ShowsDeviceListAndRegister', async () => {
+    apiMock.getDoorIntegration.and.returnValue(
+      of({
+        tenantId: 'test-tenant-id',
+        doorIntegrationEnabled: true,
+        doorIntegrationChangedAtUtc: '2026-01-01T00:00:00.000Z',
+        doorIntegrationChangedByProfileId: 'profile-1',
+      })
+    );
+
+    await refreshDoorFlag();
+
+    const section = fixture.nativeElement.querySelector('[data-test="door-integration"]') as HTMLElement | null;
+    expect(section).not.toBeNull();
+
+    const registerBtn = fixture.nativeElement.querySelector(
+      '[data-test="register-device-btn"]'
+    ) as HTMLButtonElement | null;
+    expect(registerBtn).not.toBeNull();
+
+    const text = (section?.textContent ?? '').toLowerCase();
+    expect(text).toContain('devices');
+    expect(text).toContain('last changed');
+  });
+
+  it('DoorIntegrationSection_GatehouseDropdownPopulated', async () => {
+    apiMock.getDoorIntegration.and.returnValue(
+      of({
+        tenantId: 'test-tenant-id',
+        doorIntegrationEnabled: true,
+        doorIntegrationChangedAtUtc: null,
+        doorIntegrationChangedByProfileId: null,
+      })
+    );
+
+    await refreshDoorFlag();
+
+    const registerBtn = fixture.nativeElement.querySelector(
+      '[data-test="register-device-btn"]'
+    ) as HTMLButtonElement | null;
+    expect(registerBtn).not.toBeNull();
+    registerBtn!.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const gatehouseSelect = fixture.nativeElement.querySelector('#gatehouse') as HTMLSelectElement | null;
+    expect(gatehouseSelect).not.toBeNull();
+  });
+
+  it('DoorIntegrationSection_RegisterModalEmits', async () => {
+    apiMock.getDoorIntegration.and.returnValue(
+      of({
+        tenantId: 'test-tenant-id',
+        doorIntegrationEnabled: true,
+        doorIntegrationChangedAtUtc: null,
+        doorIntegrationChangedByProfileId: null,
+      })
+    );
+
+    await refreshDoorFlag();
+
+    const registerBtn = fixture.nativeElement.querySelector(
+      '[data-test="register-device-btn"]'
+    ) as HTMLButtonElement | null;
+    expect(registerBtn).not.toBeNull();
+    registerBtn!.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const modal = fixture.nativeElement.querySelector('ce-device-form-modal') as HTMLElement | null;
+    expect(modal).not.toBeNull();
   });
 });
