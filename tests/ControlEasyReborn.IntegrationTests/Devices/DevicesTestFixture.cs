@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using ControlEasyReborn.Infrastructure.KeyDerivation;
 using ControlEasyReborn.Modules.Devices.Application.Abstractions;
 using ControlEasyReborn.Modules.Devices.Application.Contracts;
@@ -119,6 +120,99 @@ public sealed class DevicesTestFixture : IAsyncLifetime
         var state = scope.ServiceProvider.GetRequiredService<IDoorSimulatorState>();
         state.Reset(TenantId, DeviceId);
         return Task.CompletedTask;
+    }
+
+    // Phase 25 — soft-delete helper. The Device is set to IsActive=false +
+    // RemovedAtUtc=now so it returns DeviceInactive from ingest.
+    public async Task SoftDeleteDeviceAsync()
+    {
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        await using var cmd = new MySqlCommand(
+            "UPDATE Devices SET IsActive=0, RemovedAtUtc=UTC_TIMESTAMP(6) WHERE Id=@id AND tenant_id=@tid", conn);
+        cmd.Parameters.AddWithValue("@id", DeviceId.ToString());
+        cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    // Phase 25 — count device_events rows for this tenant.
+    public async Task<int> CountDeviceEventsAsync(string? resultCode = null)
+    {
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        var sql = resultCode is null
+            ? "SELECT COUNT(*) FROM device_events WHERE tenant_id=@tid"
+            : "SELECT COUNT(*) FROM device_events WHERE tenant_id=@tid AND ResultCode=@rc";
+        await using var cmd = new MySqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
+        if (resultCode is not null) cmd.Parameters.AddWithValue("@rc", resultCode);
+        var result = await cmd.ExecuteScalarAsync();
+        return Convert.ToInt32(result);
+    }
+
+    // Phase 25 — count AccessEvents rows for this tenant (Used to verify
+    // single-write-path: device event ingestion always flows through the
+    // RecordAccessScanHandler which writes one row per accepted scan).
+    public async Task<int> CountAccessEventsAsync()
+    {
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        await using var cmd = new MySqlCommand(
+            "SELECT COUNT(*) FROM AccessEvents WHERE tenant_id=@tid", conn);
+        cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
+        var result = await cmd.ExecuteScalarAsync();
+        return Convert.ToInt32(result);
+    }
+
+    // Phase 25 — count refused-scan rows.
+    public async Task<int> CountRefusedScanAttemptsAsync(string? failureCode = null)
+    {
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        var sql = failureCode is null
+            ? "SELECT COUNT(*) FROM RefusedScanAttempts WHERE tenant_id=@tid"
+            : "SELECT COUNT(*) FROM RefusedScanAttempts WHERE tenant_id=@tid AND FailureCode=@fc";
+        await using var cmd = new MySqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
+        if (failureCode is not null) cmd.Parameters.AddWithValue("@fc", failureCode);
+        var result = await cmd.ExecuteScalarAsync();
+        return Convert.ToInt32(result);
+    }
+
+    // Phase 25 — count Visits rows for this tenant.
+    public async Task<int> CountVisitsAsync()
+    {
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        await using var cmd = new MySqlCommand(
+            "SELECT COUNT(*) FROM Visits WHERE tenant_id=@tid", conn);
+        cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
+        var result = await cmd.ExecuteScalarAsync();
+        return Convert.ToInt32(result);
+    }
+
+    public async Task<int> CountProfileAsync(Guid profileId)
+    {
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        await using var cmd = new MySqlCommand(
+            "SELECT COUNT(*) FROM Profiles WHERE Id=@id AND tenant_id=@tid", conn);
+        cmd.Parameters.AddWithValue("@id", profileId.ToString());
+        cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
+        var result = await cmd.ExecuteScalarAsync();
+        return Convert.ToInt32(result);
+    }
+
+    // Phase 25 — Build a CardRead payload with optional simulator token + sequence number.
+    public DeviceEventPayload BuildCardReadPayload(string? opaqueToken = null, long? sequenceNumber = null, Guid? externalEventId = null)
+    {
+        return new DeviceEventPayload(
+            EventType: ControlEasyReborn.Modules.Devices.Domain.Enums.DeviceEventType.CardRead,
+            OccurredAtUtc: DateTime.UtcNow.AddSeconds(-1),
+            SequenceNumber: sequenceNumber ?? 1,
+            ExternalEventId: externalEventId ?? Guid.NewGuid(),
+            OpaqueToken: opaqueToken ?? $"sim-test-resident-{Guid.NewGuid():N}",
+            PayloadJson: "{}");
     }
 
     // Per-tenant HMAC key. Computed deterministically via the same HKDF path
