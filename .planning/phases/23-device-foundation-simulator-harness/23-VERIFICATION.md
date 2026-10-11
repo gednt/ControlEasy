@@ -1,7 +1,7 @@
 ---
 gsd_state_version: 1.0
 phase: 23
-status: verified
+status: passed
 verified_at: 2026-10-10
 verifier: gsd-verifier (autonomous autonomous resume)
 ---
