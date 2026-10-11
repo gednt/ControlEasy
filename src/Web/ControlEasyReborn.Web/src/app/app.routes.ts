@@ -113,6 +113,16 @@ export const routes: Routes = [
         loadComponent: () => import('./features/administration/administration.page').then((m) => m.AdministrationPage),
       },
       {
+        // Phase 26 (DOOR-13) — device-health dashboard. Visible to TenantAdmin
+        // + Porteiro per CONTEXT.md "Permission visibility". Reuses the existing
+        // porteiroGuard which already allows both roles (see porteiro.guard.ts).
+        path: 'devices',
+        canActivate: [porteiroGuard],
+        data: { breadcrumb: 'Device health' },
+        loadComponent: () =>
+          import('./features/devices/devices-health.page').then((m) => m.DevicesHealthPage),
+      },
+      {
         path: 'platform/condominiums',
         canActivate: [platformAdminGuard],
         data: { breadcrumb: 'Condominiums' },

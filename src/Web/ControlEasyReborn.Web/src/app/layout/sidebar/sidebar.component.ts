@@ -254,6 +254,12 @@ export class SidebarComponent {
     { route: '/gatehouse/qr', label: 'QR scan', icon: 'camera' },
     { route: '/gatehouse/manual', label: 'Manual lookup', icon: 'search' },
     { route: '/gatehouse/credentials', label: 'QR credentials', icon: 'user-check' },
+    // Phase 26 (DOOR-13 + DOOR-14) — device-health dashboard. Placed under
+    // the gatehouse section so porteiros see it without scrolling (the
+    // gatehouse panel + the dashboard are the two surfaces that consume
+    // device health). TenantAdmin also gets the item via the same
+    // showGatehouseNav() check (admin role allowed through porteiroGuard).
+    { route: '/devices', label: 'Device health', icon: 'activity' },
   ];
 
   showGatehouseNav(): boolean {

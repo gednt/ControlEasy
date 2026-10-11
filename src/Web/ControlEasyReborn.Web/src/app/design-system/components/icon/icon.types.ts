@@ -21,6 +21,7 @@ export type LucideIconName =
   | 'x-circle'
   | 'plus'
   | 'refresh'
+  | 'refresh-cw'
   | 'more-horizontal'
   | 'edit'
   | 'trash-2'
@@ -39,7 +40,10 @@ export type LucideIconName =
   | 'upload'
   | 'image'
   | 'download'
-  | 'file-text';
+  | 'file-text'
+  // Phase 26 (DOOR-13 + DOOR-14) — device health page + sidebar nav
+  | 'pulse'
+  | 'activity';
 
 const ICON_ALIASES: Partial<Record<LucideIconName, string>> = {
   dashboard: 'layout-dashboard',
@@ -55,6 +59,9 @@ const ICON_ALIASES: Partial<Record<LucideIconName, string>> = {
   package: 'package',
   download: 'download',
   'file-text': 'file-text',
+  // Phase 26 - lucide-angular exposes `activity` as the alias for pulse-line icons.
+  activity: 'activity',
+  pulse: 'pulse',
 };
 
 export function resolveLucideIconName(name: LucideIconName): string {

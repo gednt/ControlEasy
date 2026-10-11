@@ -14,6 +14,7 @@ import {
   DeviceEventPayload,
   DeviceEventIngestionDto,
   DeviceEventListItem,
+  DeviceHealthDto,
 } from './door-unlock.types';
 
 // Thin Angular wrapper around the Devices API. Phase 23 ships the service
@@ -21,7 +22,9 @@ import {
 // (toggleDoorIntegration, register, update, setActivation, remove) so the
 // /administration page can manage devices; Phase 25 adds the reader-event
 // ingestion surface (ingestEvent, listEvents, getEvent) used by the
-// integration tests and by future admin pages.
+// integration tests and by future admin pages; Phase 26 adds the device
+// health list (getHealth) consumed by the /devices dashboard page and the
+// gatehouse-panel offline-toast poller (DeviceHealthService).
 //
 // The canonical signature scheme is documented in
 // .planning/phases/23-device-foundation-simulator-harness/23-CONTEXT.md
@@ -92,5 +95,11 @@ export class DevicesApiService {
 
   getEvent(deviceId: string, eventId: string): Observable<DeviceEventListItem> {
     return this.http.get<DeviceEventListItem>(`/api/v1/devices/${deviceId}/events/${eventId}`);
+  }
+
+  // Phase 26: device-health dashboard (DOOR-13). Returns the per-device
+  // health list consumed by /devices page + the gatehouse-panel poller.
+  getHealth(): Observable<DeviceHealthDto[]> {
+    return this.http.get<DeviceHealthDto[]>('/api/v1/devices/health');
   }
 }

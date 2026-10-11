@@ -168,3 +168,26 @@ export interface DeviceEventListItem {
   accessEventId: string | null;
   refusedScanAttemptId: string | null;
 }
+
+// Phase 26 — device-health dashboard (DOOR-12 + DOOR-13).
+// Mirrors ControlEasyReborn.Modules.Devices.Application.Contracts.DeviceHealthDto
+// (the wire shape served by GET /api/v1/devices/health).
+
+export type DeviceStatus = 'Online' | 'Offline' | 'Degraded';
+
+export interface DeviceHealthDto {
+  deviceId: string;
+  vendor: string;
+  deviceType: string;
+  gatehouseId: string | null;
+  gatehouseName: string | null;
+  status: DeviceStatus;
+  statusLabel: string;
+  lastHeartbeatAtUtc: string | null;
+  errorCount: number;
+  eventsSinceLastSuccess: number;
+  errorRatePercent: number;
+  offlineAfterSeconds: number;
+  errorRateThresholdPercent: number;
+  isOfflineExceeded: boolean;
+}
