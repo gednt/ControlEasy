@@ -2,46 +2,46 @@
 gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: Door Integration & Hardware Access (Simulator-First)
-status: executing
-stopped_at: Phase 26 complete (Device Health Monitoring) — all 4 ROADMAP success criteria met (DOOR-12 + DOOR-13 + DOOR-14 + recovery covered by 13 new integration tests in the Devices collection — 54/54 total Devices integration tests pass; 269/269 unit + 20/20 arch tests pass). 6 atomic phase-26 commits on feat/milestone-v2.3. v2.3 milestone execution is complete — `trigger-milestone-audit` next.
-last_updated: "2026-10-11T14:00:00.000Z"
+status: archived
+stopped_at: v2.3 milestone complete + archived 2026-10-11 — audit `passed` (15/15 DOOR-* requirements, 9/9 cross-phase integration checks verified, 0 constitutional regressions); 4 phases (23–26) shipped with SUMMARY + VERIFICATION; 26 atomic commits on feat/milestone-v2.3 since milestone-start 4b9d5dd (commit range 4b9d5dd..a42087c, 179 files, +15,894/−58 LOC). Archive: `.planning/milestones/v2.3-ROADMAP.md` + `v2.3-REQUIREMENTS.md` + `v2.3-MILESTONE-AUDIT.md`. Tag: `v2.3` (local). Next: `/gsd-new-milestone` to start v2.4.
+last_updated: "2026-10-11T15:30:00.000Z"
 last_activity: 2026-10-11
-last_activity_desc: Phase 26 complete — v2.3 milestone execution complete
-state_head: 4d7b7f3
+last_activity_desc: v2.3 milestone archived — `gsd-complete-milestone` workflow executed; tag `v2.3` created
+state_head: a42087c
 progress:
   total_phases: 4
   completed_phases: 4
   total_plans: 4
   completed_plans: 4
 current_phase: null
-current_phase_name: v2.3 milestone complete (Phases 23 + 24 + 25 + 26 all shipped)
+current_phase_name: v2.3 archived (Phases 23 + 24 + 25 + 26 all shipped) — ready for `/gsd-new-milestone` (v2.4)
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-10)
+See: .planning/PROJECT.md (updated 2026-10-11)
 
 **Core value:** Gatehouse staff can reliably register and control access through a fast, tenant-isolated web UI.
-**Current focus:** v2.3 Door Integration & Hardware Access (Simulator-First) — requirements + roadmap defined 2026-09-22 on `feat/planning-lineage-unification` (15 DOOR-* requirements, Phases 23–26 with success criteria in `.planning/ROADMAP.md`); v2.3 execution complete on `feat/milestone-v2.3`. Next milestones v2.4 (Phases 27–30) and v2.5 (Phases 31–34) remain planned.
+**Current focus:** v2.3 Door Integration & Hardware Access (Simulator-First) ✅ **archived 2026-10-11**. Requirements + roadmap defined 2026-09-22 on `feat/planning-lineage-unification` (15 DOOR-* requirements, Phases 23–26 with success criteria in `.planning/ROADMAP.md`); all 4 phases shipped with SUMMARY + VERIFICATION + audit `passed`; archive + tag `v2.3` in place. Next milestone: v2.4 (Resident Self-Service & Visitor Experience, Phases 27–30) via `/gsd-new-milestone`. v2.5 (Phases 31–34, real hardware) remains defined.
 
 ## Current Position
 
-Phase: (none — v2.3 milestone complete)
+Phase: (none — v2.3 milestone archived)
 Plan: —
-Status: Awaiting `gsd-audit-milestone` (autonomous workflow trigger). v2.3 closes all 15 DOOR-* requirements across Phases 23-26.
-Last activity: 2026-10-11 — Phase 26 complete (6 atomic phase-26 commits, 54/54 Devices integration tests pass; 269/269 unit + 20/20 arch tests pass; 24/24 Angular Karma specs pass for the new dashboard + gatehouse-toast; CONFLICT-FREE WORKTREE on feat/milestone-v2.3 with 4 atomic phase-26 commits after the Phase 25 baseline).
+Status: v2.3 archived; tag `v2.3` created locally on `feat/milestone-v2.3` at `a42087c`. Ready for `/gsd-new-milestone` to start v2.4 (Resident Self-Service & Visitor Experience, Phases 27–30).
+Last activity: 2026-10-11 — `gsd-complete-milestone` workflow executed; archive files written to `.planning/milestones/`; PROJECT.md / ROADMAP.md / STATE.md advanced; commit `chore: archive v2.3 milestone`; tag `v2.3`.
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed (cumulative): 48 (11 v1.0 + 1 v1.1 + 3 v2.0 + 9 v2.1 + 15 v2.2 Phases 19/20/21/22 + 8 from v2.0 photo-capture/consent shipped via `.specs/photo-capture/` + `.specs/consent-gatehouse/` + 4 from v2.3 Phases 23-26)
+- Total plans completed (cumulative): 52 (11 v1.0 + 1 v1.1 + 3 v2.0 + 9 v2.1 + 4 v2.3 phases 23–26 + 8 from v2.0 photo-capture/consent shipped via `.specs/photo-capture/` + `.specs/consent-gatehouse/` + 15 v2.2 Phases 19/20/21/22; v2.4 = 0)
 - v2.1 milestone: 9 plans, 9 summaries, 3 verifications, full local CI verification passing
 - v2.2 milestone: 15 plans across Phases 19/20/21/22 (4 + 4 + 3 + 4); all four phases have `*-VALIDATION.md` + `*-VERIFICATION.md`; full local CI verification passing on the final state
-- Average duration per plan: ~5-15 min (autonomous execution)
-- v2.3 milestone: 4 plans, 4 summaries, 4 verifications (Phase 23 + Phase 24 + Phase 25 + Phase 26 complete — milestone execution DONE)
+- v2.3 milestone: 4 plans, 4 summaries, 4 verifications, audit `passed`, archived 2026-10-11 (15 DOOR-* requirements across Phases 23–26)
+- Average duration per plan: ~5-15 min (autonomous execution); v2.3 Phases 23/24/25/26 ran ~90-120 min each (new module + UI + Playwright specs)
 
 **Per-Plan Metrics:**
 
@@ -117,6 +117,7 @@ Last activity: 2026-10-11 — Phase 26 complete (6 atomic phase-26 commits, 54/5
 - v2.2 Phase 22 closes UI-03/UI-04 parity for the four target pages (login/dashboard/visits/vehicles); remaining parity work for `apartments`, `service-providers`, `administration`, `platform/condominiums` is deferred (mockup-visual-parity UC6 list — future continuation, not silently expanded in Phase 22).
 - v2.0/v2.1 `*-VALIDATION.md` backfill (phases 11/12/13 + 16/17/18) is **out of scope** for TEST-02 (strictly 19–22); surfaced in `22-VERIFICATION.md` and `22-VALIDATION.md` cross-phase audit as a separate human decision, default deferred.
 - Multi-arch Docker/CI is fast-cycle (no milestone)
+- v2.3 milestone archived 2026-10-11: audit `passed` (15/15 DOOR-* requirements, 9/9 cross-phase integration checks verified, 0 constitutional regressions). Archive: `.planning/milestones/v2.3-ROADMAP.md` (full phase details + decisions + tech debt) + `v2.3-REQUIREMENTS.md` + `v2.3-MILESTONE-AUDIT.md`. Tag: `v2.3` (local, on `feat/milestone-v2.3` at `a42087c`, not pushed per AGENTS.WORKTREES.md). PROJECT.md + ROADMAP.md + STATE.md advanced. Next: v2.4 (Resident Self-Service & Visitor Experience, Phases 27–30) via `/gsd-new-milestone`. v2.5 (Phases 31–34, real hardware) remains defined and depends on v2.3's shipped abstractions.
 
 ### Blockers/Concerns
 
@@ -135,9 +136,9 @@ Last activity: 2026-10-11 — Phase 26 complete (6 atomic phase-26 commits, 54/5
 | v2.0 (tech debt) | Backend X-Total-Count header on /api/v1/entry-log | Forward-compatible shim (entries.length approximation) | 2026-09-13 | v2.2 target |
 | v2.1 | Webhook/WhatsApp temp-password delivery, photo on packages | Deferred requirements (REQUIREMENTS.md) | 2026-09-19 | v2.1+ |
 | v2.1 | CPF pre-reg matching, purpose codes, resident visit history, visitor self-check-in, badge printing | Deferred requirements (REQUIREMENTS.md) — concretely scoped as v2.4 (2026-09-23) | 2026-09-19 | v2.4 |
-| v2.3 | Door relay & unlock commands (DOOR-01) | Re-scoped simulator-first into v2.3 Phase 23+ (2026-09-22) | 2026-08-23 | v2.3 |
-| v2.3 | Reader events & device health (DOOR-02, DOOR-03) | Re-scoped simulator-first into v2.3 Phase 23+ (2026-09-22) | 2026-08-23 | v2.3 |
-| v2.3 | Real vendor device drivers (relay + reader) | Concretized as milestone v2.5 (Control iD, Intelbras, Hikvision; Phases 31–34) — party-mode hardware-research session 2026-09-23 | 2026-09-22 | v2.5 |
+| v2.3 | Door relay & unlock commands (DOOR-01) | Closed in v2.3 Phase 23 — simulator-first (2026-10-10) | 2026-08-23 | v2.3 (resolved 2026-10-11) |
+| v2.3 | Reader events & device health (DOOR-02, DOOR-03) | Closed in v2.3 Phases 25 + 26 — simulator-first (2026-10-11) | 2026-08-23 | v2.3 (resolved 2026-10-11) |
+| v2.3 | Real vendor device drivers (relay + reader) | Concretized as milestone v2.5 (Control iD, Intelbras, Hikvision; Phases 31–34) — party-mode hardware-research session 2026-09-23; depends on v2.3's shipped `IDoorController`/`IDeviceHandler` abstractions | 2026-09-22 | v2.5 |
 | Future access method | Facial biometrics | Requires separate approved specification | 2026-09-13 | future |
 | Fast-cycle | Multi-arch Docker/CI (ARCH-01, ARCH-02) | No milestone, ~1 week | 2026-06-24 | none |
 | todos | integrated-visits-flow.md | (presence-only) | 2026-09-20 | v2.1 |
@@ -145,10 +146,11 @@ Last activity: 2026-10-11 — Phase 26 complete (6 atomic phase-26 commits, 54/5
 ## Session Continuity
 
 Last session: 2026-10-11
-Stopped at: Phase 26 (Device Health Monitoring) complete on `feat/milestone-v2.3`. 6 atomic phase-26 commits shipped (`feat(devices)` backend, `feat(devices)` endpoint, `feat(web)` dashboard, `feat(web)` gatehouse toast, `test(devices)` integration, `test(web)` Playwright). 54/54 Devices integration tests pass (Phase 26 contributes 13 new tests across heartbeat ingestion + health endpoint + cross-tenant), 269/269 unit + 20/20 arch tests pass, 24/24 Angular Karma specs pass (8 device-health.service + 6 devices-health.page + 10 gatehouse-panel including 3 new offline-toast specs). All 4 ROADMAP success criteria met (DOOR-12 + DOOR-13 + DOOR-14 + recovery). **v2.3 milestone execution complete.** The autonomous workflow will trigger `gsd-audit-milestone` (Milestone Audit), then `gsd-complete-milestone`, then `gsd-cleanup` as part of the lifecycle. v2.4 (Phases 27–30) and v2.5 (Phases 31–34, real hardware) are the next planned milestones.
+Stopped at: v2.3 milestone **archived** on `feat/milestone-v2.3` at `a42087c`. Audit `passed` (15/15 DOOR-* requirements, 9/9 cross-phase integration checks). Archive: `.planning/milestones/v2.3-ROADMAP.md` + `v2.3-REQUIREMENTS.md` + `v2.3-MILESTONE-AUDIT.md`. Tag: `v2.3` (local, not pushed per AGENTS.WORKTREES.md). Branch: `feat/milestone-v2.3`. Commit range: `4b9d5dd..a42087c` (26 atomic commits, 179 files, +15,894/−58 LOC). Next: `/gsd-new-milestone` to start v2.4 (Resident Self-Service & Visitor Experience, Phases 27–30).
 Resume file: None
 
 ## Operator Next Steps
 
-- Wait for the autonomous `gsd-audit-milestone` + `gsd-complete-milestone` + `gsd-cleanup` lifecycle to finish. v2.3 is the FINAL milestone for the Door Integration work in the simulator-first track.
-- After milestone closeout, kick off v2.5 (Phases 31–34, real hardware) via `/gsd-new-milestone`.
+- v2.3 archived; tag `v2.3` created on `feat/milestone-v2.3` (local — not pushed per AGENTS.WORKTREES.md).
+- Merge `feat/milestone-v2.3` → `main` (manual, per AGENTS.WORKTREES.md) before starting v2.4 to keep the `devcontainer` history clean.
+- Kick off v2.4 (Resident Self-Service & Visitor Experience, Phases 27–30) via `/gsd-new-milestone`. v2.5 (Phases 31–34, real hardware) follows v2.4.

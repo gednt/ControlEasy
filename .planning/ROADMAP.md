@@ -4,7 +4,7 @@
 
 - 🚧 **v2.5 — Real Vendor Hardware Integration (Control iD, Intelbras, Hikvision)** — Phases 31-34 (planning 2026-09-23)
 - 🚧 **v2.4 — Resident Self-Service & Visitor Experience** — Phases 27-30 (planning 2026-09-23)
-- 🚧 **v2.3 — Door Integration & Hardware Access (simulator-first)** — Phases 23-26 (planning 2026-09-22)
+- ✅ **v2.3 — Door Integration & Hardware Access (simulator-first)** — Phases 23-26 (shipped 2026-10-11) — [archived](milestones/v2.3-ROADMAP.md) · [requirements](milestones/v2.3-REQUIREMENTS.md) · [audit](milestones/v2.3-MILESTONE-AUDIT.md)
 - 🚧 **v2.2 — UI Parity & Operational Closeout** — Phases 19-22 (started 2026-09-22, planning artifacts complete)
 - ✅ **v2.1 — Integrated Visits & Account Operations** — Phases 16-18 (shipped 2026-09-20)
 - ✅ **v2.0 — Gatehouse Photo & Consent Ledger** — Phases 11-13 (shipped 2026-09-13)
@@ -38,14 +38,14 @@ Full details in Phase Details below · requirements: [REQUIREMENTS.md](REQUIREME
 </details>
 
 <details>
-<summary>🚧 v2.3 Door Integration & Hardware Access — simulator-first (Phases 23-26) — PLANNING 2026-09-22</summary>
+<summary>✅ v2.3 Door Integration & Hardware Access — simulator-first (Phases 23-26) — SHIPPED 2026-10-11</summary>
 
-- [x] **Phase 23: Device Foundation & Simulator Harness** - `IDoorController`/`IDeviceHandler` abstractions, simulated device adapter, `devices` table with AES-256-GCM-encrypted connection params, secure unlock endpoint with HMAC/replay/rate-limit security bar, append-only tamper-evident unlock audit (completed 2026-09-26)
+- [x] **Phase 23: Device Foundation & Simulator Harness** - `IDoorController`/`IDeviceHandler` abstractions, simulated device adapter, `devices` table with AES-256-GCM-encrypted connection params, secure unlock endpoint with HMAC/replay/rate-limit security bar, append-only tamper-evident unlock audit (completed 2026-10-10)
 - [x] **Phase 24: Device Administration & Tenant Opt-In** - `door_integration_enabled` tenant opt-in flag with admin UI, device registration/management UI (register, edit, activate/deactivate, remove) (completed 2026-10-11)
 - [x] **Phase 25: Reader Events & Ledger Integration** - `device_events` table, event ingestion → `DeviceEvent` normalization, ledger entries from card-match events, denied-attempt logging, idempotent replay-on-reconnect (completed 2026-10-11)
-- [ ] **Phase 26: Device Health Monitoring** - `device_heartbeats` tracking with per-device alert thresholds, health dashboard UI, offline alert toast in porteiro UI
+- [x] **Phase 26: Device Health Monitoring** - `device_heartbeats` tracking with per-device alert thresholds, health dashboard UI, offline alert toast in porteiro UI (completed 2026-10-11)
 
-Full details in Phase Details below · requirements: [milestones/v2.3-REQUIREMENTS.md](milestones/v2.3-REQUIREMENTS.md)
+Full details in Phase Details below · requirements: [milestones/v2.3-REQUIREMENTS.md](milestones/v2.3-REQUIREMENTS.md) · audit: [milestones/v2.3-MILESTONE-AUDIT.md](milestones/v2.3-MILESTONE-AUDIT.md)
 
 </details>
 
@@ -311,7 +311,11 @@ Plans:
   4. Every unlock command writes an append-only, tamper-evident audit row (requesting user, device ID, timestamp, command hash, response status); an integration test proves UPDATE/DELETE on the audit table is rejected by DB triggers (DOOR-03)
   5. Device connection params are stored AES-256-GCM-encrypted per tenant in the `devices` table and never appear in plaintext in persistence, logs, or API responses (DOOR-04)
 
-**Plans**: TBD
+**Plans**: 1 plan executed (1/1)
+
+Plans:
+
+- [x] 23-01-PLAN.md — Device Foundation & Simulator Harness
 
 ### Phase 24: Device Administration & Tenant Opt-In
 
@@ -326,7 +330,12 @@ Plans:
   4. Connection params entered in the UI are accepted once and never displayed back in plaintext on any screen or API response (DOOR-06)
   5. A TenantAdmin of condominium A cannot see, register, or operate devices of condominium B (tenant isolation enforced via `ITenantAwareLinqFactory`, covered by cross-tenant tests) (DOOR-05, DOOR-06)
 
-**Plans**: TBD
+**Plans**: 1 plan executed (1/1)
+
+Plans:
+
+- [x] 24-01-PLAN.md — Device Administration & Tenant Opt-In
+
 **UI hint**: yes
 
 ### Phase 25: Reader Events & Ledger Integration
@@ -341,7 +350,11 @@ Plans:
   3. A card-match event creates the corresponding entry-log/ledger record automatically on the post-cleanup contract; an unknown-card event is logged as a denied attempt and creates no ledger entry (DOOR-10)
   4. Events queued during downtime are replayed when the simulated device reconnects — no event is lost, no event is processed twice (idempotent replay verified by integration test with connection interruption) (DOOR-11)
 
-**Plans**: TBD
+**Plans**: 1 plan executed (1/1)
+
+Plans:
+
+- [x] 25-01-PLAN.md — Reader Events & Ledger Integration
 
 ### Phase 26: Device Health Monitoring
 
@@ -355,7 +368,12 @@ Plans:
   3. A device crossing its offline threshold triggers an alert toast in the porteiro UI telling gatehouse staff to use manual entry (DOOR-14)
   4. A device that recovers (heartbeats resume) returns to online/degraded status and clears the alert state without operator intervention (DOOR-12, DOOR-13)
 
-**Plans**: TBD
+**Plans**: 1 plan executed (1/1)
+
+Plans:
+
+- [x] 26-01-PLAN.md — Device Health Monitoring
+
 **UI hint**: yes
 
 ### Phase 31: Edge Agent & Driver Foundation

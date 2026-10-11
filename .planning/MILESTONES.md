@@ -47,22 +47,45 @@
 
 ---
 
-## v2.3 Door Integration & Hardware Access — Simulator-First (Started: 2026-09-22)
+## v2.3 Door Integration & Hardware Access — Simulator-First (Shipped: 2026-10-11)
 
-**Phases:** 23, 24, 25, 26
-**Status:** Planning (requirements + roadmap defined; phases not started)
+**Phases completed:** 4 phases (23–26), 4 plans, 26 atomic commits, 179 files changed (+15,894/−58 LOC)
+**Status:** ✅ Shipped (audit `passed` — 15/15 DOOR-* requirements, 9/9 cross-phase integration checks verified, 0 constitutional regressions)
+**Git range:** `4b9d5dd`..`a42087c` on `feat/milestone-v2.3` (2026-10-10 → 2026-10-11)
+**Tag:** `v2.3` (local; not pushed per AGENTS.WORKTREES.md)
 
 **Scope:** The complete hardware-independent portion of the door-integration spec (`.specs/door-integration/`), re-scoped simulator-first: `IDoorController`/`IDeviceHandler` abstractions, the full security machinery (HMAC-SHA256 per-tenant keys, nonce+timestamp replay window, rate limiting, append-only tamper-evident audit, AES-256-GCM-encrypted connection params, porteiro-role authorization), device-event normalization feeding the ledger, device health monitoring, and the admin/porteiro UI — all integration-tested against a simulated/loopback device adapter. Real vendor driver work and on-site hardware verification are deferred to DOOR-R1..R3 (gated on real condominium hardware); swapping the simulator for a real adapter later is a driver-implementation task, not a redesign.
+
+**Delivered:**
+
+- **Phase 23 — Device Foundation & Simulator Harness:** `IDoorController` + `SimulatedDoorController` with HMAC-SHA256 unlock (HKDF per-tenant key), nonce + timestamp replay window, per-device rate limiter (1 unlock / 3s), append-only `DeviceUnlockAudit` (DB triggers reject UPDATE/DELETE with signal 45000), AES-256-GCM connection-params encryption, dev-only simulator inspector endpoint. 29 new tests (15 integration + 14 unit)
+- **Phase 24 — Device Administration & Tenant Opt-In:** TenantAdmin opt-in flag (`Tenants.DoorIntegrationEnabled`) + device register/edit/activate/remove admin UI, AES-256-GCM-encrypted connection params (never displayed in plaintext), cross-tenant 404 (not 403), soft-delete with 24h quiet-period guard. Angular `/administration` Door Integration section + standalone `DeviceFormModalComponent`. 39 new tests (15 integration + 12 Angular + 9 Playwright + 3 a11y)
+- **Phase 25 — Reader Events & Ledger Integration:** `device_events` append-only ledger + idempotency 4-tuple UNIQUE `(tenant_id, device_id, sequence_number, external_event_id)` translated from MySQL errno 1062 to `DuplicateIdempotencyKeyException`. `IDeviceHandler.Normalize(...)` vendor-agnostic abstraction. Single-write-path doctrine enforced by code grep — every Visit / AccessEvent / RefusedScanAttempt write flows through `RecordAccessScanHandler` / `RecordRefusedScanHandler` / `VisitorArrivalHandler`. 11 new integration tests across ingestion / idempotency / cross-tenant
+- **Phase 26 — Device Health Monitoring:** `device_heartbeats` one-row-per-device upsert with derived online/offline/degraded status (per-device thresholds default 60s/10%); Angular `DeviceHealthService` singleton shared between `/devices` and `/gatehouse-panel` — 30s polling + 60s back-off after 3 errors + transition detection; `/devices` standalone dashboard page; gatehouse-panel inline ce-toast on offline transition edges. 13 new integration tests + 24 new Angular specs + 3 Playwright visual + a11y specs
+
+**Verification:** All 4 phases have `*-VERIFICATION.md` with `status: passed`. Milestone audit `passed` — 9/9 cross-phase integration checks verified, 15/15 DOOR-* requirements covered, 0 constitutional regressions (`.planning/milestones/v2.3-MILESTONE-AUDIT.md`).
+
+**Tests:** 269/269 unit + 20/20 architecture + 54/54 Devices integration + 24/24 device-health Angular specs — all green on the milestone closeout worktree. Per-phase Web SPA gates green.
+
+**Known tech debt (forward-compatible shims, accepted at closeout):**
+
+- Per-device threshold override UI on `/devices` (Configure button) — disabled with tooltip; defaults 60s/10% suffice for the simulator path
+- OpenAPI client regeneration drift — handwritten `DevicesApiService` covers Phase 24/25/26 endpoints; regeneration deferred to v2.5 Phase 31 cleanup
+- Windows-host Web production Docker build skip — Phase 26 ran `ng test` via `ChromeHeadlessNoSandbox` on Windows instead of the canonical Gitea runner
+- Subquery flake in `RunInitScripts` (pre-existing) — per-collection runs (Devices, AccessControl, etc.) are green; canonical CI gate runs the `--filter Devices` partition; v2.4 will fix by per-collection DBs
 
 **Key decisions:**
 
 - Simulator-first re-scope (2026-09-22): the original Phases 14–15 reservations assumed real hardware that does not exist; reservations retired, phase numbering continues from 23
 - Remote unlock is security-sensitive — full constitutional security bar applies (rate limiting, HMAC-SHA256, replay protection, tamper-evident audit, encrypted connection params, porteiro-role authorization)
 - Ledger integration (Phase 25) builds on the post-cleanup entry-log contract (`feat/unified-visits-flow-cleanup` — PR #11 merged to `main` 2026-09-26, `7a5eb35`)
+- Single-write-path doctrine (Phase 25): Devices never instantiates Visit / AccessEvent / RefusedScanAttempt entities; every ledger write flows through the canonical AccessControl/Visits handlers. Enforced by code grep in the audit
+- Idempotency 4-tuple UNIQUE (Phase 25): survives disconnect-during-firmware-crash replay use case
+- DeviceStatus derived at heartbeat ingestion, no background sweep (Phase 26); v2.5 edge agent introduces periodic poll on its own clock
 - Milestone v2.2 (Phases 19–22) is planned and unexecuted; lineage unified with v2.3/v2.4 on `feat/planning-lineage-unification` (2026-09-23); no phase overlap
 
 **Specs:** `.specs/door-integration/` (original spec — re-scoped by this milestone)
-**Roadmap:** `.planning/ROADMAP.md` (v2.3 section) · **Requirements:** `.planning/milestones/v2.3-REQUIREMENTS.md`
+**Roadmap:** `.planning/milestones/v2.3-ROADMAP.md` (archive) · **Requirements:** `.planning/milestones/v2.3-REQUIREMENTS.md` · **Audit:** `.planning/milestones/v2.3-MILESTONE-AUDIT.md`
 **Origin:** v2.3 planning session (2026-09-22), re-scope of the 2026-08-23 party-mode door-integration spec
 
 ---
