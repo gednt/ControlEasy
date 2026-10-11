@@ -6,5 +6,6 @@ public static class PorteiroDefaults
 
     public const string Permissions =
         "Visits.Read,Apartments.Read,Residents.Read,Vehicles.Read,ServiceProviders.Read,Reports.Read,Photos.Read,Photos.Write," +
-        "Access.Read,Access.Access.Operate";
+        "Access.Read,Access.Access.Operate," +
+        "devices.unlock,devices.read,devices.read_health";
 }

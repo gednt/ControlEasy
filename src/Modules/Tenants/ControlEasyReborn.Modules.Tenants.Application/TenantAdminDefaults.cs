@@ -11,5 +11,6 @@ public static class TenantAdminDefaults
         "Reports.Read," +
         "Photos.Read,Photos.Write,Photos.Delete," +
         "Access.Read,Access.Access.Operate," +
-        "Access.Control.Issue,Access.Control.Replace,Access.Control.Revoke";
+        "Access.Control.Issue,Access.Control.Replace,Access.Control.Revoke," +
+        "devices.unlock,devices.read,devices.write,tenants.toggle_door_integration,devices.read_health";
 }
