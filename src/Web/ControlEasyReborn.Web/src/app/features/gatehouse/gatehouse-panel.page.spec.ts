@@ -3,18 +3,39 @@ import { importProvidersFrom } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { GatehousePanelPage } from './gatehouse-panel.page';
 import { VisitsApiService } from '../visits/visits-api.service';
 import { ApartmentsApiService } from '../apartments/apartments-api.service';
 import { GatewayControlService } from '../access-control/gateway-control.service';
 import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
 import { CE_LUCIDE_ICONS } from '../../design-system/components/icon/icon.registry';
+import { DeviceHealthService, DeviceStatusTransition } from '../devices/device-health.service';
+import { DeviceHealthDto } from '../devices/door-unlock.types';
+
+class FakeDeviceHealthService {
+  readonly health$ = new BehaviorSubject<DeviceHealthDto[]>([]);
+  readonly offlineAlerts$ = new Subject<DeviceStatusTransition>();
+  private stopPollingCalls = 0;
+
+  startPolling(): void {
+    /* no-op for tests */
+  }
+
+  stopPolling(): void {
+    this.stopPollingCalls += 1;
+  }
+
+  getStopPollingCalls(): number {
+    return this.stopPollingCalls;
+  }
+}
 
 describe('GatehousePanelPage', () => {
   let fixture: ComponentFixture<GatehousePanelPage>;
   let component: GatehousePanelPage;
   let httpMock: HttpTestingController;
+  let deviceHealth: FakeDeviceHealthService;
 
   const queryParamsSubject = new BehaviorSubject(convertToParamMap({}));
 
@@ -22,6 +43,8 @@ describe('GatehousePanelPage', () => {
     spyOn(BrowserMultiFormatReader.prototype, 'decodeFromVideoDevice').and.returnValue(
       Promise.resolve({ stop: jasmine.createSpy('stop') } as unknown as IScannerControls),
     );
+
+    deviceHealth = new FakeDeviceHealthService();
 
     await TestBed.configureTestingModule({
       imports: [GatehousePanelPage],
@@ -33,6 +56,7 @@ describe('GatehousePanelPage', () => {
         VisitsApiService,
         ApartmentsApiService,
         GatewayControlService,
+        { provide: DeviceHealthService, useValue: deviceHealth },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -334,5 +358,132 @@ describe('GatehousePanelPage', () => {
     flush();
 
     expect(component.packageDropOpen()).toBeFalse();
+  }));
+
+  // -------- Phase 26 (DOOR-14) offline-alert toast --------
+
+  it('OfflineAlert_Renders_WhenDeviceTransitionsToOffline', fakeAsync(() => {
+    fixture.detectChanges();
+    flushInitialRequests();
+    tick();
+
+    // Emit an offline transition; the toast wrapper should appear.
+    deviceHealth.offlineAlerts$.next({
+      kind: 'offline',
+      device: {
+        deviceId: 'd1',
+        vendor: 'Control iD',
+        deviceType: 'reader',
+        gatehouseId: null,
+        gatehouseName: 'Portaria A',
+        status: 'Offline',
+        statusLabel: 'Offline',
+        lastHeartbeatAtUtc: new Date(Date.now() - 5 * 60_000).toISOString(),
+        errorCount: 0,
+        eventsSinceLastSuccess: 10,
+        errorRatePercent: 0,
+        offlineAfterSeconds: 60,
+        errorRateThresholdPercent: 10,
+        isOfflineExceeded: true,
+      },
+      elapsedMs: 5 * 60_000,
+    });
+    fixture.detectChanges();
+    tick();
+
+    const wrapper = (fixture.nativeElement as HTMLElement).querySelector(
+      '[data-test="device-offline-toast"]'
+    );
+    expect(wrapper).withContext('offline-toast wrapper').not.toBeNull();
+    const text = wrapper?.textContent ?? '';
+    expect(text).toContain('Control iD');
+    expect(text).toContain('Portaria A');
+    expect(text).toContain("hasn't checked in for");
+  }));
+
+  it('Dismiss_ClearsAlertLocally_DoesNotAffectService', fakeAsync(() => {
+    fixture.detectChanges();
+    flushInitialRequests();
+    tick();
+
+    deviceHealth.offlineAlerts$.next({
+      kind: 'offline',
+      device: {
+        deviceId: 'd1',
+        vendor: 'Control iD',
+        deviceType: 'reader',
+        gatehouseId: null,
+        gatehouseName: 'Portaria A',
+        status: 'Offline',
+        statusLabel: 'Offline',
+        lastHeartbeatAtUtc: new Date(Date.now() - 60_000).toISOString(),
+        errorCount: 0,
+        eventsSinceLastSuccess: 10,
+        errorRatePercent: 0,
+        offlineAfterSeconds: 60,
+        errorRateThresholdPercent: 10,
+        isOfflineExceeded: true,
+      },
+      elapsedMs: 60_000,
+    });
+    fixture.detectChanges();
+    tick();
+
+    // Click dismiss.
+    const dismiss = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      '[data-testid="device-offline-toast-dismiss"]'
+    );
+    expect(dismiss).not.toBeNull();
+    dismiss?.click();
+    fixture.detectChanges();
+    tick();
+
+    // The wrapper is gone locally, but the service's offlineAlerts$ has
+    // not been touched (the same Subject instance is still in scope).
+    // Re-emitting should still surface.
+    const wrapperAfter = (fixture.nativeElement as HTMLElement).querySelector(
+      '[data-test="device-offline-toast"]'
+    );
+    expect(wrapperAfter).withContext('local toast cleared').toBeNull();
+
+    deviceHealth.offlineAlerts$.next({
+      kind: 'offline',
+      device: {
+        deviceId: 'd2',
+        vendor: 'Intelbras',
+        deviceType: 'controller',
+        gatehouseId: null,
+        gatehouseName: 'Portaria B',
+        status: 'Offline',
+        statusLabel: 'Offline',
+        lastHeartbeatAtUtc: new Date().toISOString(),
+        errorCount: 0,
+        eventsSinceLastSuccess: 1,
+        errorRatePercent: 0,
+        offlineAfterSeconds: 60,
+        errorRateThresholdPercent: 10,
+        isOfflineExceeded: true,
+      },
+      elapsedMs: 0,
+    });
+    fixture.detectChanges();
+    tick();
+    const wrapperResurface = (fixture.nativeElement as HTMLElement).querySelector(
+      '[data-test="device-offline-toast"]'
+    );
+    expect(wrapperResurface).not.toBeNull();
+    expect((wrapperResurface?.textContent ?? '')).toContain('Intelbras');
+  }));
+
+  it('NoAlert_WhenAllDevicesOnline', fakeAsync(() => {
+    fixture.detectChanges();
+    flushInitialRequests();
+    tick();
+
+    // No offlineAlerts$ emit -> the wrapper should NOT appear.
+    const wrapper = (fixture.nativeElement as HTMLElement).querySelector(
+      '[data-test="device-offline-toast"]'
+    );
+    expect(wrapper).withContext('no offline toast when all online').toBeNull();
   }));
 });

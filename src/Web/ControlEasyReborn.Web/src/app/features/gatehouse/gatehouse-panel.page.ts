@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -20,6 +20,7 @@ import { formatApartmentLabel, ApartmentsApiService, ApartmentResponse } from '.
 import { QrPassModalComponent } from '../access-control/components/qr-pass-modal.component';
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
 import { ToastService } from '../../design-system/components/toast/toast.component';
+import { DeviceHealthService, DeviceStatusTransition } from '../devices/device-health.service';
 
 export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
 
@@ -44,6 +45,39 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="gatehouse-container">
+      <!-- Phase 26 (DOOR-14): offline-alert toast. Renders above the page header
+           when DeviceHealthService emits an online -> offline transition. The
+           toast appears for the FIRST device that transitions in a single
+           poll cycle (UI-SPEC.md "Visual" - the dashboard is the place to
+           see all offline devices, the toast is the gatehouse staff
+           "something needs attention" signal). Dismissing only clears the
+           local toast (the service retains the transition until the device
+           recovers). -->
+      @if (currentOfflineAlert(); as alert) {
+        <div
+          class="device-offline-toast"
+          data-test="device-offline-toast"
+          role="status"
+          aria-live="polite"
+        >
+          <div class="ce-toast tone-warning">
+            <span class="ce-toast-icon" aria-hidden="true">&#x26A0;</span>
+            <span class="ce-toast-message">
+              <strong>Device offline</strong> &mdash; {{ alert.device.vendor }} at
+              {{ alert.device.gatehouseName ?? 'Gatehouse' }} hasn't checked in for
+              {{ formatElapsed(alert.device.lastHeartbeatAtUtc) }}.
+              <em>Entries should still be created manually until the device is online.</em>
+            </span>
+            <button
+              type="button"
+              class="ce-toast-close"
+              aria-label="Dismiss"
+              (click)="dismissOfflineAlert()"
+              data-testid="device-offline-toast-dismiss"
+            >&times;</button>
+          </div>
+        </div>
+      }
       <header class="gatehouse-header">
         <div class="header-content">
           <p class="eyebrow">Operations desk / gatehouse control</p>
@@ -517,6 +551,50 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
         color: var(--color-text-primary);
       }
 
+      /* Phase 26 (DOOR-14) — offline-alert toast wrapper. Mirrors the
+         ce-toast host styles (background + accent) so the inline toast
+         visually matches the global toast service without a host element.
+         The toast is dismissible via the .ce-toast-close button. */
+      .device-offline-toast {
+        margin-top: var(--space-2);
+      }
+      .device-offline-toast .ce-toast {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-3);
+        padding: var(--space-3) var(--space-4);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        font-size: var(--font-size-sm);
+        min-width: 18rem;
+      }
+      .device-offline-toast .ce-toast.tone-warning {
+        background: var(--color-warning-light);
+        color: var(--color-warning);
+      }
+      .device-offline-toast .ce-toast-message {
+        flex: 1;
+        line-height: var(--line-height-normal);
+      }
+      .device-offline-toast .ce-toast-icon {
+        font-size: 1rem;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+      .device-offline-toast .ce-toast-close {
+        background: transparent;
+        border: 0;
+        color: inherit;
+        cursor: pointer;
+        font-size: 1rem;
+        padding: 0;
+        line-height: 1;
+        opacity: 0.7;
+      }
+      .device-offline-toast .ce-toast-close:hover {
+        opacity: 1;
+      }
+
       .gatehouse-header {
         padding: var(--space-2) 0 var(--space-3);
         border-bottom: 1px solid var(--color-border);
@@ -941,7 +1019,7 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
     `,
   ],
 })
-export class GatehousePanelPage implements OnInit {
+export class GatehousePanelPage implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
@@ -949,6 +1027,11 @@ export class GatehousePanelPage implements OnInit {
   private readonly gateway = inject(GatewayControlService);
   private readonly apartmentsApi = inject(ApartmentsApiService);
   private readonly toast = inject(ToastService);
+  // Phase 26 (DOOR-14) — singleton service; the gatehouse-panel is one of
+  // two consumers (the other is /devices). The service is idempotent on
+  // startPolling/stopPolling, so the page mount triggers polling and the
+  // page destroy stops it. (The /devices page does the same when active.)
+  private readonly deviceHealth = inject(DeviceHealthService);
 
   readonly activeTab = signal<GatehouseTab>('qr');
 
@@ -974,6 +1057,14 @@ export class GatehousePanelPage implements OnInit {
   readonly packageDropRecipient = signal<ManualLookupResult | null>(null);
   readonly packageDropCondominium = signal(false);
   private packageDropLookupAuditId: string | null = null;
+
+  // Phase 26 (DOOR-14) — current offline-alert transition (local toast
+  // state). The DeviceHealthService retains the transition in its own
+  // subject until the device recovers — this local signal only controls
+  // whether the inline toast wrapper is visible (the user can dismiss it
+  // without affecting the service).
+  readonly currentOfflineAlert = signal<DeviceStatusTransition | null>(null);
+  private deviceHealthSubscription: { unsubscribe: () => void } | null = null;
 
   private apartmentsMap = signal<Map<string, ApartmentResponse>>(new Map());
 
@@ -1021,6 +1112,16 @@ export class GatehousePanelPage implements OnInit {
 
     // 3. Preload apartments map and initial open visits count
     this.loadApartments();
+
+    // 4. Phase 26 (DOOR-14) — subscribe to offline-alert transitions. The
+    //    service is shared with the /devices dashboard; whoever started it
+    //    last is responsible for stopping it (this page stops on destroy).
+    //    On every online -> offline edge, set the local currentOfflineAlert
+    //    signal so the inline toast wrapper appears.
+    this.deviceHealthSubscription = this.deviceHealth.offlineAlerts$.subscribe((t) => {
+      this.currentOfflineAlert.set(t);
+    });
+    this.deviceHealth.startPolling(30_000);
     this.loadOpenVisits();
   }
 
@@ -1274,6 +1375,39 @@ export class GatehousePanelPage implements OnInit {
     if (!apartmentId) return 'Gatehouse / General';
     const ap = this.apartmentsMap().get(apartmentId);
     return ap ? formatApartmentLabel(ap) : 'Apartment';
+  }
+
+  // Phase 26 (DOOR-14) — dismiss the local toast without clearing the
+  // service's transition history. The DeviceHealthService still tracks the
+  // offline device; the next poll that flips the device back to online
+  // (or another device transitions to offline) fires a new alert.
+  dismissOfflineAlert(): void {
+    this.currentOfflineAlert.set(null);
+  }
+
+  // Phase 26 — format "X minutes" / "X hours" relative-time string for the
+  // offline toast. Reuses the device->reportingElapsedInterval behaviour
+  // already used by the gatehouse-panel's open-visits table.
+  formatElapsed(iso: string | null): string {
+    if (!iso) return 'a moment';
+    const ms = Math.max(0, Date.now() - new Date(iso).getTime());
+    const mins = Math.floor(ms / 60_000);
+    if (mins < 1) return 'a moment';
+    if (mins < 60) return `${mins}m`;
+    const hours = Math.floor(mins / 60);
+    const rem = mins % 60;
+    return rem > 0 ? `${hours}h ${rem}m` : `${hours}h`;
+  }
+
+  ngOnDestroy(): void {
+    // Stop polling AND unsubscribe the alert stream. Whoever started the
+    // service last is responsible for stopping it — this page mounts the
+    // service (so /devices' polling was already idempotent startPolling),
+    // so this destroy stops it.
+    this.deviceHealthSubscription?.unsubscribe();
+    this.deviceHealthSubscription = null;
+    this.deviceHealth.stopPolling();
+    this.currentOfflineAlert.set(null);
   }
 
   formatElapsedTime(dateStr?: string | null): string {
