@@ -215,6 +215,108 @@ public sealed class DevicesTestFixture : IAsyncLifetime
             PayloadJson: "{}");
     }
 
+    // Phase 26 — Build a Heartbeat payload with optional error counters.
+    public DeviceEventPayload BuildHeartbeatPayload(int errorCount = 0, int eventsSinceLastSuccess = 1)
+    {
+        var payload = $"{{\"error_count\":{errorCount},\"events_since_last_success\":{eventsSinceLastSuccess}}}";
+        return new DeviceEventPayload(
+            EventType: ControlEasyReborn.Modules.Devices.Domain.Enums.DeviceEventType.Heartbeat,
+            OccurredAtUtc: DateTime.UtcNow,
+            SequenceNumber: 1,
+            ExternalEventId: Guid.NewGuid(),
+            OpaqueToken: null,
+            PayloadJson: payload);
+    }
+
+    // Phase 26 — Seed a synthetic device_heartbeats row directly via SQL.
+    // The integration tests need to control the LastHeartbeatAtUtc + Status
+    // columns for dashboard assertions without going through the live
+    // heartbeat pipeline (which races the 5-minute freshness window).
+    public async Task SeedHeartbeatRowAsync(
+        Guid deviceId,
+        DateTime lastHeartbeatAtUtc,
+        int status,
+        int errorCount = 0,
+        int eventsSinceLastSuccess = 10,
+        int offlineAfterSeconds = 60,
+        decimal errorRateThresholdPercent = 10.00m)
+    {
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        await using var cmd = new MySqlCommand(
+            @"INSERT INTO device_heartbeats
+              (Id, DeviceId, TenantId, LastHeartbeatAtUtc, Status, ErrorCount, EventsSinceLastSuccess,
+               OfflineAfterSeconds, ErrorRateThresholdPercent, UpdatedAtUtc, tenant_id)
+              VALUES (@id, @did, @tid, @last, @status, @ec, @ess, @ofs, @ertp, UTC_TIMESTAMP(6), @tid)
+              ON DUPLICATE KEY UPDATE
+                LastHeartbeatAtUtc = VALUES(LastHeartbeatAtUtc),
+                Status = VALUES(Status),
+                ErrorCount = VALUES(ErrorCount),
+                EventsSinceLastSuccess = VALUES(EventsSinceLastSuccess),
+                OfflineAfterSeconds = VALUES(OfflineAfterSeconds),
+                ErrorRateThresholdPercent = VALUES(ErrorRateThresholdPercent),
+                UpdatedAtUtc = VALUES(UpdatedAtUtc)",
+            conn);
+        cmd.Parameters.AddWithValue("@id", Guid.NewGuid().ToString());
+        cmd.Parameters.AddWithValue("@did", deviceId.ToString());
+        cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
+        cmd.Parameters.AddWithValue("@last", lastHeartbeatAtUtc);
+        cmd.Parameters.AddWithValue("@status", status);
+        cmd.Parameters.AddWithValue("@ec", errorCount);
+        cmd.Parameters.AddWithValue("@ess", eventsSinceLastSuccess);
+        cmd.Parameters.AddWithValue("@ofs", offlineAfterSeconds);
+        cmd.Parameters.AddWithValue("@ertp", errorRateThresholdPercent);
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    // Phase 26 — Seed a synthetic second Device under the same tenant so the
+    // dashboard-list tests have multiple devices to enumerate.
+    public async Task SeedSecondDeviceAsync(Guid? newDeviceId = null, string vendor = "Intelbras", bool isActive = true, bool isRemoved = false)
+    {
+        var did = newDeviceId ?? Guid.NewGuid();
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        await using var cmd = new MySqlCommand(
+            @"INSERT INTO Devices
+              (Id, TenantId, DeviceType, Vendor, ConnectionParams, GatehouseId, IsActive, CreatedAtUtc, CreatedByProfileId, RemovedAtUtc, tenant_id)
+              VALUES (@id, @tid, 'reader', @vendor, @params, NULL, @active, UTC_TIMESTAMP(6), @actor, @removed, @tid)",
+            conn);
+        cmd.Parameters.AddWithValue("@id", did.ToString());
+        cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
+        cmd.Parameters.AddWithValue("@vendor", vendor);
+        cmd.Parameters.AddWithValue("@params", new byte[] { 0x05, 0x06, 0x07, 0x08 });
+        cmd.Parameters.AddWithValue("@active", isActive ? 1 : 0);
+        cmd.Parameters.AddWithValue("@actor", ActorProfileId.ToString());
+        cmd.Parameters.AddWithValue("@removed", isRemoved ? (object)DateTime.UtcNow : DBNull.Value);
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    public async Task<int> CountDeviceHeartbeatsAsync(int? status = null)
+    {
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        var sql = status.HasValue
+            ? "SELECT COUNT(*) FROM device_heartbeats WHERE tenant_id=@tid AND Status=@s"
+            : "SELECT COUNT(*) FROM device_heartbeats WHERE tenant_id=@tid";
+        await using var cmd = new MySqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
+        if (status.HasValue) cmd.Parameters.AddWithValue("@s", status.Value);
+        return Convert.ToInt32(await cmd.ExecuteScalarAsync());
+    }
+
+    public async Task<DateTime?> GetHeartbeatLastSeenAsync(Guid deviceId)
+    {
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        await using var cmd = new MySqlCommand(
+            "SELECT LastHeartbeatAtUtc FROM device_heartbeats WHERE DeviceId=@did AND tenant_id=@tid",
+            conn);
+        cmd.Parameters.AddWithValue("@did", deviceId.ToString());
+        cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
+        var result = await cmd.ExecuteScalarAsync();
+        return result is null || result is DBNull ? null : Convert.ToDateTime(result);
+    }
+
     // Per-tenant HMAC key. Computed deterministically via the same HKDF path
     // the handler uses — we re-derive from the master seed + tenant id.
     public byte[] GetTenantHmacKey()
