@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using ControlEasyReborn.Modules.AccessControl.Application.Commands;
 using ControlEasyReborn.Modules.AccessControl.Application.Handlers;
 using ControlEasyReborn.Modules.AccessControl.Domain.Enums;
@@ -32,15 +33,20 @@ namespace ControlEasyReborn.Modules.Devices.Application.Handlers;
 //        CardDenied: refused scan (FailureCode=InvalidCredential)
 //        Tamper / DoorForced: refused scan (FailureCode=TamperDetected)
 //        ReaderReconnected: persist DeviceEvent, no ledger side effect
+//        Heartbeat (Phase 26): dispatched to IngestHeartbeatHandler —
+//          the row IS the device_heartbeats row, not the device_events ledger
 //   6. Insert the DeviceEvent row LAST. The DeviceEvent row IS the ledger
 //      marker — a row here means the matching Visit / AccessEvent /
 //      RefusedScanAttempt rows have been written by the cross-module
-//      handlers (single-write-path doctrine).
+//      handlers (single-write-path doctrine). Heartbeats DO NOT create a
+//      DeviceEvent row (they have their own upsert table); the handler
+//      short-circuits before the insert.
 //
 // All cross-module write paths funnel through:
 //   VisitorArrivalHandler (Visits.Application)    — Visit creation / advance
 //   RecordAccessScanHandler   (AccessControl.Application) — AccessEvent creation
 //   RecordRefusedScanHandler  (AccessControl.Application) — RefusedScanAttempt
+//   IngestHeartbeatHandler    (Devices.Application)    — device_heartbeats row
 public sealed class IngestDeviceEventHandler
 {
     private readonly IDeviceRepository _devices;
@@ -51,6 +57,7 @@ public sealed class IngestDeviceEventHandler
     private readonly RecordAccessScanHandler _recordScan;
     private readonly RecordRefusedScanHandler _recordRefused;
     private readonly IVisitDirectory _visitDirectory;
+    private readonly IngestHeartbeatHandler _ingestHeartbeat;
     private readonly IValidator<DeviceEventPayload> _validator;
     private readonly ILogger<IngestDeviceEventHandler> _logger;
 
@@ -63,6 +70,7 @@ public sealed class IngestDeviceEventHandler
         RecordAccessScanHandler recordScan,
         RecordRefusedScanHandler recordRefused,
         IVisitDirectory visitDirectory,
+        IngestHeartbeatHandler ingestHeartbeat,
         IValidator<DeviceEventPayload> validator,
         ILogger<IngestDeviceEventHandler>? logger = null)
     {
@@ -74,6 +82,7 @@ public sealed class IngestDeviceEventHandler
         _recordScan = recordScan;
         _recordRefused = recordRefused;
         _visitDirectory = visitDirectory;
+        _ingestHeartbeat = ingestHeartbeat;
         _validator = validator;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<IngestDeviceEventHandler>.Instance;
     }
@@ -91,6 +100,28 @@ public sealed class IngestDeviceEventHandler
             throw new Application.Errors.ValidationException(validation.Errors
                 .GroupBy(e => e.PropertyName)
                 .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray()));
+        }
+
+        // Heartbeats short-circuit BEFORE the tenant-flag / device-lifecycle /
+        // idempotency-key steps — they have their own heartbeat pipeline and
+        // do NOT produce a device_events row. The IngestHeartbeatHandler does
+        // its own tenant-flag + device-lifecycle checks; a TenantFlagOff or
+        // DeviceInactive outcome surfaces as the same DTO code so the caller
+        // sees a consistent shape.
+        if (payload.EventType == DeviceEventType.Heartbeat)
+        {
+            var heartbeatShape = ParseHeartbeatShape(payload);
+            await _ingestHeartbeat.HandleAsync(
+                tenantId,
+                deviceId,
+                heartbeatShape.ErrorCount,
+                heartbeatShape.EventsSinceLastSuccess,
+                payload.OccurredAtUtc,
+                ct);
+            return BuildDto(
+                DeviceEventResultCode.HeartbeatReceived,
+                occurredAtUtc: payload.OccurredAtUtc,
+                processedAtUtc: DateTime.UtcNow);
         }
 
         // 1. Tenant flag.
@@ -313,7 +344,8 @@ public sealed class IngestDeviceEventHandler
                 break;
 
             default:
-                // Heartbeat + unknown event types are rejected by the validator.
+                // Heartbeat is short-circuited above (before the switch).
+                // Unknown event types are rejected by IngestDeviceEventValidator.
                 throw new InvalidOperationException($"Unhandled event type: {normalized.EventType}");
         }
 
@@ -374,6 +406,43 @@ public sealed class IngestDeviceEventHandler
     {
         var bytes = Encoding.UTF8.GetBytes(input);
         return SHA256.HashData(bytes);
+    }
+
+    // Phase 26 — extract the heartbeat counters from payload_json. The wire
+    // format from Phase 25 reserves payload_json for free-form vendor data;
+    // for heartbeats it carries the structured ErrorCount + EventsSinceLastSuccess
+    // counters. Missing keys default to 0 (a heartbeat with no errors is the
+    // common case).
+    private static (int ErrorCount, int EventsSinceLastSuccess) ParseHeartbeatShape(DeviceEventPayload payload)
+    {
+        if (string.IsNullOrWhiteSpace(payload.PayloadJson))
+        {
+            return (0, 0);
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(payload.PayloadJson);
+            var root = doc.RootElement;
+            var errorCount = TryReadInt(root, "error_count");
+            var eventsSinceLastSuccess = TryReadInt(root, "events_since_last_success");
+            return (errorCount, eventsSinceLastSuccess);
+        }
+        catch (JsonException)
+        {
+            return (0, 0);
+        }
+    }
+
+    private static int TryReadInt(JsonElement root, string name)
+    {
+        if (!root.TryGetProperty(name, out var element)) return 0;
+        return element.ValueKind switch
+        {
+            JsonValueKind.Number when element.TryGetInt32(out var v) => v,
+            JsonValueKind.String when int.TryParse(element.GetString(), out var v) => v,
+            _ => 0
+        };
     }
 
     private static DeviceEventIngestionDto BuildDto(

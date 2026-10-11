@@ -46,6 +46,9 @@ public static class DevicesServiceCollectionExtensions
         services.AddSingleton<IDeviceHandler, SimulatedDeviceHandler>();
         services.AddScoped<IDeviceCredentialResolver, DeviceCredentialResolver>();
 
+        // Phase 26 - heartbeat ingestion + dashboard (DOOR-12 + DOOR-13 + DOOR-14).
+        services.AddScoped<IDeviceHeartbeatRepository, DeviceHeartbeatRepository>();
+
         services.AddScoped<UnlockDeviceHandler>();
         services.AddScoped<ToggleDoorIntegrationHandler>();
         services.AddScoped<RegisterDeviceHandler>();
@@ -54,11 +57,14 @@ public static class DevicesServiceCollectionExtensions
         services.AddScoped<RemoveDeviceHandler>();
         services.AddScoped<IngestDeviceEventHandler>();
         services.AddScoped<ListDeviceEventsHandler>();
+        services.AddScoped<IngestHeartbeatHandler>();
+        services.AddScoped<ListDeviceHealthHandler>();
 
         services.AddScoped<IValidator<DoorUnlockRequest>, UnlockDeviceValidator>();
         services.AddScoped<IValidator<RegisterDeviceRequest>, RegisterDeviceValidator>();
         services.AddScoped<IValidator<EditDeviceRequest>, EditDeviceValidator>();
         services.AddScoped<IValidator<DeviceEventPayload>, IngestDeviceEventValidator>();
+        services.AddScoped<IValidator<HeartbeatValidatorPayload>, HeartbeatValidator>();
 
         return services;
     }

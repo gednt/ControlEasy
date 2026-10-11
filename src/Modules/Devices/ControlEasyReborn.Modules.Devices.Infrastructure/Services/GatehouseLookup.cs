@@ -35,4 +35,25 @@ public sealed class GatehouseLookup : IGatehouseLookup
         if (string.IsNullOrEmpty(value)) return null;
         return Guid.TryParse(value, out var tid) ? tid : null;
     }
+
+    // Phase 26 (DOOR-13) — fetch the gatehouse's display name. Tenant-scoped
+    // lookup: returns null if the gatehouse is owned by another tenant. The
+    // caller already has the gatehouse id from a tenant-scoped device row, so
+    // the cross-tenant path is the rare fail-on-rename case.
+    public async Task<string?> GetNameAsync(Guid tenantId, Guid gatehouseId, CancellationToken ct)
+    {
+        var owner = await GetGatehouseTenantAsync(gatehouseId, ct);
+        if (owner is null || owner.Value != tenantId) return null;
+
+        var db = _factory.Create(_ctx, bypassTenantFilter: true);
+        var rows = await db.SelectAsync(
+            fields: "Name",
+            table: "Gatehouses",
+            whereClause: "Id = @param0",
+            parameters: new object[] { gatehouseId },
+            ct: ct);
+
+        if (rows is null || rows.Rows.Count == 0) return null;
+        return rows.Rows[0]["Name"]?.ToString();
+    }
 }

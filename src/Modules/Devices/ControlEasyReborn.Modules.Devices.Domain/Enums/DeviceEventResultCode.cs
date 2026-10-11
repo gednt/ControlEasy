@@ -21,10 +21,14 @@ public static class DeviceEventResultCode
     public const string SequenceConflict = "sequence_conflict"; // same sequence, different external event id
     public const string ReaderReconnected = "reader_reconnected"; // device came back online; ledger marker only
 
+    // Phase 26 - heartbeat ingestion outcome. The device_heartbeats row IS
+    // the durability marker; no device_events row is written for heartbeats.
+    public const string HeartbeatReceived = "heartbeat_received";
+
     public static readonly IReadOnlySet<string> All = new HashSet<string>(StringComparer.Ordinal)
     {
         CreatedVisit, AdvancedVisit, MatchedDweller,
         DeniedAttempt, ReplayDuplicate, DeviceInactive, TenantFlagOff,
-        SequenceConflict, ReaderReconnected
+        SequenceConflict, ReaderReconnected, HeartbeatReceived
     };
 }

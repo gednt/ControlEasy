@@ -10,11 +10,18 @@ public static class DevicePermissions
     public const string Write = "devices.write";
     public const string ToggleDoorIntegration = "tenants.toggle_door_integration";
 
+    // Phase 26 — DOOR-13: read device-health dashboard data. Granted to both
+    // TenantAdmin and Porteiro roles via the existing devices.read permission
+    // (the dashboard page is visible to either role per CONTEXT.md "Permission
+    // visibility"). We keep the symbol for future per-permission splits.
+    public const string ReadHealth = "devices.read_health";
+
     public static readonly IReadOnlyList<string> All = new[]
     {
         Unlock,
         Read,
         Write,
-        ToggleDoorIntegration
+        ToggleDoorIntegration,
+        ReadHealth
     };
 }
