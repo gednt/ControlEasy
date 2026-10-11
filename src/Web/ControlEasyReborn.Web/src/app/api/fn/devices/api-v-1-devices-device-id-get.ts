@@ -9,11 +9,13 @@ import { RequestBuilder } from '../../request-builder';
 
 
 export interface ApiV1DevicesDeviceIdGet$Params {
+  deviceId: string;
 }
 
-export function apiV1DevicesDeviceIdGet(http: HttpClient, rootUrl: string, params?: ApiV1DevicesDeviceIdGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+export function apiV1DevicesDeviceIdGet(http: HttpClient, rootUrl: string, params: ApiV1DevicesDeviceIdGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1DevicesDeviceIdGet.PATH, 'get');
   if (params) {
+    rb.path('deviceId', params.deviceId, {});
   }
 
   return http.request(

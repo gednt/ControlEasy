@@ -61,6 +61,7 @@ public sealed class ManualLookupEndpointsTests
     public async Task Manual_access_event_bound_to_lookup_audit_succeeds()
     {
         var tenantId = NewTenantId();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantId);
         var cpf = "98765432100";
         var apartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, "B" + Guid.NewGuid().ToString("N")[..6], Guid.NewGuid().ToString("N")[..6]);
         var residentId = await AccessControlFixture.SeedActiveResidentAsync(_mySql.ConnectionString, tenantId, "Maria Manual", cpf, apartmentId);
@@ -79,7 +80,7 @@ public sealed class ManualLookupEndpointsTests
             SubjectType: "resident",
             SubjectId: residentId,
             Direction: "entrance",
-            GatehouseId: null);
+            GatehouseId: gatehouseId);
         var manualResponse = await client.PostAsJsonAsync("/api/v1/access-events/manual", manualRequest);
 
         manualResponse.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -96,6 +97,7 @@ public sealed class ManualLookupEndpointsTests
     public async Task Manual_access_event_with_orphan_lookup_audit_returns_400_validation()
     {
         var tenantId = NewTenantId();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantId);
         var factory = NewFactory();
         var client = ManualLookupTestClient.ForTenant(factory, tenantId);
 
@@ -104,7 +106,7 @@ public sealed class ManualLookupEndpointsTests
             SubjectType: "resident",
             SubjectId: Guid.NewGuid(),
             Direction: "entrance",
-            GatehouseId: null);
+            GatehouseId: gatehouseId);
         var manualResponse = await client.PostAsJsonAsync("/api/v1/access-events/manual", manualRequest);
 
         manualResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);

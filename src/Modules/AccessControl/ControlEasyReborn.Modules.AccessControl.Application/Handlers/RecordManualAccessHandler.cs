@@ -29,6 +29,7 @@ public sealed class RecordManualAccessHandler
     private readonly IAccessLookupAuditRepository _audits;
     private readonly IAccessEventRepository _events;
     private readonly IAccessControlClock _clock;
+    private readonly IGatehouseAccessValidator _gatehouseValidator;
     private readonly IConsentPolicyEvaluator _policy;
     private readonly AccessEventDestinationResolver _resolver;
     private readonly ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory? _visits;
@@ -39,6 +40,7 @@ public sealed class RecordManualAccessHandler
         IAccessLookupAuditRepository audits,
         IAccessEventRepository events,
         IAccessControlClock clock,
+        IGatehouseAccessValidator gatehouseValidator,
         IConsentPolicyEvaluator policy,
         AccessEventDestinationResolver resolver,
         ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory? visits = null,
@@ -48,6 +50,7 @@ public sealed class RecordManualAccessHandler
         _audits = audits;
         _events = events;
         _clock = clock;
+        _gatehouseValidator = gatehouseValidator;
         _policy = policy;
         _resolver = resolver;
         _visits = visits;
@@ -67,6 +70,8 @@ public sealed class RecordManualAccessHandler
             subjectType: SubjectTypeCodes.ToWire(command.SubjectType));
 
         var nowUtc = _clock.UtcNow;
+
+        await _gatehouseValidator.EnsureValidAsync(command.TenantId, command.GatehouseId, ct);
 
         var audit = await _audits.FindAsync(command.TenantId, command.LookupAuditId, ct);
         if (audit is null || audit.PerformedByProfileId != command.PerformedByProfileId)

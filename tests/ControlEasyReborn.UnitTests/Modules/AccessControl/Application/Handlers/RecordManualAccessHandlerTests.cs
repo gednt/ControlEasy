@@ -27,6 +27,7 @@ public sealed class RecordManualAccessHandlerTests
     private readonly IApartmentDirectory _apartments = Substitute.For<IApartmentDirectory>();
     private readonly ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory _visits = Substitute.For<ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory>();
     private readonly IConsentPolicyEvaluator _policy = Substitute.For<IConsentPolicyEvaluator>();
+    private readonly IGatehouseAccessValidator _gatehouses = Substitute.For<IGatehouseAccessValidator>();
 
     private sealed class StubClock : IAccessControlClock
     {
@@ -34,7 +35,36 @@ public sealed class RecordManualAccessHandlerTests
     }
 
     private RecordManualAccessHandler Build() =>
-        new(_audits, _events, new StubClock(), _policy, new AccessEventDestinationResolver(_residents, _vehicles, _apartments, _visits), _visits);
+        new(
+            _audits,
+            _events,
+            new StubClock(),
+            _gatehouses,
+            _policy,
+            new AccessEventDestinationResolver(_residents, _vehicles, _apartments, _visits),
+            _visits);
+
+    [Fact]
+    public async Task Rejects_manual_access_before_persisting_when_gatehouse_is_missing()
+    {
+        var lookupAuditId = Guid.NewGuid();
+        _gatehouses.EnsureValidAsync(_tenantId, null, Arg.Any<CancellationToken>()).Returns(
+            Task.FromException(new ControlEasyReborn.Modules.AccessControl.Application.Errors.ValidationException(
+                new Dictionary<string, string[]> { ["GatehouseId"] = new[] { "required" } })));
+        var cmd = new RecordManualAccessCommand(
+            _tenantId,
+            lookupAuditId,
+            SubjectType.Resident,
+            Guid.NewGuid(),
+            CycleDirection.Entrance,
+            _profileId,
+            null);
+
+        var act = () => Build().HandleAsync(cmd, CancellationToken.None);
+
+        await act.Should().ThrowAsync<ControlEasyReborn.Modules.AccessControl.Application.Errors.ValidationException>();
+        await _events.DidNotReceive().AddAsync(Arg.Any<AccessEvent>(), Arg.Any<CancellationToken>());
+    }
 
     [Fact]
     public async Task Records_manual_event_when_audit_belongs_to_profile_and_subject_resolves()

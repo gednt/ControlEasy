@@ -10,12 +10,16 @@ import { BaseService } from '../base-service';
 import { ApiConfiguration } from '../api-configuration';
 import { StrictHttpResponse } from '../strict-http-response';
 
+import { apiV1InternalDevicesDeviceIdSimulatorEnqueueOfflinePost } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-enqueue-offline-post';
+import { ApiV1InternalDevicesDeviceIdSimulatorEnqueueOfflinePost$Params } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-enqueue-offline-post';
 import { apiV1InternalDevicesDeviceIdSimulatorFailureModePost } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-failure-mode-post';
 import { ApiV1InternalDevicesDeviceIdSimulatorFailureModePost$Params } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-failure-mode-post';
 import { apiV1InternalDevicesDeviceIdSimulatorGet } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-get';
 import { ApiV1InternalDevicesDeviceIdSimulatorGet$Params } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-get';
 import { apiV1InternalDevicesDeviceIdSimulatorOfflinePost } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-offline-post';
 import { ApiV1InternalDevicesDeviceIdSimulatorOfflinePost$Params } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-offline-post';
+import { apiV1InternalDevicesDeviceIdSimulatorQueueGet } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-queue-get';
+import { ApiV1InternalDevicesDeviceIdSimulatorQueueGet$Params } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-queue-get';
 import { apiV1InternalDevicesDeviceIdSimulatorResetPost } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-reset-post';
 import { ApiV1InternalDevicesDeviceIdSimulatorResetPost$Params } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-reset-post';
 
@@ -128,6 +132,60 @@ export class DevicesInternalService extends BaseService {
    */
   apiV1InternalDevicesDeviceIdSimulatorResetPost(params: ApiV1InternalDevicesDeviceIdSimulatorResetPost$Params, context?: HttpContext): Observable<void> {
     const resp = this.apiV1InternalDevicesDeviceIdSimulatorResetPost$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1InternalDevicesDeviceIdSimulatorEnqueueOfflinePost()` */
+  static readonly ApiV1InternalDevicesDeviceIdSimulatorEnqueueOfflinePostPath = '/api/v1/_internal/devices/{deviceId}/simulator/enqueue-offline';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1InternalDevicesDeviceIdSimulatorEnqueueOfflinePost()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1InternalDevicesDeviceIdSimulatorEnqueueOfflinePost$Response(params: ApiV1InternalDevicesDeviceIdSimulatorEnqueueOfflinePost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = apiV1InternalDevicesDeviceIdSimulatorEnqueueOfflinePost(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1InternalDevicesDeviceIdSimulatorEnqueueOfflinePost$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1InternalDevicesDeviceIdSimulatorEnqueueOfflinePost(params: ApiV1InternalDevicesDeviceIdSimulatorEnqueueOfflinePost$Params, context?: HttpContext): Observable<void> {
+    const resp = this.apiV1InternalDevicesDeviceIdSimulatorEnqueueOfflinePost$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1InternalDevicesDeviceIdSimulatorQueueGet()` */
+  static readonly ApiV1InternalDevicesDeviceIdSimulatorQueueGetPath = '/api/v1/_internal/devices/{deviceId}/simulator/queue';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1InternalDevicesDeviceIdSimulatorQueueGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1InternalDevicesDeviceIdSimulatorQueueGet$Response(params: ApiV1InternalDevicesDeviceIdSimulatorQueueGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = apiV1InternalDevicesDeviceIdSimulatorQueueGet(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1InternalDevicesDeviceIdSimulatorQueueGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1InternalDevicesDeviceIdSimulatorQueueGet(params: ApiV1InternalDevicesDeviceIdSimulatorQueueGet$Params, context?: HttpContext): Observable<void> {
+    const resp = this.apiV1InternalDevicesDeviceIdSimulatorQueueGet$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<void>): void => r.body)
     );

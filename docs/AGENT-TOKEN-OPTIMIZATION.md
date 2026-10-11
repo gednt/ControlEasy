@@ -66,7 +66,7 @@ against this repository as low as possible without violating
   per-repo. If you fork spec-kit for this repo, update the body in
   place; otherwise treat the upstream reference as canonical.
 
-### New `playwright-validate` skill + auto-invoke plugin — `feat/agent-frontmatter`
+### `playwright-validate` skill — `feat/agent-frontmatter`
 
 - **`.opencode/skills/playwright-validate/SKILL.md`** — full
   validation loop using the Playwright MCP browser tools
@@ -80,14 +80,9 @@ against this repository as low as possible without violating
   emit a final reminder to run `scripts/verify-ci-local.sh --fast`
   manually — verify-ci is a script, not an agent, so there is no
   handoff.
-- **`.opencode/plugins/playwright-validate.ts`** — auto-invoke plugin.
-  Listens to `tool.execute.after` for `edit|write` tool calls; filters
-  paths under `src/Web/ControlEasyReborn.Web/**` (case-insensitive,
-  relative paths resolved against the worktree root); buffers touched
-  paths per session; on `session.idle` fires a single TUI toast +
-  `appendPrompt` injection that tells the agent to run the skill once
-  instead of spamming per-file. Failed dispatches push the buffer
-  back for retry on the next idle.
+- The former `.opencode/plugins/playwright-validate.ts` auto-invoke
+  plugin was retired. `AGENTS.md` now makes real-browser validation an
+  explicit contributor responsibility after Angular SPA edits.
 
 ### Token budget, before vs. after (this repo only, opencode harness)
 
@@ -192,14 +187,10 @@ losing any functionality this project actually uses.
 
 ## What we did NOT do (yet)
 
-- **Mirror the `playwright-validate` hook into the other vendor dirs.**
-  AGENTS.md mentions Stop hooks for the verify-ci gate in
-  `.claude/settings.json`, `.codex/hooks.json`, and `.cursor/hooks.json`,
-  but only impeccable's hook is wired today. Adding a parallel
-  Playwright validation hook to each would require (a) a hook script
-  per vendor format (`.cjs`, `.sh`, `.ps1`) and (b) updates to each
-  `hooks.json` / `settings.json`. Bounded change, ~30 lines per
-  vendor; can be a follow-up commit if needed.
+- **Automate `playwright-validate` in vendor-specific hooks.** The
+  repository currently relies on the explicit contributor rule in
+  `AGENTS.md`; automation would require a hook script per vendor format
+  plus the corresponding settings updates.
 - **Slim `~/.agents/skills/` from "full" install to a project-curated
   subset.** Out of repo; see the previous section.
 - **Fix the installer to stop writing three near-identical copies.**
@@ -217,8 +208,7 @@ python -c "
 import tiktoken, os
 enc = tiktoken.get_encoding('cl100k_base')
 total = 0
-for p in ['AGENTS.md', '.agents/rules/local-ci-verification.md',
-          '.opencode/plugins/playwright-validate.ts']:
+for p in ['AGENTS.md', '.agents/rules/local-ci-verification.md']:
     total += len(enc.encode(open(p, encoding='utf-8').read()))
 for d in os.listdir('.opencode/skills'):
     fp = f'.opencode/skills/{d}/SKILL.md'

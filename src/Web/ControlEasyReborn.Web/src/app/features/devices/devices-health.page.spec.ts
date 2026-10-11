@@ -1,10 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { signal } from '@angular/core';
 import { importProvidersFrom } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
+import { provideRouter } from '@angular/router';
 import { DevicesHealthPage } from './devices-health.page';
 import { DeviceHealthService } from './device-health.service';
 import { DeviceHealthDto } from './door-unlock.types';
 import { CE_LUCIDE_ICONS } from '../../design-system/components/icon/icon.registry';
+import { GatehouseContextService } from '../access-control/gatehouse-context.service';
 
 class FakeDeviceHealthService {
   readonly health$ = new BehaviorSubject<DeviceHealthDto[]>([]);
@@ -49,6 +52,18 @@ class FakeDeviceHealthService {
   }
 }
 
+class FakeGatehouseContextService {
+  readonly gatehouses = signal([
+    { id: '00000000-0000-0000-0000-0000000000aa', name: 'Main gatehouse', location: 'North gate' },
+  ]);
+  readonly loading = signal(false);
+  readonly error = signal<string | null>(null);
+
+  load(): void {
+    /* no-op */
+  }
+}
+
 function makeDevice(overrides: Partial<DeviceHealthDto> = {}): DeviceHealthDto {
   return {
     deviceId: overrides.deviceId ?? 'device-1',
@@ -79,6 +94,8 @@ describe('DevicesHealthPage', () => {
       imports: [DevicesHealthPage],
       providers: [
         { provide: DeviceHealthService, useValue: service },
+        { provide: GatehouseContextService, useValue: new FakeGatehouseContextService() },
+        provideRouter([]),
         importProvidersFrom(CE_LUCIDE_ICONS),
       ],
     }).compileComponents();
@@ -96,6 +113,25 @@ describe('DevicesHealthPage', () => {
     const emptyTitle = fixture.nativeElement.querySelector('.empty-title');
     expect(emptyTitle).toBeTruthy();
     expect(emptyTitle.textContent).toContain('No devices registered yet.');
+    expect(fixture.nativeElement.querySelector('[data-testid="registered-gatehouses"]').textContent).toContain(
+      'Main gatehouse',
+    );
+    expect(fixture.nativeElement.querySelector('[data-testid="empty-administration-link"]').getAttribute('href')).toBe(
+      '/administration#door-integration',
+    );
+  });
+
+  it('surfaces a gatehouse retrieval failure in the empty state and retries it', () => {
+    const context = TestBed.inject(GatehouseContextService) as unknown as FakeGatehouseContextService;
+    context.gatehouses.set([]);
+    context.error.set('Locations unavailable.');
+    spyOn(context, 'load');
+    fixture.detectChanges();
+
+    const alert = fixture.nativeElement.querySelector('.registered-gatehouses.is-error') as HTMLElement;
+    expect(alert.textContent).toContain('Locations unavailable.');
+    (alert.querySelector('button') as HTMLButtonElement).click();
+    expect(context.load).toHaveBeenCalled();
   });
 
   it('renders online-only rows with a success badge', () => {

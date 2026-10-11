@@ -1,16 +1,27 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
+import { computed, signal } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { QrScanPage, CAMERA_FACING_MODE_STORAGE_KEY } from './qr-scan.page';
 import { ACCESS_DIRECTION_STORAGE_KEY } from './direction-storage';
 import { AccessScanResultComponent } from './components/access-scan-result.component';
 import { GatewayControlService } from './gateway-control.service';
+import { GatehouseContextService } from './gatehouse-context.service';
 import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
 import { Exception, Result } from '@zxing/library';
 
 type DecodeCallback = (result: Result | undefined, error: Exception | undefined, controls: IScannerControls) => void;
 
 import { provideRouter } from '@angular/router';
+
+class FakeGatehouseContextService {
+  readonly selectedGatehouseId = signal<string | null>('00000000-0000-0000-0000-0000000000aa');
+  readonly canRecord = computed(() => this.selectedGatehouseId() !== null);
+
+  load(): void {
+    /* no-op */
+  }
+}
 
 describe('QrScanPage', () => {
   let fixture: ComponentFixture<QrScanPage>;
@@ -52,7 +63,13 @@ describe('QrScanPage', () => {
 
     await TestBed.configureTestingModule({
       imports: [QrScanPage, AccessScanResultComponent],
-      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting(), GatewayControlService],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        GatewayControlService,
+        { provide: GatehouseContextService, useValue: new FakeGatehouseContextService() },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(QrScanPage);
@@ -82,6 +99,19 @@ describe('QrScanPage', () => {
     expect(html).toContain('Submit scan');
   }));
 
+  it('does not dispatch a scan without an active gatehouse', fakeAsync(() => {
+    const context = TestBed.inject(GatehouseContextService) as unknown as FakeGatehouseContextService;
+    context.selectedGatehouseId.set(null);
+    fixture.detectChanges();
+    tick();
+    component.onQrPayloadChange('opaque-token');
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement.querySelector('[data-testid="qr-submit-button"]') as HTMLButtonElement).disabled).toBeTrue();
+    component.submit();
+    httpMock.expectNone('/api/v1/access-events/scans');
+  }));
+
   it('records a successful scan from a decoded QR value', fakeAsync(() => {
     fixture.detectChanges();
     tick();
@@ -92,7 +122,13 @@ describe('QrScanPage', () => {
     tick();
 
     const req = httpMock.expectOne('/api/v1/access-events/scans');
-    expect(req.request.body).toEqual(jasmine.objectContaining({ qrPayload: 'opaque-token', direction: 'entrance' }));
+    expect(req.request.body).toEqual(
+      jasmine.objectContaining({
+        qrPayload: 'opaque-token',
+        direction: 'entrance',
+        gatehouseId: '00000000-0000-0000-0000-0000000000aa',
+      }),
+    );
     req.flush({
       decision: 'recorded',
       accessEventId: '00000000-0000-0000-0000-000000000001',

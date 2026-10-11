@@ -26,6 +26,7 @@ public sealed class VehicleScanEndpointsTests
     public async Task PostScan_active_vehicle_with_owner_resident_prefers_owner_apartment()
     {
         var tenantId = NewTenantId();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantId);
         var ownerApartmentBlock = "O" + Guid.NewGuid().ToString("N")[..6];
         var ownerApartmentUnit = Guid.NewGuid().ToString("N")[..6];
         var ownerApartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, ownerApartmentBlock, ownerApartmentUnit);
@@ -59,7 +60,7 @@ public sealed class VehicleScanEndpointsTests
             QrPayload: issued.Token,
             Direction: "entrance",
             ScanAttemptId: Guid.NewGuid(),
-            GatehouseId: null,
+            GatehouseId: gatehouseId,
             ConfirmDuplicate: false);
 
         var response = await client.PostAsJsonAsync("/api/v1/access-events/scans", request);
@@ -79,6 +80,7 @@ public sealed class VehicleScanEndpointsTests
     public async Task PostScan_active_vehicle_without_owner_falls_back_to_vehicle_apartment()
     {
         var tenantId = NewTenantId();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantId);
         var vehicleApartmentBlock = "X" + Guid.NewGuid().ToString("N")[..6];
         var vehicleApartmentUnit = Guid.NewGuid().ToString("N")[..6];
         var vehicleApartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, vehicleApartmentBlock, vehicleApartmentUnit);
@@ -105,7 +107,7 @@ public sealed class VehicleScanEndpointsTests
             QrPayload: issued.Token,
             Direction: "entrance",
             ScanAttemptId: Guid.NewGuid(),
-            GatehouseId: null,
+            GatehouseId: gatehouseId,
             ConfirmDuplicate: false);
 
         var response = await client.PostAsJsonAsync("/api/v1/access-events/scans", request);
@@ -122,6 +124,7 @@ public sealed class VehicleScanEndpointsTests
     public async Task PostScan_deactivated_vehicle_records_refused_vehicle_inactive()
     {
         var tenantId = NewTenantId();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantId);
         var apartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, "X" + Guid.NewGuid().ToString("N")[..6], Guid.NewGuid().ToString("N")[..6]);
 
         var vehicleId = await AccessControlFixture.SeedActiveVehicleAsync(
@@ -148,7 +151,7 @@ public sealed class VehicleScanEndpointsTests
             QrPayload: issued.Token,
             Direction: "entrance",
             ScanAttemptId: Guid.NewGuid(),
-            GatehouseId: null,
+            GatehouseId: gatehouseId,
             ConfirmDuplicate: false);
 
         var response = await client.PostAsJsonAsync("/api/v1/access-events/scans", request);
@@ -181,13 +184,14 @@ public sealed class VehicleScanEndpointsTests
             Guid.NewGuid());
 
         var tenantB = NewTenantId();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantB);
         var factory = NewFactory();
         var client = QrScanTestClient.ForTenant(factory, tenantB);
         var request = new RecordAccessScanRequest(
             QrPayload: issued.Token,
             Direction: "entrance",
             ScanAttemptId: Guid.NewGuid(),
-            GatehouseId: null,
+            GatehouseId: gatehouseId,
             ConfirmDuplicate: false);
 
         var response = await client.PostAsJsonAsync("/api/v1/access-events/scans", request);

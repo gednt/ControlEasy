@@ -1,9 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { computed, signal } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { ManualLookupPage } from './manual-lookup.page';
 import { GatewayControlService } from './gateway-control.service';
+import { GatehouseContextService } from './gatehouse-context.service';
 import { ACCESS_DIRECTION_STORAGE_KEY } from './direction-storage';
+
+class FakeGatehouseContextService {
+  readonly selectedGatehouseId = signal('00000000-0000-0000-0000-0000000000aa');
+  readonly recordingAvailable = signal(true);
+  readonly canRecord = computed(() => this.recordingAvailable());
+}
 
 describe('ManualLookupPage', () => {
   let fixture: ComponentFixture<ManualLookupPage>;
@@ -13,7 +21,12 @@ describe('ManualLookupPage', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ManualLookupPage],
-      providers: [provideHttpClient(), provideHttpClientTesting(), GatewayControlService],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        GatewayControlService,
+        { provide: GatehouseContextService, useValue: new FakeGatehouseContextService() },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ManualLookupPage);
@@ -113,7 +126,7 @@ describe('ManualLookupPage', () => {
       subjectType: 'resident',
       subjectId: '00000000-0000-0000-0000-0000000000bb',
       direction: 'entrance',
-      gatehouseId: null,
+      gatehouseId: '00000000-0000-0000-0000-0000000000aa',
     });
     req.flush({
       decision: 'recorded',
@@ -132,6 +145,30 @@ describe('ManualLookupPage', () => {
     const html = (fixture.nativeElement as HTMLElement).innerHTML;
     expect(html).toContain('Access recorded');
     expect(html).toContain('A/101');
+  });
+
+  it('disables confirmation while no operational gatehouse is selected', () => {
+    const gatehouseContext = TestBed.inject(GatehouseContextService) as unknown as FakeGatehouseContextService;
+    gatehouseContext.recordingAvailable.set(false);
+    component.state.update((state) => ({
+      ...state,
+      mode: 'confirm',
+      lookupAuditId: '00000000-0000-0000-0000-0000000000aa',
+      selected: {
+        subjectType: 'resident',
+        subjectId: '00000000-0000-0000-0000-0000000000bb',
+        displayName: 'Synthetic Resident',
+        documentMasked: '***.***789-01',
+        apartmentBlock: 'A',
+        apartmentUnit: '101',
+      },
+    }));
+
+    fixture.detectChanges();
+
+    const buttons = fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>;
+    const confirmButton = Array.from(buttons).find((button) => button.textContent?.includes('Confirm and record'));
+    expect(confirmButton?.disabled).toBeTrue();
   });
 
   it('loads direction from localStorage and persists it when changed', () => {

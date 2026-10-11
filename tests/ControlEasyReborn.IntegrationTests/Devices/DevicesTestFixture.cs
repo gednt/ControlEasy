@@ -22,6 +22,7 @@ public sealed class DevicesTestFixture : IAsyncLifetime
     public TestcontainersWebApplicationFactory Factory { get; private set; } = null!;
     public Guid TenantId { get; private set; }
     public Guid DeviceId { get; private set; }
+    public Guid GatehouseId { get; private set; }
     public Guid ActorProfileId { get; private set; }
     public string ActorEmail { get; private set; } = "devices-tests@controleasy.local";
     public string TenantSecret => "CE-INT-TEST-DEVICE-HMAC-SECRET-V1-DETERMINISTIC-32B";
@@ -47,6 +48,7 @@ public sealed class DevicesTestFixture : IAsyncLifetime
     {
         TenantId = Guid.NewGuid();
         DeviceId = Guid.NewGuid();
+        GatehouseId = Guid.NewGuid();
         ActorProfileId = Guid.NewGuid();
 
         await using var conn = new MySqlConnection(_mySql.ConnectionString);
@@ -64,17 +66,27 @@ public sealed class DevicesTestFixture : IAsyncLifetime
             await cmd.ExecuteNonQueryAsync();
         }
 
+        await using (var cmd = new MySqlCommand(
+            @"INSERT INTO Gatehouses (Id, TenantId, Name, tenant_id)
+              VALUES (@id, @tid, 'Devices test gatehouse', @tid)", conn))
+        {
+            cmd.Parameters.AddWithValue("@id", GatehouseId.ToString());
+            cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
+            await cmd.ExecuteNonQueryAsync();
+        }
+
         // Seed a Devices row with a known ciphertext blob (encrypted under
         // tenant-derived key; only the existence of the row matters for the
         // unlock tests — we never need to decrypt it).
         await using (var cmd = new MySqlCommand(
             @"INSERT INTO Devices
                 (Id, TenantId, DeviceType, Vendor, ConnectionParams, GatehouseId, IsActive, CreatedAtUtc, CreatedByProfileId, tenant_id)
-              VALUES (@id, @tid, 'controller', 'simulated', @params, NULL, 1, UTC_TIMESTAMP(6), @actor, @tid)", conn))
+              VALUES (@id, @tid, 'controller', 'simulated', @params, @gatehouse, 1, UTC_TIMESTAMP(6), @actor, @tid)", conn))
         {
             cmd.Parameters.AddWithValue("@id", DeviceId.ToString());
             cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
             cmd.Parameters.AddWithValue("@params", new byte[] { 0x01, 0x02, 0x03, 0x04 });
+            cmd.Parameters.AddWithValue("@gatehouse", GatehouseId.ToString());
             cmd.Parameters.AddWithValue("@actor", ActorProfileId.ToString());
             await cmd.ExecuteNonQueryAsync();
         }

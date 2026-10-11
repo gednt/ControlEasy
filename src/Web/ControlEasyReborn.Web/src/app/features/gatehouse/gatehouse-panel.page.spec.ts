@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed, fakeAsync, flush, tick } from '@angular/core/testing';
-import { importProvidersFrom } from '@angular/core';
+import { computed, importProvidersFrom, signal } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
@@ -12,6 +12,8 @@ import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
 import { CE_LUCIDE_ICONS } from '../../design-system/components/icon/icon.registry';
 import { DeviceHealthService, DeviceStatusTransition } from '../devices/device-health.service';
 import { DeviceHealthDto } from '../devices/door-unlock.types';
+import { GatehouseContextService } from '../access-control/gatehouse-context.service';
+import { AuthService } from '../../core/services/auth.service';
 
 class FakeDeviceHealthService {
   readonly health$ = new BehaviorSubject<DeviceHealthDto[]>([]);
@@ -28,6 +30,28 @@ class FakeDeviceHealthService {
 
   getStopPollingCalls(): number {
     return this.stopPollingCalls;
+  }
+}
+
+class FakeGatehouseContextService {
+  readonly gatehouses = signal([
+    { id: '00000000-0000-0000-0000-0000000000aa', name: 'Main gatehouse', location: 'North gate' },
+    { id: '00000000-0000-0000-0000-0000000000bb', name: 'Service gatehouse', location: 'South gate' },
+  ]);
+  readonly selectedGatehouseId = signal<string | null>('00000000-0000-0000-0000-0000000000aa');
+  readonly loading = signal(false);
+  readonly error = signal<string | null>(null);
+  readonly selectedGatehouse = computed(
+    () => this.gatehouses().find((gatehouse) => gatehouse.id === this.selectedGatehouseId()) ?? null,
+  );
+  readonly canRecord = computed(() => this.selectedGatehouse() !== null && !this.loading() && !this.error());
+
+  load(): void {
+    /* no-op */
+  }
+
+  select(gatehouseId: string | null): void {
+    this.selectedGatehouseId.set(gatehouseId);
   }
 }
 
@@ -56,6 +80,8 @@ describe('GatehousePanelPage', () => {
         VisitsApiService,
         ApartmentsApiService,
         GatewayControlService,
+        { provide: GatehouseContextService, useValue: new FakeGatehouseContextService() },
+        { provide: AuthService, useValue: { isTenantAdmin: () => true } },
         { provide: DeviceHealthService, useValue: deviceHealth },
         {
           provide: ActivatedRoute,
@@ -99,6 +125,53 @@ describe('GatehousePanelPage', () => {
     expect(html).toContain('Manual lookup');
     expect(html).toContain('Walk-in registration');
     expect(html).toContain('Open visits');
+  }));
+
+  it('renders registered gatehouses in the labelled operational location selector', fakeAsync(() => {
+    fixture.detectChanges();
+    flushInitialRequests();
+    tick();
+    fixture.detectChanges();
+
+    const label = fixture.nativeElement.querySelector('label[for="active-gatehouse"]') as HTMLLabelElement | null;
+    const select = fixture.nativeElement.querySelector('#active-gatehouse') as HTMLSelectElement | null;
+
+    expect(label?.textContent).toContain('Recording location');
+    expect(select).toBeTruthy();
+    expect(Array.from(select!.options).map((option) => option.textContent?.trim())).toEqual([
+      'Select gatehouse',
+      'Main gatehouse — North gate',
+      'Service gatehouse — South gate',
+    ]);
+    expect(select!.selectedOptions[0]?.textContent).toContain('Main gatehouse');
+  }));
+
+  it('reports an inactive gate and disables location-bound actions without a selection', fakeAsync(() => {
+    const context = TestBed.inject(GatehouseContextService) as unknown as FakeGatehouseContextService;
+    context.selectedGatehouseId.set(null);
+    fixture.detectChanges();
+    flushInitialRequests();
+    tick();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.live-pill').textContent).toContain('Gate inactive');
+    expect(
+      (fixture.nativeElement.querySelector('[data-testid="package-drop-btn"] button') as HTMLButtonElement).disabled,
+    ).toBeTrue();
+  }));
+
+  it('offers a retry when gatehouse retrieval fails', fakeAsync(() => {
+    const context = TestBed.inject(GatehouseContextService) as unknown as FakeGatehouseContextService;
+    context.error.set('Locations unavailable.');
+    spyOn(context, 'load');
+    fixture.detectChanges();
+    flushInitialRequests();
+    tick();
+    fixture.detectChanges();
+
+    const retry = fixture.nativeElement.querySelector('.location-retry') as HTMLButtonElement;
+    retry.click();
+    expect(context.load).toHaveBeenCalled();
   }));
 
   it('opens the no-entry package-drop workflow from the gatehouse panel', fakeAsync(() => {
@@ -159,7 +232,7 @@ describe('GatehousePanelPage', () => {
       subjectType: 'visitor',
       subjectId: '00000000-0000-0000-0000-000000000001',
       direction: 'entrance',
-      gatehouseId: null,
+      gatehouseId: '00000000-0000-0000-0000-0000000000aa',
       kind: 'package-drop',
       packageDescription: 'Two boxes',
       packageCarrierCode: 'Correios',
@@ -338,7 +411,7 @@ describe('GatehousePanelPage', () => {
       subjectType: 'visitor',
       subjectId: '00000000-0000-0000-0000-000000000000',
       direction: 'entrance',
-      gatehouseId: null,
+      gatehouseId: '00000000-0000-0000-0000-0000000000aa',
       kind: 'package-drop',
       packageDescription: 'Mailroom envelope',
       packageCarrierCode: 'Correios',

@@ -52,6 +52,7 @@ import { apiV1SecurityUsersPost } from '../fn/security/api-v-1-security-users-po
 import { ApiV1SecurityUsersPost$Params } from '../fn/security/api-v-1-security-users-post';
 import { apiV1SecurityUsersUserIdResetPasswordPost } from '../fn/security/api-v-1-security-users-user-id-reset-password-post';
 import { ApiV1SecurityUsersUserIdResetPasswordPost$Params } from '../fn/security/api-v-1-security-users-user-id-reset-password-post';
+import { GatehouseResponse } from '../models/gatehouse-response';
 
 @Injectable({ providedIn: 'root' })
 export class SecurityService extends BaseService {
@@ -581,7 +582,7 @@ export class SecurityService extends BaseService {
    *
    * This method doesn't expect any request body.
    */
-  apiV1SecurityGatehousesGet$Response(params?: ApiV1SecurityGatehousesGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+  apiV1SecurityGatehousesGet$Response(params?: ApiV1SecurityGatehousesGet$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<GatehouseResponse>>> {
     const obs = apiV1SecurityGatehousesGet(this.http, this.rootUrl, params, context);
     return obs;
   }
@@ -592,10 +593,10 @@ export class SecurityService extends BaseService {
    *
    * This method doesn't expect any request body.
    */
-  apiV1SecurityGatehousesGet(params?: ApiV1SecurityGatehousesGet$Params, context?: HttpContext): Observable<void> {
+  apiV1SecurityGatehousesGet(params?: ApiV1SecurityGatehousesGet$Params, context?: HttpContext): Observable<Array<GatehouseResponse>> {
     const resp = this.apiV1SecurityGatehousesGet$Response(params, context);
     return resp.pipe(
-      map((r: StrictHttpResponse<void>): void => r.body)
+      map((r: StrictHttpResponse<Array<GatehouseResponse>>): Array<GatehouseResponse> => r.body)
     );
   }
 
@@ -608,7 +609,7 @@ export class SecurityService extends BaseService {
    *
    * This method sends `application/json` and handles request body of type `application/json`.
    */
-  apiV1SecurityGatehousesPost$Response(params: ApiV1SecurityGatehousesPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+  apiV1SecurityGatehousesPost$Response(params: ApiV1SecurityGatehousesPost$Params, context?: HttpContext): Observable<StrictHttpResponse<GatehouseResponse>> {
     const obs = apiV1SecurityGatehousesPost(this.http, this.rootUrl, params, context);
     return obs;
   }
@@ -619,10 +620,10 @@ export class SecurityService extends BaseService {
    *
    * This method sends `application/json` and handles request body of type `application/json`.
    */
-  apiV1SecurityGatehousesPost(params: ApiV1SecurityGatehousesPost$Params, context?: HttpContext): Observable<void> {
+  apiV1SecurityGatehousesPost(params: ApiV1SecurityGatehousesPost$Params, context?: HttpContext): Observable<GatehouseResponse> {
     const resp = this.apiV1SecurityGatehousesPost$Response(params, context);
     return resp.pipe(
-      map((r: StrictHttpResponse<void>): void => r.body)
+      map((r: StrictHttpResponse<GatehouseResponse>): GatehouseResponse => r.body)
     );
   }
 

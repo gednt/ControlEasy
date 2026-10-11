@@ -3,7 +3,7 @@
 
 export interface RecordManualAccessRequest {
   direction?: string | null;
-  gatehouseId?: string | null;
+  gatehouseId: string;
   kind?: string | null;
   lookupAuditId?: string;
   packageCarrierCode?: string | null;

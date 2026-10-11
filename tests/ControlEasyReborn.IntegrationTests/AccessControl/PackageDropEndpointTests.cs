@@ -58,6 +58,7 @@ public sealed class PackageDropEndpointTests
     public async Task Apartment_bound_package_drop_persists_access_event_row()
     {
         var tenantId = NewTenantId();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantId);
         var block = "P" + Guid.NewGuid().ToString("N")[..6];
         var unit = Guid.NewGuid().ToString("N")[..6];
         var apartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, block, unit);
@@ -75,7 +76,7 @@ public sealed class PackageDropEndpointTests
             SubjectType: "visitor",
             SubjectId: apartmentId,
             Direction: "entrance",
-            GatehouseId: null,
+            GatehouseId: gatehouseId,
             Kind: "package-drop",
             PackageDescription: "2 boxes",
             PackageCarrierCode: "Correios");
@@ -106,6 +107,7 @@ public sealed class PackageDropEndpointTests
     public async Task Condominium_level_drop_records_gatehouse_reception_snapshot()
     {
         var tenantId = NewTenantId();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantId);
         var block = "P" + Guid.NewGuid().ToString("N")[..6];
         var unit = Guid.NewGuid().ToString("N")[..6];
         var apartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, block, unit);
@@ -123,7 +125,7 @@ public sealed class PackageDropEndpointTests
             SubjectType: "visitor",
             SubjectId: Guid.Empty,
             Direction: "entrance",
-            GatehouseId: null,
+            GatehouseId: gatehouseId,
             Kind: "package-drop",
             PackageDescription: "Mail room letter");
 
@@ -149,6 +151,7 @@ public sealed class PackageDropEndpointTests
     public async Task Missing_package_description_returns_400_problem_details()
     {
         var tenantId = NewTenantId();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantId);
         var block = "P" + Guid.NewGuid().ToString("N")[..6];
         var unit = Guid.NewGuid().ToString("N")[..6];
         var apartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, block, unit);
@@ -165,7 +168,7 @@ public sealed class PackageDropEndpointTests
             SubjectType: "visitor",
             SubjectId: Guid.Empty,
             Direction: "entrance",
-            GatehouseId: null,
+            GatehouseId: gatehouseId,
             Kind: "package-drop",
             PackageDescription: null);
 

@@ -1,10 +1,12 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace ControlEasyReborn.Modules.AccessControl.Application.Contracts;
 
 public sealed record RecordAccessScanRequest(
     string QrPayload,
     string Direction,
     Guid ScanAttemptId,
-    Guid? GatehouseId,
+    [property: Required] Guid GatehouseId,
     bool ConfirmDuplicate,
     string? VisitorName = null,
     string? VisitorDocument = null);
@@ -61,7 +63,7 @@ public sealed record RecordManualAccessRequest(
     string SubjectType,
     Guid SubjectId,
     string Direction,
-    Guid? GatehouseId,
+    [property: Required] Guid GatehouseId,
     string? Kind = null,
     string? PackageDescription = null,
     string? PackageCarrierCode = null);

@@ -194,7 +194,9 @@ public static class SecurityEndpoints
                 ?? throw new InvalidOperationException("Tenant context is not resolved.");
             var response = await handler.HandleAsync(request, tenantId, ct);
             return Results.Created($"/api/v1/security/gatehouses/{response.Id}", response);
-        });
+        })
+        .Produces<GatehouseResponse>(StatusCodes.Status201Created)
+        .ProducesValidationProblem(StatusCodes.Status400BadRequest);
 
         gatehousesGroup.MapGet("/", async (
             ITenantContext tenantContext,
@@ -205,7 +207,8 @@ public static class SecurityEndpoints
                 ?? throw new InvalidOperationException("Tenant context is not resolved.");
             var response = await handler.HandleAsync(tenantId, ct);
             return Results.Ok(response);
-        });
+        })
+        .Produces<IReadOnlyList<GatehouseResponse>>(StatusCodes.Status200OK);
 
         group.MapPost("/tenant-switch", async (
             [FromBody] TenantSwitchRequest request,

@@ -119,7 +119,7 @@ export interface ManualAccessRequest {
   subjectType: SubjectKind;
   subjectId: string;
   direction: 'entrance' | 'exit';
-  gatehouseId?: string | null;
+  gatehouseId: string;
 }
 
 export interface ManualAccessResponse {

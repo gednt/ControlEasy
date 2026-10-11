@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, signal
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GatewayControlService } from './gateway-control.service';
+import { GatehouseContextService } from './gatehouse-context.service';
 import { LookupResponse, ManualLookupResult, ManualLookupType, ScanResult, SubjectKind } from './access-control.types';
 import { AccessDirection, getSavedAccessDirection, saveAccessDirection } from './direction-storage';
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
@@ -292,7 +293,7 @@ const initialState = (): UiState => ({
             <button
               type="button"
               class="ce-button variant-primary size-md"
-              [disabled]="state().busy"
+              [disabled]="state().busy || !gatehouseContext.canRecord()"
               (click)="confirm()"
             >
               {{ state().busy ? 'Recording...' : 'Confirm and record' }}
@@ -456,6 +457,7 @@ const initialState = (): UiState => ({
 })
 export class ManualLookupPage implements OnDestroy {
   private readonly gateway = inject(GatewayControlService);
+  readonly gatehouseContext = inject(GatehouseContextService);
   private readonly toast = inject(ToastService);
   private destroyed = false;
 
@@ -601,7 +603,7 @@ export class ManualLookupPage implements OnDestroy {
 
   confirm(): void {
     const current = this.state();
-    if (current.busy || !current.selected || !current.lookupAuditId) return;
+    if (current.busy || !current.selected || !current.lookupAuditId || !this.gatehouseContext.canRecord()) return;
     this.state.update((s) => ({ ...s, busy: true, error: null }));
 
     this.gateway
@@ -610,6 +612,7 @@ export class ManualLookupPage implements OnDestroy {
         subjectType: current.selected.subjectType,
         subjectId: current.selected.subjectId,
         direction: current.direction,
+        gatehouseId: this.gatehouseContext.selectedGatehouseId()!,
       })
       .subscribe({
         next: (response) => {

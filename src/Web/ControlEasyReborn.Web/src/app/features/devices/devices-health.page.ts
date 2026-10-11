@@ -8,6 +8,7 @@ import {
   OnDestroy,
 } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CeBadgeComponent } from '../../design-system/components/badge/badge.component';
 import { CeButtonComponent } from '../../design-system/components/button/button.component';
@@ -17,6 +18,7 @@ import { CeSpinnerComponent } from '../../design-system/components/spinner/spinn
 import { CeTooltipDirective } from '../../design-system/components/tooltip/tooltip.directive';
 import { DeviceHealthService } from './device-health.service';
 import { DeviceHealthDto, DeviceStatus } from './door-unlock.types';
+import { GatehouseContextService } from '../access-control/gatehouse-context.service';
 
 // Phase 26 (DOOR-13) — Device health dashboard page.
 //
@@ -34,6 +36,7 @@ import { DeviceHealthDto, DeviceStatus } from './door-unlock.types';
   imports: [
     CommonModule,
     DatePipe,
+    RouterLink,
     CeBadgeComponent,
     CeButtonComponent,
     CeCardComponent,
@@ -95,10 +98,27 @@ import { DeviceHealthDto, DeviceStatus } from './door-unlock.types';
           <p class="empty-title">No devices registered yet.</p>
           <p class="empty-subtitle">
             Devices appear here once you register one from
-            <a routerLink="/administration" data-testid="empty-administration-link"
+            <a
+              routerLink="/administration"
+              fragment="door-integration"
+              data-testid="empty-administration-link"
               >administration → Door Integration</a
             >.
           </p>
+          @if (gatehouseContext.gatehouses().length > 0) {
+            <p class="registered-gatehouses" data-testid="registered-gatehouses">
+              Registered locations: {{ gatehouseNames() }}. Select one before registering a device.
+            </p>
+          } @else if (gatehouseContext.error()) {
+            <p class="registered-gatehouses is-error" role="alert">
+              {{ gatehouseContext.error() }}
+              <button type="button" (click)="gatehouseContext.load()">Retry locations</button>.
+            </p>
+          } @else if (!gatehouseContext.loading()) {
+            <p class="registered-gatehouses">
+              Register a gatehouse in Door Integration before adding a device.
+            </p>
+          }
         </div>
       </ce-card>
     } @else {
@@ -262,6 +282,11 @@ import { DeviceHealthDto, DeviceStatus } from './door-unlock.types';
         color: var(--color-primary);
         text-decoration: underline;
       }
+      .registered-gatehouses {
+        margin: 0;
+        font-size: var(--font-size-sm);
+        color: var(--color-text-primary);
+      }
       .table-card {
         overflow-x: auto;
       }
@@ -298,6 +323,7 @@ import { DeviceHealthDto, DeviceStatus } from './door-unlock.types';
 })
 export class DevicesHealthPage implements OnInit, OnDestroy {
   protected readonly service = inject(DeviceHealthService);
+  readonly gatehouseContext = inject(GatehouseContextService);
 
   readonly devices = signal<DeviceHealthDto[]>([]);
   readonly loading = signal(true);
@@ -307,6 +333,7 @@ export class DevicesHealthPage implements OnInit, OnDestroy {
   private readonly sub = new Subscription();
 
   ngOnInit(): void {
+    this.gatehouseContext.load();
     this.service.startPolling(30_000);
     this.sub.add(
       this.service.health$.subscribe((list) => {
@@ -360,6 +387,12 @@ export class DevicesHealthPage implements OnInit, OnDestroy {
       default:
         return 'neutral';
     }
+  }
+
+  gatehouseNames(): string {
+    return this.gatehouseContext.gatehouses()
+      .map((gatehouse) => gatehouse.name)
+      .join(', ');
   }
 
   formatRelative(iso: string): string {

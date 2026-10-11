@@ -26,6 +26,7 @@ public sealed class CredentialLifecycleEndpointsTests
     public async Task Issue_replace_revoke_lifecycle_executes_successfully()
     {
         var tenantId = NewTenantId();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantId);
         var apartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, "Z" + Guid.NewGuid().ToString("N")[..6], Guid.NewGuid().ToString("N")[..6]);
         var residentId = await AccessControlFixture.SeedActiveResidentAsync(_mySql.ConnectionString, tenantId, "Lifecycle Resident", Guid.NewGuid().ToString("N")[..11], apartmentId);
 
@@ -45,7 +46,8 @@ public sealed class CredentialLifecycleEndpointsTests
         {
             qrPayload = issued.GetProperty("qrPayload").GetString()!,
             direction = "entrance",
-            scanAttemptId = Guid.NewGuid()
+            scanAttemptId = Guid.NewGuid(),
+            gatehouseId
         });
         scanFirstResponse.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -58,7 +60,8 @@ public sealed class CredentialLifecycleEndpointsTests
         {
             qrPayload = issued.GetProperty("qrPayload").GetString()!,
             direction = "entrance",
-            scanAttemptId = Guid.NewGuid()
+            scanAttemptId = Guid.NewGuid(),
+            gatehouseId
         });
         scanOldResponse.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
 
@@ -73,7 +76,8 @@ public sealed class CredentialLifecycleEndpointsTests
         {
             qrPayload = replaced.GetProperty("qrPayload").GetString()!,
             direction = "entrance",
-            scanAttemptId = Guid.NewGuid()
+            scanAttemptId = Guid.NewGuid(),
+            gatehouseId
         });
         scanRevokedResponse.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }

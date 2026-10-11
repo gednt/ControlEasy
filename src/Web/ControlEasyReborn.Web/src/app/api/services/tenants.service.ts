@@ -10,6 +10,10 @@ import { BaseService } from '../base-service';
 import { ApiConfiguration } from '../api-configuration';
 import { StrictHttpResponse } from '../strict-http-response';
 
+import { apiV1TenantsCurrentDoorIntegrationGet } from '../fn/tenants/api-v-1-tenants-current-door-integration-get';
+import { ApiV1TenantsCurrentDoorIntegrationGet$Params } from '../fn/tenants/api-v-1-tenants-current-door-integration-get';
+import { apiV1TenantsCurrentDoorIntegrationPut } from '../fn/tenants/api-v-1-tenants-current-door-integration-put';
+import { ApiV1TenantsCurrentDoorIntegrationPut$Params } from '../fn/tenants/api-v-1-tenants-current-door-integration-put';
 import { apiV1TenantsGet } from '../fn/tenants/api-v-1-tenants-get';
 import { ApiV1TenantsGet$Params } from '../fn/tenants/api-v-1-tenants-get';
 import { apiV1TenantsIdAdminsGet } from '../fn/tenants/api-v-1-tenants-id-admins-get';
@@ -534,6 +538,60 @@ export class TenantsService extends BaseService {
    */
   apiV1TenantsIdPorteirosUserIdResumePost(params: ApiV1TenantsIdPorteirosUserIdResumePost$Params, context?: HttpContext): Observable<void> {
     const resp = this.apiV1TenantsIdPorteirosUserIdResumePost$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1TenantsCurrentDoorIntegrationGet()` */
+  static readonly ApiV1TenantsCurrentDoorIntegrationGetPath = '/api/v1/tenants/current/door-integration';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1TenantsCurrentDoorIntegrationGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsCurrentDoorIntegrationGet$Response(params?: ApiV1TenantsCurrentDoorIntegrationGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = apiV1TenantsCurrentDoorIntegrationGet(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1TenantsCurrentDoorIntegrationGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1TenantsCurrentDoorIntegrationGet(params?: ApiV1TenantsCurrentDoorIntegrationGet$Params, context?: HttpContext): Observable<void> {
+    const resp = this.apiV1TenantsCurrentDoorIntegrationGet$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1TenantsCurrentDoorIntegrationPut()` */
+  static readonly ApiV1TenantsCurrentDoorIntegrationPutPath = '/api/v1/tenants/current/door-integration';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1TenantsCurrentDoorIntegrationPut()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1TenantsCurrentDoorIntegrationPut$Response(params: ApiV1TenantsCurrentDoorIntegrationPut$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = apiV1TenantsCurrentDoorIntegrationPut(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1TenantsCurrentDoorIntegrationPut$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1TenantsCurrentDoorIntegrationPut(params: ApiV1TenantsCurrentDoorIntegrationPut$Params, context?: HttpContext): Observable<void> {
+    const resp = this.apiV1TenantsCurrentDoorIntegrationPut$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<void>): void => r.body)
     );

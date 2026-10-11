@@ -283,6 +283,7 @@ public sealed class ReportEndpointTests
     public async Task History_returns_visit_package_and_legacy_rows_once_each()
     {
         var tenantId = Guid.NewGuid();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantId);
         var block = "H" + Guid.NewGuid().ToString("N")[..6];
         var unit = Guid.NewGuid().ToString("N")[..6];
         var apartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, block, unit);
@@ -304,7 +305,7 @@ public sealed class ReportEndpointTests
                 SubjectType: "visitor",
                 SubjectId: Guid.Empty,
                 Direction: "entrance",
-                GatehouseId: null,
+                GatehouseId: gatehouseId,
                 Kind: "package-drop",
                 PackageDescription: "History boxes",
                 PackageCarrierCode: "Jadlog"));
@@ -346,6 +347,7 @@ public sealed class ReportEndpointTests
     public async Task History_carrier_code_filter_returns_only_matching_package_rows()
     {
         var tenantId = Guid.NewGuid();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantId);
         var block = "H" + Guid.NewGuid().ToString("N")[..6];
         var unit = Guid.NewGuid().ToString("N")[..6];
         var apartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, block, unit);
@@ -356,9 +358,9 @@ public sealed class ReportEndpointTests
         var lookupAuditId = await CreateLookupAuditAsync(client, tenantId, cpf, apartmentId);
 
         await client.PostAsJsonAsync("/api/v1/access-events/manual",
-            new RecordManualAccessRequest(lookupAuditId, "visitor", Guid.Empty, "entrance", null, Kind: "package-drop", PackageDescription: "Envelope", PackageCarrierCode: "Loggi"));
+            new RecordManualAccessRequest(lookupAuditId, "visitor", Guid.Empty, "entrance", gatehouseId, Kind: "package-drop", PackageDescription: "Envelope", PackageCarrierCode: "Loggi"));
         await client.PostAsJsonAsync("/api/v1/access-events/manual",
-            new RecordManualAccessRequest(lookupAuditId, "visitor", Guid.Empty, "entrance", null, Kind: "package-drop", PackageDescription: "Box", PackageCarrierCode: "Correios"));
+            new RecordManualAccessRequest(lookupAuditId, "visitor", Guid.Empty, "entrance", gatehouseId, Kind: "package-drop", PackageDescription: "Box", PackageCarrierCode: "Correios"));
 
         var response = await client.GetAsync("/api/v1/reports/history?carrierCode=Correios");
         response.EnsureSuccessStatusCode();
@@ -374,6 +376,7 @@ public sealed class ReportEndpointTests
     public async Task History_refused_scan_shows_failure_code_not_visit_vocabulary()
     {
         var tenantId = Guid.NewGuid();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantId);
         var block = "H" + Guid.NewGuid().ToString("N")[..6];
         var unit = Guid.NewGuid().ToString("N")[..6];
         var apartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, block, unit);
@@ -392,7 +395,7 @@ public sealed class ReportEndpointTests
             QrPayload: issued.Token,
             Direction: "entrance",
             ScanAttemptId: Guid.NewGuid(),
-            GatehouseId: null,
+            GatehouseId: gatehouseId,
             ConfirmDuplicate: false);
         var scanResponse = await scanClient.PostAsJsonAsync("/api/v1/access-events/scans", scanRequest);
         scanResponse.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
@@ -413,6 +416,7 @@ public sealed class ReportEndpointTests
     public async Task History_includes_unlinked_resident_qr_scan_events()
     {
         var tenantId = Guid.NewGuid();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantId);
         var block = "H" + Guid.NewGuid().ToString("N")[..6];
         var unit = Guid.NewGuid().ToString("N")[..6];
         var apartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, block, unit);
@@ -427,7 +431,7 @@ public sealed class ReportEndpointTests
             QrPayload: issued.Token,
             Direction: "entrance",
             ScanAttemptId: Guid.NewGuid(),
-            GatehouseId: null,
+            GatehouseId: gatehouseId,
             ConfirmDuplicate: false));
         scanResponse.EnsureSuccessStatusCode();
 

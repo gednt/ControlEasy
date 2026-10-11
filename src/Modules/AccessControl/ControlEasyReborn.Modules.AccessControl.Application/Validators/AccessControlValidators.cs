@@ -13,6 +13,7 @@ public sealed class RecordAccessScanCommandValidator : AbstractValidator<RecordA
             .NotEmpty()
             .MaximumLength(512);
         RuleFor(c => c.ScanAttemptId).NotEmpty();
+        RuleFor(c => c.GatehouseId).NotEmpty();
         RuleFor(c => c.PerformedByProfileId).NotEmpty();
         RuleFor(c => c.Direction)
             .Must(d => d == CycleDirection.Entrance || d == CycleDirection.Exit)
@@ -51,6 +52,7 @@ public sealed class RecordManualAccessCommandValidator : AbstractValidator<Recor
     {
         RuleFor(c => c.TenantId).NotEmpty();
         RuleFor(c => c.LookupAuditId).NotEmpty();
+        RuleFor(c => c.GatehouseId).NotEmpty();
         RuleFor(c => c.SubjectType)
             .Must(t => t == SubjectType.Resident || t == SubjectType.Vehicle || t == SubjectType.Visitor)
             .WithMessage("SubjectType must be 'resident', 'vehicle', or 'visitor'.");

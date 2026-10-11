@@ -56,4 +56,11 @@ describe('CeIconComponent', () => {
     const svg: SVGElement | null = fixture.nativeElement.querySelector('svg.lucide-search');
     expect(svg).toBeTruthy();
   });
+
+  it('renders the activity icon used by device health navigation', () => {
+    fixture.componentRef.setInput('name', 'activity');
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('svg.lucide-activity')).toBeTruthy();
+  });
 });

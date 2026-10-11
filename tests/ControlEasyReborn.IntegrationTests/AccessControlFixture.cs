@@ -14,6 +14,23 @@ public sealed class AccessControlFixture : IAsyncLifetime
 
     public Task DisposeAsync() => Task.CompletedTask;
 
+    public static async Task<Guid> SeedGatehouseAsync(
+        string connectionString,
+        Guid tenantId,
+        CancellationToken ct = default)
+    {
+        var id = Guid.NewGuid();
+        await using var conn = new MySqlConnection(connectionString);
+        await conn.OpenAsync(ct);
+        await using var cmd = new MySqlCommand(
+            "INSERT INTO Gatehouses (Id, TenantId, Name, tenant_id) " +
+            "VALUES (@id, @tid, 'Integration test gatehouse', @tid)", conn);
+        cmd.Parameters.AddWithValue("@id", id.ToString());
+        cmd.Parameters.AddWithValue("@tid", tenantId.ToString());
+        await cmd.ExecuteNonQueryAsync(ct);
+        return id;
+    }
+
     public static async Task<Guid> SeedActiveApartmentAsync(string connectionString, Guid tenantId, string block, string unit, CancellationToken ct = default)
     {
         var id = Guid.NewGuid();

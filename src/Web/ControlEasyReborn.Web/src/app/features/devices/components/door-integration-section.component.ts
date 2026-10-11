@@ -46,7 +46,12 @@ interface DeviceRow {
   imports: [CommonModule, FormsModule, CeToggleComponent, DeviceFormModalComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="door-integration-section" data-test="door-integration" aria-labelledby="door-integration-heading">
+    <section
+      id="door-integration"
+      class="door-integration-section"
+      data-test="door-integration"
+      aria-labelledby="door-integration-heading"
+    >
       <header class="section-header">
         <h2 id="door-integration-heading">Door Integration</h2>
         <p class="section-subtitle">

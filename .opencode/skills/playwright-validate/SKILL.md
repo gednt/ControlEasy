@@ -29,10 +29,8 @@ code probably does.
   another reviewer can compare against `mockup/` references.
 - When investigating a bug report that includes a route, error message,
   or visual symptom.
-- When the `playwright-validate.ts` plugin auto-invokes this skill (it
-  fires after any `Edit|Write` to a `src/Web/ControlEasyReborn.Web/**`
-  file). In that case the skill should be quiet and fast: smoke-test
-  the touched route and capture one screenshot.
+- After any Angular SPA edit, as required by the repository's
+  `AGENTS.md` Playwright validation overlay.
 
 ## Pre-flight (idempotent, run once per session)
 

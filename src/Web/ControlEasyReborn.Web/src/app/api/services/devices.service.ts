@@ -10,8 +10,14 @@ import { BaseService } from '../base-service';
 import { ApiConfiguration } from '../api-configuration';
 import { StrictHttpResponse } from '../strict-http-response';
 
+import { apiV1DevicesDeviceIdActivationPut } from '../fn/devices/api-v-1-devices-device-id-activation-put';
+import { ApiV1DevicesDeviceIdActivationPut$Params } from '../fn/devices/api-v-1-devices-device-id-activation-put';
+import { apiV1DevicesDeviceIdDelete } from '../fn/devices/api-v-1-devices-device-id-delete';
+import { ApiV1DevicesDeviceIdDelete$Params } from '../fn/devices/api-v-1-devices-device-id-delete';
 import { apiV1DevicesDeviceIdGet } from '../fn/devices/api-v-1-devices-device-id-get';
 import { ApiV1DevicesDeviceIdGet$Params } from '../fn/devices/api-v-1-devices-device-id-get';
+import { apiV1DevicesDeviceIdPatch } from '../fn/devices/api-v-1-devices-device-id-patch';
+import { ApiV1DevicesDeviceIdPatch$Params } from '../fn/devices/api-v-1-devices-device-id-patch';
 import { apiV1DevicesDeviceIdUnlockPost } from '../fn/devices/api-v-1-devices-device-id-unlock-post';
 import { ApiV1DevicesDeviceIdUnlockPost$Params } from '../fn/devices/api-v-1-devices-device-id-unlock-post';
 import { apiV1DevicesGet } from '../fn/devices/api-v-1-devices-get';
@@ -52,33 +58,6 @@ export class DevicesService extends BaseService {
     );
   }
 
-  /** Path part for operation `apiV1DevicesDeviceIdGet()` */
-  static readonly ApiV1DevicesDeviceIdGetPath = '/api/v1/devices/{deviceId}';
-
-  /**
-   * This method provides access to the full `HttpResponse`, allowing access to response headers.
-   * To access only the response body, use `apiV1DevicesDeviceIdGet()` instead.
-   *
-   * This method doesn't expect any request body.
-   */
-  apiV1DevicesDeviceIdGet$Response(params?: ApiV1DevicesDeviceIdGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
-    const obs = apiV1DevicesDeviceIdGet(this.http, this.rootUrl, params, context);
-    return obs;
-  }
-
-  /**
-   * This method provides access only to the response body.
-   * To access the full response (for headers, for example), `apiV1DevicesDeviceIdGet$Response()` instead.
-   *
-   * This method doesn't expect any request body.
-   */
-  apiV1DevicesDeviceIdGet(params?: ApiV1DevicesDeviceIdGet$Params, context?: HttpContext): Observable<void> {
-    const resp = this.apiV1DevicesDeviceIdGet$Response(params, context);
-    return resp.pipe(
-      map((r: StrictHttpResponse<void>): void => r.body)
-    );
-  }
-
   /** Path part for operation `apiV1DevicesGet()` */
   static readonly ApiV1DevicesGetPath = '/api/v1/devices';
 
@@ -113,9 +92,9 @@ export class DevicesService extends BaseService {
    * This method provides access to the full `HttpResponse`, allowing access to response headers.
    * To access only the response body, use `apiV1DevicesPost()` instead.
    *
-   * This method doesn't expect any request body.
+   * This method sends `application/json` and handles request body of type `application/json`.
    */
-  apiV1DevicesPost$Response(params?: ApiV1DevicesPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+  apiV1DevicesPost$Response(params: ApiV1DevicesPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
     const obs = apiV1DevicesPost(this.http, this.rootUrl, params, context);
     return obs;
   }
@@ -124,10 +103,118 @@ export class DevicesService extends BaseService {
    * This method provides access only to the response body.
    * To access the full response (for headers, for example), `apiV1DevicesPost$Response()` instead.
    *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1DevicesPost(params: ApiV1DevicesPost$Params, context?: HttpContext): Observable<void> {
+    const resp = this.apiV1DevicesPost$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1DevicesDeviceIdGet()` */
+  static readonly ApiV1DevicesDeviceIdGetPath = '/api/v1/devices/{deviceId}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1DevicesDeviceIdGet()` instead.
+   *
    * This method doesn't expect any request body.
    */
-  apiV1DevicesPost(params?: ApiV1DevicesPost$Params, context?: HttpContext): Observable<void> {
-    const resp = this.apiV1DevicesPost$Response(params, context);
+  apiV1DevicesDeviceIdGet$Response(params: ApiV1DevicesDeviceIdGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = apiV1DevicesDeviceIdGet(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1DevicesDeviceIdGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1DevicesDeviceIdGet(params: ApiV1DevicesDeviceIdGet$Params, context?: HttpContext): Observable<void> {
+    const resp = this.apiV1DevicesDeviceIdGet$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1DevicesDeviceIdDelete()` */
+  static readonly ApiV1DevicesDeviceIdDeletePath = '/api/v1/devices/{deviceId}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1DevicesDeviceIdDelete()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1DevicesDeviceIdDelete$Response(params: ApiV1DevicesDeviceIdDelete$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = apiV1DevicesDeviceIdDelete(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1DevicesDeviceIdDelete$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1DevicesDeviceIdDelete(params: ApiV1DevicesDeviceIdDelete$Params, context?: HttpContext): Observable<void> {
+    const resp = this.apiV1DevicesDeviceIdDelete$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1DevicesDeviceIdPatch()` */
+  static readonly ApiV1DevicesDeviceIdPatchPath = '/api/v1/devices/{deviceId}';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1DevicesDeviceIdPatch()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1DevicesDeviceIdPatch$Response(params: ApiV1DevicesDeviceIdPatch$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = apiV1DevicesDeviceIdPatch(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1DevicesDeviceIdPatch$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1DevicesDeviceIdPatch(params: ApiV1DevicesDeviceIdPatch$Params, context?: HttpContext): Observable<void> {
+    const resp = this.apiV1DevicesDeviceIdPatch$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1DevicesDeviceIdActivationPut()` */
+  static readonly ApiV1DevicesDeviceIdActivationPutPath = '/api/v1/devices/{deviceId}/activation';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1DevicesDeviceIdActivationPut()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1DevicesDeviceIdActivationPut$Response(params: ApiV1DevicesDeviceIdActivationPut$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = apiV1DevicesDeviceIdActivationPut(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1DevicesDeviceIdActivationPut$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1DevicesDeviceIdActivationPut(params: ApiV1DevicesDeviceIdActivationPut$Params, context?: HttpContext): Observable<void> {
+    const resp = this.apiV1DevicesDeviceIdActivationPut$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<void>): void => r.body)
     );

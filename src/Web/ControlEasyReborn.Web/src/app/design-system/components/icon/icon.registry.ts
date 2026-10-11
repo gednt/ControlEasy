@@ -40,6 +40,7 @@ import {
   Image,
   Download,
   FileText,
+  Activity,
 } from 'lucide-angular';
 
 /** Tree-shaken Lucide icon set used across the app shell and feature pages. */
@@ -84,4 +85,5 @@ export const CE_LUCIDE_ICONS = LucideAngularModule.pick({
   Image,
   Download,
   FileText,
+  Activity,
 });

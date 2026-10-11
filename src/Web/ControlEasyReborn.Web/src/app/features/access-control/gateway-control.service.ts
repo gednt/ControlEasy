@@ -43,7 +43,7 @@ export class GatewayControlService {
     qrPayload: string;
     direction: 'entrance' | 'exit';
     scanAttemptId: string;
-    gatehouseId?: string | null;
+    gatehouseId: string;
     confirmDuplicate?: boolean;
   }): Observable<ScanResult> {
     return this.http.post<ScanResult>('/api/v1/access-events/scans', payload);
@@ -63,7 +63,7 @@ export class GatewayControlService {
       subjectType: payload.subjectType,
       subjectId: payload.subjectId,
       direction: payload.direction,
-      gatehouseId: payload.gatehouseId ?? null,
+      gatehouseId: payload.gatehouseId,
     });
   }
 
@@ -72,13 +72,14 @@ export class GatewayControlService {
     destinationApartmentId: string | null;
     packageDescription: string;
     packageCarrierCode?: string | null;
+    gatehouseId: string;
   }): Observable<ManualAccessResponse> {
     return this.http.post<ManualAccessResponse>('/api/v1/access-events/manual', {
       lookupAuditId: payload.lookupAuditId,
       subjectType: 'visitor',
       subjectId: payload.destinationApartmentId ?? '00000000-0000-0000-0000-000000000000',
       direction: 'entrance',
-      gatehouseId: null,
+      gatehouseId: payload.gatehouseId,
       kind: 'package-drop',
       packageDescription: payload.packageDescription,
       packageCarrierCode: payload.packageCarrierCode ?? null,

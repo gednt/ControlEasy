@@ -4,7 +4,7 @@
 export interface RecordAccessScanRequest {
   confirmDuplicate?: boolean;
   direction?: string | null;
-  gatehouseId?: string | null;
+  gatehouseId: string;
   qrPayload?: string | null;
   scanAttemptId?: string;
   visitorDocument?: string | null;

@@ -26,6 +26,7 @@ public sealed class QrScanEndpointsTests
     public async Task PostScan_resident_qr_success_records_event_with_destination_snapshot()
     {
         var tenantId = NewTenantId();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantId);
         var block = "Z" + Guid.NewGuid().ToString("N")[..6];
         var unit = Guid.NewGuid().ToString("N")[..6];
         var apartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, block, unit);
@@ -50,7 +51,7 @@ public sealed class QrScanEndpointsTests
             QrPayload: issued.Token,
             Direction: "entrance",
             ScanAttemptId: Guid.NewGuid(),
-            GatehouseId: null,
+            GatehouseId: gatehouseId,
             ConfirmDuplicate: false);
 
         var response = await client.PostAsJsonAsync("/api/v1/access-events/scans", request);
@@ -75,6 +76,7 @@ public sealed class QrScanEndpointsTests
     public async Task PostScan_revoked_credential_records_refused_attempt_with_credential_inactive_code()
     {
         var tenantId = NewTenantId();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantId);
         var apartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, "Z" + Guid.NewGuid().ToString("N")[..6], Guid.NewGuid().ToString("N")[..6]);
         var residentId = await AccessControlFixture.SeedActiveResidentAsync(_mySql.ConnectionString, tenantId, "Maria R", Guid.NewGuid().ToString("N")[..11], apartmentId);
 
@@ -99,7 +101,7 @@ public sealed class QrScanEndpointsTests
             QrPayload: issued.Token,
             Direction: "entrance",
             ScanAttemptId: Guid.NewGuid(),
-            GatehouseId: null,
+            GatehouseId: gatehouseId,
             ConfirmDuplicate: false);
 
         var response = await client.PostAsJsonAsync("/api/v1/access-events/scans", request);
@@ -117,6 +119,7 @@ public sealed class QrScanEndpointsTests
     public async Task PostScan_duplicate_scan_attempt_returns_same_decision_idempotently()
     {
         var tenantId = NewTenantId();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantId);
         var apartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, "Z" + Guid.NewGuid().ToString("N")[..6], Guid.NewGuid().ToString("N")[..6]);
         var residentId = await AccessControlFixture.SeedActiveResidentAsync(_mySql.ConnectionString, tenantId, "Maria D", Guid.NewGuid().ToString("N")[..11], apartmentId);
 
@@ -140,7 +143,7 @@ public sealed class QrScanEndpointsTests
             QrPayload: issued.Token,
             Direction: "entrance",
             ScanAttemptId: scanAttemptId,
-            GatehouseId: null,
+            GatehouseId: gatehouseId,
             ConfirmDuplicate: false);
 
         var first = await client.PostAsJsonAsync("/api/v1/access-events/scans", request);
@@ -177,6 +180,7 @@ public sealed class QrScanEndpointsTests
             Guid.NewGuid());
 
         var tenantB = NewTenantId();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantB);
         var factory = NewFactory();
         var client = QrScanTestClient.ForTenant(factory, tenantB);
 
@@ -184,7 +188,7 @@ public sealed class QrScanEndpointsTests
             QrPayload: issued.Token,
             Direction: "entrance",
             ScanAttemptId: Guid.NewGuid(),
-            GatehouseId: null,
+            GatehouseId: gatehouseId,
             ConfirmDuplicate: false);
 
         var response = await client.PostAsJsonAsync("/api/v1/access-events/scans", request);
@@ -195,6 +199,26 @@ public sealed class QrScanEndpointsTests
         problem!.FailureCode.Should().Be("invalid_credential");
 
         await AssertNoAccessEventForTenantAsync(tenantB, scanAttemptId: request.ScanAttemptId);
+    }
+
+    [Fact]
+    public async Task PostScan_foreign_gatehouse_returns_bad_request_without_persisting_event()
+    {
+        var tenantA = NewTenantId();
+        var foreignGatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantA);
+        var tenantB = NewTenantId();
+        var scanAttemptId = Guid.NewGuid();
+        var client = QrScanTestClient.ForTenant(NewFactory(), tenantB);
+
+        var response = await client.PostAsJsonAsync("/api/v1/access-events/scans", new RecordAccessScanRequest(
+            QrPayload: Guid.NewGuid().ToString(),
+            Direction: "entrance",
+            ScanAttemptId: scanAttemptId,
+            GatehouseId: foreignGatehouseId,
+            ConfirmDuplicate: false));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        await AssertNoAccessEventForTenantAsync(tenantB, scanAttemptId);
     }
 
     private async Task SetCredentialStatusAsync(Guid credentialId, int statusValue)

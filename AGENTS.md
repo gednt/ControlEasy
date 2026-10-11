@@ -157,10 +157,10 @@ Read each pointer only when the task touches that overlay's domain.
 - **agents-template** — `AGENTS-TEMPLATE.md`, `AGENTS-SPEC.md`,
   `agents-init/SKILL.md`. Load before editing this file or onboarding a
   new repo to the schema.
-- **playwright-validate** — `.opencode/skills/playwright-validate/SKILL.md`.
-  Smoke-test the Angular SPA in a real browser via Playwright MCP. Auto-
-  invoked by `.opencode/plugins/playwright-validate.ts` after any
-  `Edit|Write` to `src/Web/ControlEasyReborn.Web/**`.
+- **Playwright validation** — After any Angular SPA edit, smoke-test the
+  running application in a real browser using the available
+  `webapp-testing` skill. This is a contributor responsibility; no
+  repository plugin invokes it automatically.
 - **docs/AGENT-TOKEN-OPTIMIZATION.md** — what the project did to keep
   per-turn input tokens low, what was deliberately left to the user-
   level installers, and how to verify the savings. Load when

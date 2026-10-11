@@ -28,6 +28,7 @@ public sealed class VisitorScanVisitUnificationTests
     public async Task Unmatched_visitor_scan_creates_exactly_one_checked_in_visit()
     {
         var tenantId = NewTenantId();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantId);
         var block = "U" + Guid.NewGuid().ToString("N")[..6];
         var unit = Guid.NewGuid().ToString("N")[..6];
         var apartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, block, unit);
@@ -59,7 +60,7 @@ public sealed class VisitorScanVisitUnificationTests
             QrPayload: issued.Token,
             Direction: "entrance",
             ScanAttemptId: scanAttemptId,
-            GatehouseId: null,
+            GatehouseId: gatehouseId,
             ConfirmDuplicate: false,
             VisitorName: visitorName,
             VisitorDocument: document);
@@ -83,6 +84,7 @@ public sealed class VisitorScanVisitUnificationTests
     public async Task Duplicate_visitor_scan_with_new_attempt_id_is_idempotent()
     {
         var tenantId = NewTenantId();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantId);
         var block = "U" + Guid.NewGuid().ToString("N")[..6];
         var unit = Guid.NewGuid().ToString("N")[..6];
         var apartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, block, unit);
@@ -112,7 +114,7 @@ public sealed class VisitorScanVisitUnificationTests
             QrPayload: issued.Token,
             Direction: "entrance",
             ScanAttemptId: firstScanAttemptId,
-            GatehouseId: null,
+            GatehouseId: gatehouseId,
             ConfirmDuplicate: false,
             VisitorName: visitorName,
             VisitorDocument: document);
@@ -126,7 +128,7 @@ public sealed class VisitorScanVisitUnificationTests
             QrPayload: issued.Token,
             Direction: "entrance",
             ScanAttemptId: secondScanAttemptId,
-            GatehouseId: null,
+            GatehouseId: gatehouseId,
             ConfirmDuplicate: false,
             VisitorName: visitorName,
             VisitorDocument: document);
@@ -148,6 +150,7 @@ public sealed class VisitorScanVisitUnificationTests
     public async Task Pre_registered_visit_qr_scan_without_profile_fields_checks_in_the_credential_visit()
     {
         var tenantId = NewTenantId();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantId);
         var block = "U" + Guid.NewGuid().ToString("N")[..6];
         var unit = Guid.NewGuid().ToString("N")[..6];
         var apartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, block, unit);
@@ -173,7 +176,7 @@ public sealed class VisitorScanVisitUnificationTests
             QrPayload: issued.Token,
             Direction: "entrance",
             ScanAttemptId: scanAttemptId,
-            GatehouseId: null,
+            GatehouseId: gatehouseId,
             ConfirmDuplicate: false));
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -188,6 +191,7 @@ public sealed class VisitorScanVisitUnificationTests
     public async Task Resident_scan_creates_no_visit_rows()
     {
         var tenantId = NewTenantId();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantId);
         var block = "U" + Guid.NewGuid().ToString("N")[..6];
         var unit = Guid.NewGuid().ToString("N")[..6];
         var apartmentId = await AccessControlFixture.SeedActiveApartmentAsync(_mySql.ConnectionString, tenantId, block, unit);
@@ -214,7 +218,7 @@ public sealed class VisitorScanVisitUnificationTests
             QrPayload: issued.Token,
             Direction: "entrance",
             ScanAttemptId: Guid.NewGuid(),
-            GatehouseId: null,
+            GatehouseId: gatehouseId,
             ConfirmDuplicate: false);
 
         var response = await client.PostAsJsonAsync("/api/v1/access-events/scans", request);

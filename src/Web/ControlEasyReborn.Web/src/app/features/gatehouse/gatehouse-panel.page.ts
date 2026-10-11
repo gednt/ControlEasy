@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
   CeBadgeComponent,
   CeButtonComponent,
@@ -21,6 +21,8 @@ import { QrPassModalComponent } from '../access-control/components/qr-pass-modal
 import { getApiErrorMessage } from '../../core/utils/api-error.util';
 import { ToastService } from '../../design-system/components/toast/toast.component';
 import { DeviceHealthService, DeviceStatusTransition } from '../devices/device-health.service';
+import { GatehouseContextService } from '../access-control/gatehouse-context.service';
+import { AuthService } from '../../core/services/auth.service';
 
 export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
 
@@ -29,6 +31,7 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     ReactiveFormsModule,
     RouterLink,
     CeBadgeComponent,
@@ -89,14 +92,15 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
                 size="sm"
                 aria-label="Gatehouse only — package drop without entry"
                 (click)="openPackageDrop()"
+                [disabled]="!gatehouseContext.canRecord()"
                 data-testid="package-drop-btn"
               >
                 <ce-icon name="package" [size]="16" />
                 Package drop (no entry)
               </ce-button>
-              <span class="live-pill" aria-live="polite">
+              <span class="live-pill" [class.is-inactive]="!gatehouseContext.canRecord()" aria-live="polite">
                 <span class="pulse-dot"></span>
-                <span>Gate active</span>
+                <span>{{ gatehouseContext.canRecord() ? 'Gate active' : 'Gate inactive' }}</span>
               </span>
               @if (openVisitsCount() > 0) {
                 <span class="onsite-pill">
@@ -104,6 +108,42 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
                 </span>
               }
             </div>
+          </div>
+          <div class="operational-location" data-testid="active-gatehouse-context">
+            <label for="active-gatehouse">Recording location</label>
+            <select
+              id="active-gatehouse"
+              [ngModel]="gatehouseContext.selectedGatehouseId()"
+              (ngModelChange)="gatehouseContext.select($event || null)"
+              [disabled]="gatehouseContext.loading()"
+              data-testid="active-gatehouse-select"
+            >
+              <option [ngValue]="null">Select gatehouse</option>
+              @for (gatehouse of gatehouseContext.gatehouses(); track gatehouse.id) {
+                <option [ngValue]="gatehouse.id">
+                  {{ gatehouse.name }}@if (gatehouse.location) { — {{ gatehouse.location }} }
+                </option>
+              }
+            </select>
+            @if (gatehouseContext.loading()) {
+              <span class="location-status" role="status">Loading locations…</span>
+            } @else if (gatehouseContext.error()) {
+              <span class="location-status is-error" role="alert">
+                {{ gatehouseContext.error() }}
+                <button type="button" class="location-retry" (click)="gatehouseContext.load()">Retry</button>
+              </span>
+            } @else if (gatehouseContext.gatehouses().length === 0) {
+              <span class="location-status" role="status">
+                No gatehouse is registered.
+                @if (auth.isTenantAdmin()) {
+                  <a routerLink="/administration" fragment="door-integration">Configure Door Integration</a>.
+                } @else {
+                  Ask an authorized administrator to configure Door Integration.
+                }
+              </span>
+            } @else if (!gatehouseContext.selectedGatehouse()) {
+              <span class="location-status" role="status">Select a location before recording access.</span>
+            }
           </div>
           <p class="lede">
             Single operator workstation for credential scanning, manual resident lookup, immediate walk-in registration,
@@ -532,7 +572,8 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
             [disabled]="
               packageDropForm.invalid ||
               (!packageDropRecipient() && !packageDropCondominium()) ||
-              packageDropSubmitting()
+              packageDropSubmitting() ||
+              !gatehouseContext.canRecord()
             "
             data-testid="package-drop-submit"
           >
@@ -686,6 +727,50 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
         font-size: var(--font-size-sm);
         color: var(--color-text-secondary);
         max-width: 780px;
+      }
+
+      .operational-location {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: var(--space-2);
+        padding: var(--space-2) 0;
+        border-top: 1px solid var(--color-border);
+        color: var(--color-text-secondary);
+        font-size: var(--font-size-sm);
+      }
+      .operational-location label {
+        color: var(--color-text-primary);
+        font-weight: var(--font-weight-semibold);
+      }
+      .operational-location select {
+        min-width: 220px;
+        padding: var(--space-1) var(--space-2);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        background: var(--color-surface);
+        color: var(--color-text-primary);
+      }
+      .location-status a {
+        color: var(--color-primary);
+        text-decoration: underline;
+      }
+      .location-status.is-error {
+        color: var(--color-danger);
+      }
+      .location-retry {
+        border: 0;
+        padding: 0;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        font-weight: 700;
+        text-decoration: underline;
+        cursor: pointer;
+      }
+      .live-pill.is-inactive .pulse-dot {
+        background: var(--color-text-muted);
+        animation: none;
       }
 
       .gatehouse-tabs {
@@ -1032,6 +1117,8 @@ export class GatehousePanelPage implements OnInit, OnDestroy {
   // startPolling/stopPolling, so the page mount triggers polling and the
   // page destroy stops it. (The /devices page does the same when active.)
   private readonly deviceHealth = inject(DeviceHealthService);
+  readonly gatehouseContext = inject(GatehouseContextService);
+  readonly auth = inject(AuthService);
 
   readonly activeTab = signal<GatehouseTab>('qr');
 
@@ -1112,6 +1199,7 @@ export class GatehousePanelPage implements OnInit, OnDestroy {
 
     // 3. Preload apartments map and initial open visits count
     this.loadApartments();
+    this.gatehouseContext.load();
 
     // 4. Phase 26 (DOOR-14) — subscribe to offline-alert transitions. The
     //    service is shared with the /devices dashboard; whoever started it
@@ -1302,7 +1390,7 @@ export class GatehousePanelPage implements OnInit, OnDestroy {
     const recipient = this.packageDropRecipient();
     const isCondominium = this.packageDropCondominium();
     const lookupAuditId = this.packageDropLookupAuditId;
-    if (this.packageDropForm.invalid || this.packageDropSubmitting()) return;
+    if (this.packageDropForm.invalid || this.packageDropSubmitting() || !this.gatehouseContext.canRecord()) return;
     if (!isCondominium && !recipient?.apartmentId) return;
     if (!lookupAuditId) {
       this.packageDropError.set('A subject search is required before recording a package drop.');
@@ -1318,6 +1406,7 @@ export class GatehousePanelPage implements OnInit, OnDestroy {
         destinationApartmentId: isCondominium ? null : (recipient!.apartmentId ?? null),
         packageDescription: value.packageDescription.trim(),
         packageCarrierCode: value.packageCarrierCode.trim() || null,
+        gatehouseId: this.gatehouseContext.selectedGatehouseId()!,
       })
       .subscribe({
         next: () => {

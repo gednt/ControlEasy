@@ -39,6 +39,7 @@ public sealed class RecordAccessScanHandler
     private readonly IConsentPolicyEvaluator _policy;
     private readonly IAccessControlCryptoService _crypto;
     private readonly IAccessControlClock _clock;
+    private readonly IGatehouseAccessValidator _gatehouseValidator;
     private readonly AccessEventDestinationResolver _resolver;
     private readonly ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory? _visits;
     private readonly IAuditLogWriter? _auditWriter;
@@ -54,6 +55,7 @@ public sealed class RecordAccessScanHandler
         IConsentPolicyEvaluator policy,
         IAccessControlCryptoService crypto,
         IAccessControlClock clock,
+        IGatehouseAccessValidator gatehouseValidator,
         AccessEventDestinationResolver? resolver = null,
         ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory? visits = null,
         IAuditLogWriter? auditWriter = null,
@@ -68,6 +70,7 @@ public sealed class RecordAccessScanHandler
         _policy = policy;
         _crypto = crypto;
         _clock = clock;
+        _gatehouseValidator = gatehouseValidator;
         _visits = visits;
         _resolver = resolver ?? new AccessEventDestinationResolver(residents, vehicles, apartments, visits!);
         _auditWriter = auditWriter;
@@ -85,6 +88,8 @@ public sealed class RecordAccessScanHandler
             credentialMethod: CredentialMethodCodes.ToWire(CredentialMethod.Qr));
 
         var nowUtc = _clock.UtcNow;
+
+        await _gatehouseValidator.EnsureValidAsync(command.TenantId, command.GatehouseId, ct);
 
         var existing = await _events.FindByScanAttemptAsync(command.TenantId, command.ScanAttemptId, ct);
         if (existing is not null)

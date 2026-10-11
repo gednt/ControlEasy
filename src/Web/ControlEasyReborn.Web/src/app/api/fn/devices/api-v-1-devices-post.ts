@@ -7,13 +7,16 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
+import { RegisterDeviceRequest } from '../../models/register-device-request';
 
 export interface ApiV1DevicesPost$Params {
+      body: RegisterDeviceRequest
 }
 
-export function apiV1DevicesPost(http: HttpClient, rootUrl: string, params?: ApiV1DevicesPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+export function apiV1DevicesPost(http: HttpClient, rootUrl: string, params: ApiV1DevicesPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
   const rb = new RequestBuilder(rootUrl, apiV1DevicesPost.PATH, 'post');
   if (params) {
+    rb.body(params.body, 'application/json');
   }
 
   return http.request(

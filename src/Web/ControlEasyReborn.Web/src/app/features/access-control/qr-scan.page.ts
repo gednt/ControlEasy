@@ -14,6 +14,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { BrowserMultiFormatReader, IScannerControls } from '@zxing/browser';
 import { GatewayControlService } from './gateway-control.service';
+import { GatehouseContextService } from './gatehouse-context.service';
 import { AccessScanResultComponent } from './components/access-scan-result.component';
 import { ScanResult, ScanRefusal } from './access-control.types';
 import { AccessDirection, getSavedAccessDirection, saveAccessDirection } from './direction-storage';
@@ -237,6 +238,12 @@ function getSavedCameraFacingMode(): CameraFacingMode {
         <div class="error" role="alert" data-testid="qr-camera-error">{{ state().error }}</div>
       }
 
+      @if (!gatehouseContext.canRecord()) {
+        <p class="location-required" role="status" data-testid="qr-gatehouse-required">
+          Select an active gatehouse in the operator panel before recording an access event.
+        </p>
+      }
+
       <form (ngSubmit)="submit()" novalidate class="scan-form">
         <label class="field-group">
           <span class="field-title">Or enter QR credential token or UUID manually</span>
@@ -262,7 +269,11 @@ function getSavedCameraFacingMode(): CameraFacingMode {
             <option value="exit">Exit</option>
           </select>
         </label>
-        <button type="submit" [disabled]="state().busy || !state().qrPayload" data-testid="qr-submit-button">
+        <button
+          type="submit"
+          [disabled]="state().busy || !state().qrPayload || !gatehouseContext.canRecord()"
+          data-testid="qr-submit-button"
+        >
           {{ state().busy ? 'Scanning...' : 'Submit scan' }}
         </button>
         @if (state().busy) {
@@ -295,6 +306,7 @@ function getSavedCameraFacingMode(): CameraFacingMode {
 })
 export class QrScanPage implements AfterViewInit, OnDestroy {
   private readonly gateway = inject(GatewayControlService);
+  readonly gatehouseContext = inject(GatehouseContextService);
   private readonly reader = new BrowserMultiFormatReader();
   private scannerControls: IScannerControls | null = null;
   private currentSessionId = 0;
@@ -331,6 +343,7 @@ export class QrScanPage implements AfterViewInit, OnDestroy {
   );
 
   ngAfterViewInit(): void {
+    this.gatehouseContext.load();
     this.startScanner();
   }
 
@@ -351,7 +364,7 @@ export class QrScanPage implements AfterViewInit, OnDestroy {
   submit(): void {
     if (this.destroyed) return;
     const current = this.state();
-    if (!current.qrPayload || current.busy) return;
+    if (!current.qrPayload || current.busy || !this.gatehouseContext.canRecord()) return;
     const trimmed = current.qrPayload.trim();
     if (trimmed.length < PAYLOAD_MIN_LENGTH || trimmed.length > PAYLOAD_MAX_LENGTH) return;
     const scanAttemptId = cryptoRandom();
@@ -364,6 +377,7 @@ export class QrScanPage implements AfterViewInit, OnDestroy {
         qrPayload: trimmed,
         direction: current.direction,
         scanAttemptId,
+        gatehouseId: this.gatehouseContext.selectedGatehouseId()!,
       })
       .subscribe({
         next: (result: ScanResult) => {

@@ -8,23 +8,24 @@ import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
 import { CreateGatehouseRequest } from '../../models/create-gatehouse-request';
+import { GatehouseResponse } from '../../models/gatehouse-response';
 
 export interface ApiV1SecurityGatehousesPost$Params {
       body: CreateGatehouseRequest
 }
 
-export function apiV1SecurityGatehousesPost(http: HttpClient, rootUrl: string, params: ApiV1SecurityGatehousesPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+export function apiV1SecurityGatehousesPost(http: HttpClient, rootUrl: string, params: ApiV1SecurityGatehousesPost$Params, context?: HttpContext): Observable<StrictHttpResponse<GatehouseResponse>> {
   const rb = new RequestBuilder(rootUrl, apiV1SecurityGatehousesPost.PATH, 'post');
   if (params) {
     rb.body(params.body, 'application/json');
   }
 
   return http.request(
-    rb.build({ responseType: 'text', accept: '*/*', context })
+    rb.build({ responseType: 'json', accept: 'application/json', context })
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return (r as HttpResponse<any>).clone({ body: undefined }) as StrictHttpResponse<void>;
+      return r as StrictHttpResponse<GatehouseResponse>;
     })
   );
 }

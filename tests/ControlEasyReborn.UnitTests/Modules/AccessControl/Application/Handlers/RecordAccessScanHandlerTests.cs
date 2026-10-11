@@ -28,6 +28,7 @@ public sealed class RecordAccessScanHandlerTests
     private readonly IVehicleDirectory _vehicles = Substitute.For<IVehicleDirectory>();
     private readonly IApartmentDirectory _apartments = Substitute.For<IApartmentDirectory>();
     private readonly IConsentPolicyEvaluator _policy = Substitute.For<IConsentPolicyEvaluator>();
+    private readonly IGatehouseAccessValidator _gatehouses = Substitute.For<IGatehouseAccessValidator>();
 
     public RecordAccessScanHandlerTests()
     {
@@ -41,11 +42,44 @@ public sealed class RecordAccessScanHandlerTests
         _residents.SearchByApartmentAsync(_tenantId, Arg.Any<Guid>(), 0, 100, Arg.Any<CancellationToken>()).Returns(Array.Empty<Resident>());
         _residents.GetActiveIdentityDocumentsAsync(_tenantId, Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(Array.Empty<ResidentIdentityDocument>());
         _crypto.ResolveByTokenAsync(_tenantId, Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns((AccessCredential?)null);
+        _gatehouses.EnsureValidAsync(_tenantId, Arg.Any<Guid?>(), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
     }
 
     private readonly IAccessControlCryptoService _crypto = Substitute.For<IAccessControlCryptoService>();
 
-    private RecordAccessScanHandler BuildHandler() => new(_credentials, _events, _refusals, _residents, _vehicles, _apartments, _policy, _crypto, new SystemAccessControlClock());
+    private RecordAccessScanHandler BuildHandler() => new(
+        _credentials,
+        _events,
+        _refusals,
+        _residents,
+        _vehicles,
+        _apartments,
+        _policy,
+        _crypto,
+        new SystemAccessControlClock(),
+        _gatehouses);
+
+    [Fact]
+    public async Task Rejects_scan_before_persisting_when_gatehouse_is_missing()
+    {
+        var cmd = new RecordAccessScanCommand(
+            _tenantId,
+            "token",
+            CycleDirection.Entrance,
+            Guid.NewGuid(),
+            _profileId,
+            null,
+            false);
+        _gatehouses.EnsureValidAsync(_tenantId, null, Arg.Any<CancellationToken>()).Returns(
+            Task.FromException(new ControlEasyReborn.Modules.AccessControl.Application.Errors.ValidationException(
+                new Dictionary<string, string[]> { ["GatehouseId"] = new[] { "required" } })));
+
+        var act = () => BuildHandler().HandleAsync(cmd, CancellationToken.None);
+
+        await act.Should().ThrowAsync<ControlEasyReborn.Modules.AccessControl.Application.Errors.ValidationException>();
+        await _events.DidNotReceive().AddAsync(Arg.Any<AccessEvent>(), Arg.Any<CancellationToken>());
+        await _refusals.DidNotReceive().AddAsync(Arg.Any<RefusedScanAttempt>(), Arg.Any<CancellationToken>());
+    }
 
     [Fact]
     public async Task Returns_refused_invalid_credential_when_no_credential_matches_token_within_tenant()

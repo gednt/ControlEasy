@@ -1,9 +1,11 @@
 using ControlEasyReborn.Infrastructure.MultiTenancy;
+using ControlEasyReborn.Modules.AccessControl.Application.Abstractions;
 using ControlEasyReborn.Modules.Security.Application.Abstractions;
 using ControlEasyReborn.Modules.Security.Application.Contracts;
 using ControlEasyReborn.Modules.Security.Application.Handlers;
 using ControlEasyReborn.Modules.Security.Application.Validators;
 using ControlEasyReborn.Modules.Security.Infrastructure.Persistence;
+using ControlEasyReborn.Modules.Security.Infrastructure.Services;
 using ControlEasyReborn.SharedKernel.MultiTenancy;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +25,7 @@ public static class SecurityModuleServiceCollectionExtensions
         services.AddScoped<IAttendantProfileRepository, AttendantProfileRepository>();
         services.AddScoped<IShiftRepository, ShiftRepository>();
         services.AddScoped<IGatehouseRepository, GatehouseRepository>();
+        services.AddScoped<IGatehouseAccessValidator, GatehouseAccessValidator>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<ITempPasswordGenerator, TempPasswordGenerator>();
