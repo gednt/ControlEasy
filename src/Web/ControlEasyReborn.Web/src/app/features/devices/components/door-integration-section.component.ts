@@ -95,6 +95,76 @@ interface DeviceRow {
       </div>
 
       @if (doorFlag()?.doorIntegrationEnabled) {
+        <div class="gatehouses-card" aria-labelledby="gatehouses-heading" data-test="gatehouses-card">
+          <header class="gatehouses-header">
+            <h3 id="gatehouses-heading">Gatehouses</h3>
+          </header>
+
+          @if (gatehousesLoading()) {
+            <p class="loading-state" aria-live="polite">Loading gatehouses...</p>
+          } @else if (gatehouseOptions().length === 0) {
+            <p class="empty-state">
+              No gatehouses registered yet. Door devices require a gatehouse binding —
+              create at least one below.
+            </p>
+          } @else {
+            <ul class="gatehouse-list" data-test="gatehouse-list">
+              @for (g of gatehouseOptions(); track g.id) {
+                <li class="gatehouse-list-item" [attr.data-test]="'gatehouse-row-' + g.id">
+                  <span class="gatehouse-list-name">{{ g.name }}</span>
+                </li>
+              }
+            </ul>
+          }
+
+          <form
+            class="gatehouse-create-form"
+            data-test="gatehouse-create-form"
+            (ngSubmit)="onCreateGatehouse()"
+          >
+            <label class="gatehouse-create-field">
+              <span>Name <span aria-hidden="true">*</span></span>
+              <input
+                type="text"
+                class="ce-input"
+                data-test="gatehouse-create-name"
+                [(ngModel)]="gatehouseCreateName"
+                name="gatehouseCreateName"
+                maxlength="120"
+                required
+                [disabled]="gatehouseCreating()"
+              />
+            </label>
+            <label class="gatehouse-create-field">
+              <span>Location</span>
+              <input
+                type="text"
+                class="ce-input"
+                data-test="gatehouse-create-location"
+                [(ngModel)]="gatehouseCreateLocation"
+                name="gatehouseCreateLocation"
+                maxlength="500"
+                [disabled]="gatehouseCreating()"
+              />
+            </label>
+            <button
+              type="submit"
+              class="ce-button variant-primary"
+              data-test="gatehouse-create-submit"
+              [disabled]="gatehouseCreating() || !gatehouseCreateName().trim()"
+            >
+              @if (gatehouseCreating()) {
+                <span>Creating...</span>
+              } @else {
+                <span>+ Register gatehouse</span>
+              }
+            </button>
+            @if (gatehouseCreateError()) {
+              <p class="error-text" role="alert">{{ gatehouseCreateError() }}</p>
+            }
+          </form>
+        </div>
+
         <div class="devices-card" aria-labelledby="devices-heading">
           <header class="devices-header">
             <h3 id="devices-heading">Devices</h3>
@@ -220,6 +290,7 @@ interface DeviceRow {
       }
       .opt-in-card,
       .devices-card,
+      .gatehouses-card,
       .disabled-card {
         background: var(--color-surface);
         border: 1px solid var(--color-border);
@@ -235,7 +306,8 @@ interface DeviceRow {
         border-top-color: var(--color-neutral-light);
       }
       .opt-in-header,
-      .devices-header {
+      .devices-header,
+      .gatehouses-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -243,11 +315,48 @@ interface DeviceRow {
       }
       .opt-in-header h3,
       .devices-header h3,
+      .gatehouses-header h3,
       .disabled-card h3 {
         margin: 0;
         font-size: 1.15rem;
         font-weight: 600;
         color: var(--color-text-primary);
+      }
+      .gatehouse-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-2, 8px);
+      }
+      .gatehouse-list-item {
+        padding: var(--space-2, 8px) var(--space-3, 12px);
+        background: var(--color-surface-muted);
+        border-radius: var(--radius-md, 6px);
+        font-size: var(--font-size-sm, 14px);
+      }
+      .gatehouse-list-name {
+        font-weight: 500;
+        color: var(--color-text-primary);
+      }
+      .gatehouse-create-form {
+        display: grid;
+        grid-template-columns: 2fr 2fr auto;
+        gap: var(--space-3, 12px);
+        align-items: end;
+        padding-top: var(--space-3, 12px);
+        border-top: 1px solid var(--color-border);
+      }
+      .gatehouse-create-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .gatehouse-create-field > span {
+        font-size: var(--font-size-xs, 12px);
+        font-weight: 500;
+        color: var(--color-text-secondary);
       }
       .opt-in-row {
         display: flex;
@@ -391,6 +500,11 @@ export class DoorIntegrationSectionComponent implements OnInit {
   readonly devicesError = signal<string | null>(null);
   readonly devices = signal<DeviceDetail[]>([]);
   readonly gatehouseOptions = signal<GatehouseOption[]>([]);
+  readonly gatehousesLoading = signal(false);
+  readonly gatehouseCreateName = signal('');
+  readonly gatehouseCreateLocation = signal('');
+  readonly gatehouseCreating = signal(false);
+  readonly gatehouseCreateError = signal<string | null>(null);
 
   readonly deviceRows = computed<DeviceRow[]>(() =>
     this.devices().map((d) => ({
@@ -427,6 +541,7 @@ export class DoorIntegrationSectionComponent implements OnInit {
       this.doorFlag.set(flag);
       if (flag.doorIntegrationEnabled) {
         void this.loadDevices();
+        void this.loadGatehouses();
       }
     } catch {
       this.doorFlag.set({
@@ -480,6 +595,7 @@ export class DoorIntegrationSectionComponent implements OnInit {
   }
 
   async loadGatehouses(): Promise<void> {
+    this.gatehousesLoading.set(true);
     try {
       // Reuse the Security module's existing endpoint.
       const result = await firstValueFrom(
@@ -492,6 +608,39 @@ export class DoorIntegrationSectionComponent implements OnInit {
     } catch {
       // Non-blocking: modal will still render with an empty gatehouse list.
       this.gatehouseOptions.set([]);
+    } finally {
+      this.gatehousesLoading.set(false);
+    }
+  }
+
+  // v2.3 hotfix (gatehouse-management UI): the Security module already exposes
+  // POST /api/v1/security/gatehouses (SecurityEndpoints.cs:187), but no UI
+  // surface calls it. Tenants on a fresh install had no way to create a
+  // gatehouse, blocking every device registration because the modal's
+  // Gatehouse dropdown was empty.
+  async onCreateGatehouse(): Promise<void> {
+    const name = this.gatehouseCreateName().trim();
+    if (!name) return;
+    const location = this.gatehouseCreateLocation().trim();
+    this.gatehouseCreating.set(true);
+    this.gatehouseCreateError.set(null);
+    try {
+      const created = await firstValueFrom(
+        this.http.post<{ id: string; name: string; tenantId: string; location: string | null }>(
+          '/api/v1/security/gatehouses',
+          { name, location: location || null }
+        )
+      );
+      this.gatehouseOptions.set([
+        ...this.gatehouseOptions(),
+        { id: created.id, name: created.name },
+      ]);
+      this.gatehouseCreateName.set('');
+      this.gatehouseCreateLocation.set('');
+    } catch (err) {
+      this.gatehouseCreateError.set(getApiErrorMessage(err, 'Failed to create gatehouse.'));
+    } finally {
+      this.gatehouseCreating.set(false);
     }
   }
 
