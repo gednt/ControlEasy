@@ -40,16 +40,25 @@ public static class DevicesServiceCollectionExtensions
         services.AddScoped<ITenantDoorIntegrationRepository, TenantDoorIntegrationRepository>();
         services.AddScoped<IGatehouseLookup, GatehouseLookup>();
 
+        // Phase 25 - reader-event ingestion surface (DOOR-08..11).
+        services.AddScoped<IDeviceEventRepository, DeviceEventRepository>();
+        services.AddSingleton<IDeviceEventQueue, InMemoryDeviceEventQueue>();
+        services.AddSingleton<IDeviceHandler, SimulatedDeviceHandler>();
+        services.AddScoped<IDeviceCredentialResolver, DeviceCredentialResolver>();
+
         services.AddScoped<UnlockDeviceHandler>();
         services.AddScoped<ToggleDoorIntegrationHandler>();
         services.AddScoped<RegisterDeviceHandler>();
         services.AddScoped<EditDeviceHandler>();
         services.AddScoped<ActivateDeactivateDeviceHandler>();
         services.AddScoped<RemoveDeviceHandler>();
+        services.AddScoped<IngestDeviceEventHandler>();
+        services.AddScoped<ListDeviceEventsHandler>();
 
         services.AddScoped<IValidator<DoorUnlockRequest>, UnlockDeviceValidator>();
         services.AddScoped<IValidator<RegisterDeviceRequest>, RegisterDeviceValidator>();
         services.AddScoped<IValidator<EditDeviceRequest>, EditDeviceValidator>();
+        services.AddScoped<IValidator<DeviceEventPayload>, IngestDeviceEventValidator>();
 
         return services;
     }
