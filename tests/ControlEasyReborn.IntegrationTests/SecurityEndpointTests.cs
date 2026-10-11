@@ -117,15 +117,46 @@ public sealed class SecurityEndpointTests
         body.Should().NotBeNull();
     }
 
-    [Fact]
-    public async Task ListGatehouses_as_tenant_returns_ok()
+    [Theory]
+    [InlineData(null)]
+    [InlineData("Main entrance")]
+    public async Task CreateGatehouse_persists_exact_response_for_same_tenant_only(string? location)
     {
-        var client = _factory.AsTenantA();
+        var clientA = _factory.AsTenantA();
+        var clientB = _factory.AsTenantB();
+        var request = new CreateGatehouseRequest($"Gatehouse A {Guid.NewGuid():N}", location);
+        var tenantBRequest = new CreateGatehouseRequest($"Gatehouse B {Guid.NewGuid():N}", "Service entrance");
 
-        var response = await client.GetAsync("/api/v1/security/gatehouses");
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var createResponse = await clientA.PostAsJsonAsync("/api/v1/security/gatehouses", request);
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
 
-        var body = await response.Content.ReadFromJsonAsync<List<GatehouseResponse>>();
-        body.Should().NotBeNull();
+        var created = await createResponse.Content.ReadFromJsonAsync<GatehouseResponse>();
+        created.Should().NotBeNull();
+        var createdGatehouse = created!;
+        createdGatehouse.TenantId.Should().Be(TenantAwareWebApplicationFactory.TenantAId);
+        createdGatehouse.Name.Should().Be(request.Name);
+        createdGatehouse.Location.Should().Be(location);
+
+        var tenantBCreateResponse = await clientB.PostAsJsonAsync("/api/v1/security/gatehouses", tenantBRequest);
+        tenantBCreateResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        var tenantBCreated = await tenantBCreateResponse.Content.ReadFromJsonAsync<GatehouseResponse>();
+        tenantBCreated.Should().NotBeNull();
+
+        var sameTenantResponse = await clientA.GetAsync("/api/v1/security/gatehouses");
+        sameTenantResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var sameTenantGatehouses = await sameTenantResponse.Content.ReadFromJsonAsync<List<GatehouseResponse>>();
+        sameTenantGatehouses.Should().NotBeNull();
+        sameTenantGatehouses!.Should().ContainSingle(gatehouse => gatehouse.Id == createdGatehouse.Id)
+            .Which.Should().Be(createdGatehouse);
+
+        var otherTenantResponse = await clientB.GetAsync("/api/v1/security/gatehouses");
+        otherTenantResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var otherTenantGatehouses = await otherTenantResponse.Content.ReadFromJsonAsync<List<GatehouseResponse>>();
+        otherTenantGatehouses.Should().NotBeNull();
+        otherTenantGatehouses!.Should().ContainSingle(gatehouse => gatehouse.Id == tenantBCreated!.Id)
+            .Which.Should().Be(tenantBCreated);
+        otherTenantGatehouses!.Should().NotContain(gatehouse => gatehouse.Id == createdGatehouse.Id);
     }
 }
