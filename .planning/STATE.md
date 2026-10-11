@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v2.3
 milestone_name: Door Integration & Hardware Access (Simulator-First)
 status: executing
-stopped_at: Phase 25 complete (Reader Events & Ledger Integration) — all 4 ROADMAP success criteria met (DOOR-08 + DOOR-09 + DOOR-10 + DOOR-11 covered by 11 device-event integration tests in the Devices collection — 41/41 total Devices integration tests pass; 269/269 unit + 20/20 arch tests pass). 8 atomic commits on feat/milestone-v2.3.
-last_updated: "2026-10-11T12:30:00.000Z"
+stopped_at: Phase 26 complete (Device Health Monitoring) — all 4 ROADMAP success criteria met (DOOR-12 + DOOR-13 + DOOR-14 + recovery covered by 13 new integration tests in the Devices collection — 54/54 total Devices integration tests pass; 269/269 unit + 20/20 arch tests pass). 6 atomic phase-26 commits on feat/milestone-v2.3. v2.3 milestone execution is complete — `trigger-milestone-audit` next.
+last_updated: "2026-10-11T14:00:00.000Z"
 last_activity: 2026-10-11
-last_activity_desc: Phase 25 complete — phase 26 next
-state_head: 58f09e6
+last_activity_desc: Phase 26 complete — v2.3 milestone execution complete
+state_head: 4d7b7f3
 progress:
   total_phases: 4
-  completed_phases: 3
-  total_plans: 3
-  completed_plans: 3
-current_phase: 26
-current_phase_name: v2.3 Phase 26 — Device Health Monitoring
+  completed_phases: 4
+  total_plans: 4
+  completed_plans: 4
+current_phase: null
+current_phase_name: v2.3 milestone complete (Phases 23 + 24 + 25 + 26 all shipped)
 ---
 
 # Project State
@@ -24,24 +24,24 @@ current_phase_name: v2.3 Phase 26 — Device Health Monitoring
 See: .planning/PROJECT.md (updated 2026-10-10)
 
 **Core value:** Gatehouse staff can reliably register and control access through a fast, tenant-isolated web UI.
-**Current focus:** v2.3 Door Integration & Hardware Access (Simulator-First) — requirements + roadmap defined 2026-09-22 on `feat/planning-lineage-unification` (15 DOOR-* requirements, Phases 23–26 with success criteria in `.planning/ROADMAP.md`); ready for `/gsd-discuss-phase 23` or `/gsd-plan-phase 23`. Next milestones v2.4 (Phases 27–30) and v2.5 (Phases 31–34) remain planned.
+**Current focus:** v2.3 Door Integration & Hardware Access (Simulator-First) — requirements + roadmap defined 2026-09-22 on `feat/planning-lineage-unification` (15 DOOR-* requirements, Phases 23–26 with success criteria in `.planning/ROADMAP.md`); v2.3 execution complete on `feat/milestone-v2.3`. Next milestones v2.4 (Phases 27–30) and v2.5 (Phases 31–34) remain planned.
 
 ## Current Position
 
-Phase: 26 (next; Phase 25 complete)
+Phase: (none — v2.3 milestone complete)
 Plan: —
-Status: Awaiting `/gsd-plan-phase 26` (Device Health Monitoring) — DOOR-12..14
-Last activity: 2026-10-11 — Phase 25 complete (8 atomic commits, 41/41 Devices integration tests pass; 269/269 unit + 20/20 arch tests pass; 20/20 architecture tests pass including the new device_events backfill marker)
+Status: Awaiting `gsd-audit-milestone` (autonomous workflow trigger). v2.3 closes all 15 DOOR-* requirements across Phases 23-26.
+Last activity: 2026-10-11 — Phase 26 complete (6 atomic phase-26 commits, 54/54 Devices integration tests pass; 269/269 unit + 20/20 arch tests pass; 24/24 Angular Karma specs pass for the new dashboard + gatehouse-toast; CONFLICT-FREE WORKTREE on feat/milestone-v2.3 with 4 atomic phase-26 commits after the Phase 25 baseline).
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed (cumulative): 47 (11 v1.0 + 1 v1.1 + 3 v2.0 + 9 v2.1 + 15 v2.2 Phases 19/20/21/22 + 8 from v2.0 photo-capture/consent shipped via `.specs/photo-capture/` + `.specs/consent-gatehouse/`)
+- Total plans completed (cumulative): 48 (11 v1.0 + 1 v1.1 + 3 v2.0 + 9 v2.1 + 15 v2.2 Phases 19/20/21/22 + 8 from v2.0 photo-capture/consent shipped via `.specs/photo-capture/` + `.specs/consent-gatehouse/` + 4 from v2.3 Phases 23-26)
 - v2.1 milestone: 9 plans, 9 summaries, 3 verifications, full local CI verification passing
 - v2.2 milestone: 15 plans across Phases 19/20/21/22 (4 + 4 + 3 + 4); all four phases have `*-VALIDATION.md` + `*-VERIFICATION.md`; full local CI verification passing on the final state
 - Average duration per plan: ~5-15 min (autonomous execution)
-- v2.3 milestone: 3 plans, 3 summaries, 3 verifications (Phase 23 + Phase 24 + Phase 25 complete; Phase 26 pending)
+- v2.3 milestone: 4 plans, 4 summaries, 4 verifications (Phase 23 + Phase 24 + Phase 25 + Phase 26 complete — milestone execution DONE)
 
 **Per-Plan Metrics:**
 
@@ -66,6 +66,7 @@ Last activity: 2026-10-11 — Phase 25 complete (8 atomic commits, 41/41 Devices
 | Phase 23 P01 | ~90 min | 8 tasks | 30+ files |
 | Phase 24 P01 | ~120 min | 10 tasks | 39 files |
 | Phase 25 P01 | ~90 min | 7 tasks | 32 files |
+| Phase 26 P01 | ~90 min | 9 tasks | 42 files |
 
 **Per-Plan Metrics:**
 
@@ -109,7 +110,10 @@ Last activity: 2026-10-11 — Phase 25 complete (8 atomic commits, 41/41 Devices
 - v2.3 Phase 23 (Device Foundation & Simulator Harness): ships HMAC-SHA256 unlock security bar (per-tenant HKDF key, nonce cache, replay window, rate limiter), AES-256-GCM connection-params encryption per tenant, append-only `DeviceUnlockAudit` table with DB BEFORE UPDATE/DELETE triggers, in-process door simulator with dev-only inspector endpoint, and the full `/api/v1/devices/{id}/unlock` endpoint. 29 new tests (15 integration + 14 unit). Phase 24 consumes the IDeviceConnectionCryptoService and the Device entity's IsActive flag (no entity mutation required).
 - v2.3 Phase 24 (Device Administration & Tenant Opt-In): `Tenants.DoorIntegrationEnabled` toggle endpoint with audit columns (mirrors v2.1 MustChangePassword audit pattern); `POST/PATCH/PUT/DELETE /api/v1/devices` admin endpoints + GET redaction; cross-tenant gatehouse-id check returns 404 (not 403, so other tenants' gatehouse existence cannot be probed); soft-delete via `Devices.RemovedAtUtc` (24h quiet-period guard returns 409 if a `DeviceUnlockAudit` row exists in the last 24h); Angular `/administration` page extended with Door Integration section (ce-switch opt-in toggle + ce-table device list + disabled card); standalone `DeviceFormModalComponent` for register/edit flows (live JSON validity, vendor dropdown, gatehouse dropdown); handwritten `DevicesApiService` (bypasses generated OpenAPI client — kept commit surface minimal). 39 new tests (15 integration + 12 Angular component + 9 Playwright + 3 a11y/visual). Atomic commits: `feat(sql)`, `feat(devices)`, `feat(web)`, `docs(phase-24)`.
 - v2.3 Phase 25 (Reader Events & Ledger Integration): `device_events` append-only ledger table with idempotency UNIQUE `(tenant_id, device_id, sequence_number, external_event_id)` (DOOR-09 + DOOR-11); `POST /api/v1/devices/{deviceId}/events` ingest endpoint + `GET` admin list endpoint; `IDeviceHandler.Normalize()` vendor-agnostic abstraction with the in-process simulator shortcut for the test harness; single-write-path doctrine enforced by code grep — every Visit / AccessEvent / RefusedScanAttempt write flows through the existing `VisitorArrivalHandler` + `RecordAccessScanHandler` + new public `RecordRefusedScanHandler` (DOOR-10); idempotency-race race translated from MySqlException errno 1062 → `DuplicateIdempotencyKeyException`; SHA-256 verifier-byte lookup via new `IAccessCredentialRepository.FindByHashAsync(tenantId, sha256Hash)`; simulator inspector extended with `enqueue-offline` + `queue-peek` for the DOOR-11 disconnection-replay test; extended `RefusalCodes` with `UnknownCard` / `CredentialExpired` / `TamperDetected` / `CredentialMissingDestination`. 11 new integration tests across ingestion / idempotency / cross-tenant. Atomic commits: `feat(sql)`, `feat(accesscontrol)`, `feat(devices)` x2 (simulator handler/queue vs reader events), `feat(web)`, `test(devices)`, `chore(sql)` (backfill marker), `docs(phase-25)` x2 (SUMMARY + VERIFICATION).
+- v2.3 Phase 26 (Device Health Monitoring): `device_heartbeats` one-row-per-device table with `online/offline/degraded` status (DOOR-12), per-device thresholds `offline_after_seconds=60` + `error_rate_threshold_percent=10.00`; `IngestHeartbeatHandler` derives status from `gap = now - lastHeartbeatAtUtc` (Offline) + `errorRate = errorCount/max(eventsSinceLastSuccess,1) * 100` (Degraded) — per-event at ingestion time, no background sweep; `IDeviceHeartbeatRepository` surface is `GetAsync + UpsertAsync + ListAsync` only (no Update/Delete — matches DOOR-12 design rule); raw ADO `INSERT ... ON DUPLICATE KEY UPDATE` upsert (the Linq abstraction doesn't have a first-class upsert). Phase 25's `IngestDeviceEventHandler` now routes `EventType=Heartbeat` to the new handler BEFORE the idempotency-key check — heartbeats don't write a row to `device_events` (their own `device_heartbeats` row IS the durability marker). New `GET /api/v1/devices/health` (TenantAdmin + Porteiro via existing `devices.read` permission). Angular `DeviceHealthService` singleton (`@Injectable({providedIn:'root'})`) shared between `/devices` and `/gatehouse-panel` pages — 30s polling + 60s back-off after 3 consecutive errors; transition detection via `BehaviorSubject` snapshot diff; `offlineAlerts$` emits on `online -> offline` edges. New `/devices` standalone page with `ce-card` + `ce-table` + `ce-badge` (success/warning/danger) + 30s auto-refresh + Retry button. `GatehousePanelPage` extended with inline ce-toast (warning tone, dismissible, `aria-live="polite"`) above the page header; toast appears ONCE per offline transition; dismiss is local (service retains history). 13 new integration tests (6 ingestion + 4 health endpoint + 3 cross-tenant) + 14 new Angular unit specs (8 service + 6 page) + 3 new gatehouse-panel toast specs + 3 new Playwright visual + a11y specs. Atomic commits: `feat(devices)` (backend), `feat(devices)` (endpoint), `feat(web)` (dashboard page), `feat(web)` (gatehouse toast), `test(devices)` (integration), `test(web)` (Playwright).
 - Gatehouse access is software-only validation/audit: QR initial credential + manual lookup fallback; every visit requires a destination; biometrics require separate approved spec
+- Phase 26 polling cadence: 30s default for both /devices dashboard and /gatehouse-panel alert subscription — configurable via the service startPolling() arg. Singleton service (providedIn:'root') so both pages share one HTTP request cycle. Pauses for 60s after 3 consecutive HTTP errors (back-off), then resumes.
+- Phase 26 toast transition detection: implemented in the service (not the page), so the gatehouse-panel subscribe-and-react pattern works the same as the dashboard subscribe-and-react. Edge events (`online -> offline`, `offline -> online`, `online -> degraded`) flow through one `Subject<DeviceStatusTransition>` with `.kind` discriminator.
 - v2.2 Phase 22 closes UI-03/UI-04 parity for the four target pages (login/dashboard/visits/vehicles); remaining parity work for `apartments`, `service-providers`, `administration`, `platform/condominiums` is deferred (mockup-visual-parity UC6 list — future continuation, not silently expanded in Phase 22).
 - v2.0/v2.1 `*-VALIDATION.md` backfill (phases 11/12/13 + 16/17/18) is **out of scope** for TEST-02 (strictly 19–22); surfaced in `22-VERIFICATION.md` and `22-VALIDATION.md` cross-phase audit as a separate human decision, default deferred.
 - Multi-arch Docker/CI is fast-cycle (no milestone)
@@ -141,9 +145,10 @@ Last activity: 2026-10-11 — Phase 25 complete (8 atomic commits, 41/41 Devices
 ## Session Continuity
 
 Last session: 2026-10-11
-Stopped at: Phase 25 (Reader Events & Ledger Integration) complete on `feat/milestone-v2.3`. 8 atomic commits shipped (feat-sql, feat-accesscontrol, feat-devices x2, feat-web, test-devices, chore-sql, docs-phase-25 x2). 41/41 Devices integration tests pass (Phase 25 contributes 11 new tests across ingestion / replay / cross-tenant), 269/269 unit + 20/20 arch tests pass. All 4 ROADMAP success criteria met (DOOR-08 + DOOR-09 + DOOR-10 + DOOR-11). Next: Phase 26 — Device Health Monitoring (DOOR-12..14).
+Stopped at: Phase 26 (Device Health Monitoring) complete on `feat/milestone-v2.3`. 6 atomic phase-26 commits shipped (`feat(devices)` backend, `feat(devices)` endpoint, `feat(web)` dashboard, `feat(web)` gatehouse toast, `test(devices)` integration, `test(web)` Playwright). 54/54 Devices integration tests pass (Phase 26 contributes 13 new tests across heartbeat ingestion + health endpoint + cross-tenant), 269/269 unit + 20/20 arch tests pass, 24/24 Angular Karma specs pass (8 device-health.service + 6 devices-health.page + 10 gatehouse-panel including 3 new offline-toast specs). All 4 ROADMAP success criteria met (DOOR-12 + DOOR-13 + DOOR-14 + recovery). **v2.3 milestone execution complete.** The autonomous workflow will trigger `gsd-audit-milestone` (Milestone Audit), then `gsd-complete-milestone`, then `gsd-cleanup` as part of the lifecycle. v2.4 (Phases 27–30) and v2.5 (Phases 31–34, real hardware) are the next planned milestones.
 Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Wait for the autonomous `gsd-audit-milestone` + `gsd-complete-milestone` + `gsd-cleanup` lifecycle to finish. v2.3 is the FINAL milestone for the Door Integration work in the simulator-first track.
+- After milestone closeout, kick off v2.5 (Phases 31–34, real hardware) via `/gsd-new-milestone`.
