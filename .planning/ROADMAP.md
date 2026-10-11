@@ -40,9 +40,9 @@ Full details in Phase Details below · requirements: [REQUIREMENTS.md](REQUIREME
 <details>
 <summary>🚧 v2.3 Door Integration & Hardware Access — simulator-first (Phases 23-26) — PLANNING 2026-09-22</summary>
 
-- [ ] **Phase 23: Device Foundation & Simulator Harness** - `IDoorController`/`IDeviceHandler` abstractions, simulated device adapter, `devices` table with AES-256-GCM-encrypted connection params, secure unlock endpoint with HMAC/replay/rate-limit security bar, append-only tamper-evident unlock audit
-- [ ] **Phase 24: Device Administration & Tenant Opt-In** - `door_integration_enabled` tenant opt-in flag with admin UI, device registration/management UI (register, edit, activate/deactivate, remove)
-- [ ] **Phase 25: Reader Events & Ledger Integration** - `device_events` table, event ingestion → `DeviceEvent` normalization, ledger entries from card-match events, denied-attempt logging, idempotent replay-on-reconnect
+- [x] **Phase 23: Device Foundation & Simulator Harness** - `IDoorController`/`IDeviceHandler` abstractions, simulated device adapter, `devices` table with AES-256-GCM-encrypted connection params, secure unlock endpoint with HMAC/replay/rate-limit security bar, append-only tamper-evident unlock audit (completed 2026-09-26)
+- [x] **Phase 24: Device Administration & Tenant Opt-In** - `door_integration_enabled` tenant opt-in flag with admin UI, device registration/management UI (register, edit, activate/deactivate, remove) (completed 2026-10-11)
+- [x] **Phase 25: Reader Events & Ledger Integration** - `device_events` table, event ingestion → `DeviceEvent` normalization, ledger entries from card-match events, denied-attempt logging, idempotent replay-on-reconnect (completed 2026-10-11)
 - [ ] **Phase 26: Device Health Monitoring** - `device_heartbeats` tracking with per-device alert thresholds, health dashboard UI, offline alert toast in porteiro UI
 
 Full details in Phase Details below · requirements: [milestones/v2.3-REQUIREMENTS.md](milestones/v2.3-REQUIREMENTS.md)
