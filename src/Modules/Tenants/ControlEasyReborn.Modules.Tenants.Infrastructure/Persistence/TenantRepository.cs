@@ -74,8 +74,8 @@ public sealed class TenantRepository : ITenantRepository
             new[] { "Slug", "DisplayName", "Status" },
             TableName,
             new[] { tenant.Slug, tenant.DisplayName, ((int)tenant.Status).ToString(System.Globalization.CultureInfo.InvariantCulture) },
-            "Id = @param0",
-            new object[] { tenant.Id },
+            "Id = @param3",
+            new object[] { tenant.Id.ToString() },
             ct: ct);
     }
 

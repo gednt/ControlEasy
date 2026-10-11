@@ -29,7 +29,7 @@ public sealed class TenantDoorIntegrationRepository : ITenantDoorIntegrationRepo
             fields: "Id, DoorIntegrationEnabled, DoorIntegrationChangedAtUtc, DoorIntegrationChangedByProfileId",
             table: TableName,
             whereClause: "Id = @param0",
-            parameters: new object[] { tenantId },
+            parameters: new object[] { tenantId.ToString() },
             ct: ct);
 
         if (rows is null || rows.Rows.Count == 0) return null;
@@ -73,8 +73,8 @@ public sealed class TenantDoorIntegrationRepository : ITenantDoorIntegrationRepo
                 occurredAtUtc.ToString("yyyy-MM-dd HH:mm:ss.ffffff"),
                 actorProfileId.ToString()
             },
-            "Id = @param0",
-            new object[] { tenantId },
+            "Id = @param3",
+            new object[] { tenantId.ToString() },
             ct: ct);
 
         if (!updated || !string.IsNullOrEmpty(db.Error))
