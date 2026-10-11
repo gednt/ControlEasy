@@ -69,6 +69,23 @@ public sealed class GatehouseRepositoryTests
         await action.Should().ThrowAsync<OperationCanceledException>();
     }
 
+    [Fact]
+    public async Task SetActiveAsync_updates_only_lifecycle_state_by_id()
+    {
+        var gatehouse = CreateGatehouse(_tenantId);
+        gatehouse.SetActive(false);
+        var sut = CreateRepository(_tenantId);
+
+        await sut.SetActiveAsync(gatehouse, CancellationToken.None);
+
+        var operation = _fakeClient.Operations.Should().ContainSingle().Subject;
+        operation.Sql.Should().Contain("Active");
+        operation.Sql.Should().Contain("tenant_id = @param2");
+        operation.Parameters.Should().Contain("0");
+        operation.Parameters.Should().Contain(gatehouse.Id.ToString());
+        operation.Parameters.Should().Contain(_tenantId.ToString());
+    }
+
     private GatehouseRepository CreateRepository(Guid? contextTenantId)
     {
         var context = new FakeTenantContext(contextTenantId);

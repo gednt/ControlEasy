@@ -24,7 +24,7 @@ public sealed class GatehouseRepository : IGatehouseRepository
     {
         var db = _factory.Create(_ctx);
         var rows = await db.SelectAsync(
-            fields: "Id, TenantId, Name, Location",
+            fields: "Id, TenantId, Name, Location, Active",
             table: TableName,
             whereClause: "Id = @param0",
             parameters: new object[] { id },
@@ -32,13 +32,13 @@ public sealed class GatehouseRepository : IGatehouseRepository
         return MapFirstOrDefault(rows);
     }
 
-    public async Task<IReadOnlyList<Gatehouse>> ListByTenantAsync(Guid tenantId, CancellationToken ct)
+    public async Task<IReadOnlyList<Gatehouse>> ListByTenantAsync(Guid tenantId, bool includeInactive, CancellationToken ct)
     {
         var db = _factory.Create(_ctx);
         var rows = await db.SelectAsync(
-            fields: "Id, TenantId, Name, Location",
+            fields: "Id, TenantId, Name, Location, Active",
             table: TableName,
-            whereClause: "TenantId = @param0",
+            whereClause: includeInactive ? "TenantId = @param0" : "TenantId = @param0 AND Active = 1",
             parameters: new object[] { tenantId },
             ct: ct);
         return MapList(rows);
@@ -88,6 +88,30 @@ public sealed class GatehouseRepository : IGatehouseRepository
             ct: ct);
     }
 
+    public async Task SetActiveAsync(Gatehouse gatehouse, CancellationToken ct)
+    {
+        var tenantId = _ctx.TenantId
+            ?? throw new InvalidOperationException("A resolved tenant context is required to update a gatehouse.");
+        if (tenantId != gatehouse.TenantId)
+        {
+            throw new InvalidOperationException("The gatehouse tenant does not match the authenticated tenant context.");
+        }
+
+        var db = _factory.Create(_ctx);
+        var updated = await db.UpdateAsync(
+            new[] { "Active" },
+            TableName,
+            new[] { gatehouse.Active ? "1" : "0" },
+            "Id = @param1 AND tenant_id = @param2",
+            new object[] { gatehouse.Id.ToString(), tenantId.ToString() },
+            ct: ct);
+        if (!updated)
+        {
+            ct.ThrowIfCancellationRequested();
+            throw new InvalidOperationException($"Failed to update gatehouse {gatehouse.Id} lifecycle state. {db.Error}");
+        }
+    }
+
     private static Gatehouse? MapFirstOrDefault(DataTable rows)
     {
         if (rows is null || rows.Rows.Count == 0) return null;
@@ -112,6 +136,7 @@ public sealed class GatehouseRepository : IGatehouseRepository
             id: Guid.Parse(r["Id"].ToString() ?? string.Empty),
             tenantId: Guid.Parse(r["TenantId"].ToString() ?? string.Empty),
             name: r["Name"]?.ToString() ?? string.Empty,
-            location: string.IsNullOrEmpty(r["Location"]?.ToString()) ? null : r["Location"].ToString());
+            location: string.IsNullOrEmpty(r["Location"]?.ToString()) ? null : r["Location"].ToString(),
+            active: Convert.ToBoolean(r["Active"]));
     }
 }

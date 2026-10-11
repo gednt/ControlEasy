@@ -63,4 +63,18 @@ public sealed class GatehouseAccessValidatorTests
 
         await validator.EnsureValidAsync(_tenantId, gatehouseId, CancellationToken.None);
     }
+
+    [Fact]
+    public async Task Rejects_inactive_gatehouse_owned_by_current_tenant()
+    {
+        var gatehouseId = Guid.NewGuid();
+        _gatehouses.FindAsync(gatehouseId, Arg.Any<CancellationToken>())
+            .Returns(new Gatehouse(gatehouseId, _tenantId, "Retired entrance", null, active: false));
+        var validator = new GatehouseAccessValidator(_gatehouses);
+
+        var act = () => validator.EnsureValidAsync(_tenantId, gatehouseId, CancellationToken.None);
+
+        var exception = await act.Should().ThrowAsync<ValidationException>();
+        exception.Which.Errors.Should().ContainKey("GatehouseId");
+    }
 }

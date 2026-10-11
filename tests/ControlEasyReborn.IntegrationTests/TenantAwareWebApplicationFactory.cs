@@ -39,6 +39,8 @@ public abstract class TenantAwareWebApplicationFactory : WebApplicationFactory<P
         "Photos.Read",
         "Photos.Write",
         "Photos.Delete",
+        "devices.read",
+        "devices.write",
     ];
 
     public HttpClient AsTenantA()

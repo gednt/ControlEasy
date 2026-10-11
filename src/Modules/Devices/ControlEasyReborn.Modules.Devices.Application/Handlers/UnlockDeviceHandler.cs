@@ -39,6 +39,7 @@ public sealed class UnlockDeviceHandler
     private readonly ITenantDoorIntegrationFlagLookup _tenantFlagLookup;
     private readonly IValidator<DoorUnlockRequest> _validator;
     private readonly ILogger<UnlockDeviceHandler> _logger;
+    private readonly IGatehouseLookup _gatehouses;
 
     public UnlockDeviceHandler(
         IDeviceRepository devices,
@@ -50,6 +51,7 @@ public sealed class UnlockDeviceHandler
         IDoorSimulatorState simulatorState,
         ITenantDoorIntegrationFlagLookup tenantFlagLookup,
         IValidator<DoorUnlockRequest> validator,
+        IGatehouseLookup gatehouses,
         ILogger<UnlockDeviceHandler>? logger = null)
     {
         _devices = devices;
@@ -62,6 +64,7 @@ public sealed class UnlockDeviceHandler
         _tenantFlagLookup = tenantFlagLookup;
         _validator = validator;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<UnlockDeviceHandler>.Instance;
+        _gatehouses = gatehouses;
     }
 
     public async Task<DoorUnlockResult> HandleAsync(
@@ -177,6 +180,18 @@ public sealed class UnlockDeviceHandler
                 CorrelationId: correlationId,
                 OccurredAtUtc: nowUtc,
                 FailureCode: "device_inactive");
+        }
+        if (device.GatehouseId.HasValue &&
+            !await _gatehouses.IsActiveAsync(tenantId, device.GatehouseId.Value, ct))
+        {
+            var correlationId = Guid.NewGuid();
+            using var _ = DeviceLoggingProperties.BeginScope(tenantId, deviceId, actorProfileId, correlationId, outcome: "gatehouse_inactive");
+            return new DoorUnlockResult(
+                DoorUnlockResultKind.DeviceInactive,
+                CorrelationId: correlationId,
+                OccurredAtUtc: nowUtc,
+                FailureCode: "gatehouse_inactive",
+                FailureDetail: "The device gatehouse is inactive.");
         }
 
         // 7. Delegate to IDoorController (simulated or real driver).

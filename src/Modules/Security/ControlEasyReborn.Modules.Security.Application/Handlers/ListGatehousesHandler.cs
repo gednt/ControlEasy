@@ -12,9 +12,9 @@ public sealed class ListGatehousesHandler
         _gatehouses = gatehouses;
     }
 
-    public async Task<IReadOnlyList<GatehouseResponse>> HandleAsync(Guid tenantId, CancellationToken ct)
+    public async Task<IReadOnlyList<GatehouseResponse>> HandleAsync(Guid tenantId, bool includeInactive, CancellationToken ct)
     {
-        var gatehouses = await _gatehouses.ListByTenantAsync(tenantId, ct);
+        var gatehouses = await _gatehouses.ListByTenantAsync(tenantId, includeInactive, ct);
         return gatehouses.Select(CreateGatehouseHandler.ToResponse).ToList();
     }
 }

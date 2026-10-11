@@ -118,6 +118,20 @@ describe('GatehouseContextService', () => {
     expect(localStorage.getItem('ce.active_gatehouse.tenant-a:profile-a')).toBeNull();
   });
 
+  it('clears a persisted selection when management marks the gatehouse inactive', () => {
+    localStorage.setItem('ce.active_gatehouse.tenant-a:profile-a', 'gatehouse-a');
+
+    service.load();
+    httpMock.expectOne('/api/v1/security/gatehouses').flush([
+      { id: 'gatehouse-a', name: 'Retired gatehouse', location: null, active: false },
+      { id: 'gatehouse-b', name: 'Active gatehouse', location: null, active: true },
+    ]);
+
+    expect(service.gatehouses().map((gatehouse) => gatehouse.id)).toEqual(['gatehouse-b']);
+    expect(service.selectedGatehouseId()).toBeNull();
+    expect(localStorage.getItem('ce.active_gatehouse.tenant-a:profile-a')).toBeNull();
+  });
+
   it('can load the new session while the previous session request is still in flight', () => {
     service.load();
     const previousRequest = httpMock.expectOne('/api/v1/security/gatehouses');

@@ -202,6 +202,41 @@ public sealed class DeviceAdminEndpointTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task InactiveGatehouse_BlocksNewBindingAndUnlock_ButAllowsUnchangedDeviceAssignment()
+    {
+        await using (var conn = new MySqlConnection(_fx.MySql.ConnectionString))
+        {
+            await conn.OpenAsync();
+            await using var cmd = new MySqlCommand(
+                "UPDATE Gatehouses SET Active = 0 WHERE Id = @id AND tenant_id = @tid", conn);
+            cmd.Parameters.AddWithValue("@id", _fx.GatehouseId.ToString());
+            cmd.Parameters.AddWithValue("@tid", _fx.TenantId.ToString());
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        var admin = TenantAdminClient();
+        var register = await admin.PostAsJsonAsync(
+            "/api/v1/devices",
+            new RegisterDeviceRequest(
+                DeviceType: "reader",
+                Vendor: "Synthetic reader",
+                GatehouseId: _fx.GatehouseId,
+                ConnectionParams: new Dictionary<string, object> { ["endpoint"] = "https://inactive.example.test" }));
+        register.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        var edit = await admin.PatchAsJsonAsync(
+            $"/api/v1/devices/{_fx.DeviceId}",
+            new EditDeviceRequest(Vendor: "Updated synthetic controller", GatehouseId: _fx.GatehouseId, ConnectionParams: null));
+        edit.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var porteiro = PorteiroClient();
+        var unlock = await porteiro.PostAsJsonAsync(
+            $"/api/v1/devices/{_fx.DeviceId}/unlock",
+            _fx.BuildSignedRequestForDevice(_fx.DeviceId));
+        unlock.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
     public async Task SetActivation_Deactivates_UnlockRejected()
     {
         var client = TenantAdminClient();

@@ -159,4 +159,73 @@ public sealed class SecurityEndpointTests
             .Which.Should().Be(tenantBCreated);
         otherTenantGatehouses!.Should().NotContain(gatehouse => gatehouse.Id == createdGatehouse.Id);
     }
+
+    [Fact]
+    public async Task Gatehouse_activation_is_reversible_tenant_scoped_and_hidden_from_operational_list()
+    {
+        var clientA = _factory.AsTenantA();
+        var clientB = _factory.AsTenantB();
+        var create = await clientA.PostAsJsonAsync(
+            "/api/v1/security/gatehouses",
+            new CreateGatehouseRequest($"Lifecycle {Guid.NewGuid():N}", "Synthetic entrance"));
+        create.EnsureSuccessStatusCode();
+        var gatehouse = (await create.Content.ReadFromJsonAsync<GatehouseResponse>())!;
+        gatehouse.Active.Should().BeTrue();
+
+        var omittedActivation = await clientA.PutAsJsonAsync(
+            $"/api/v1/security/gatehouses/{gatehouse.Id}/activation",
+            new { });
+        omittedActivation.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var foreignMutation = await clientB.PutAsJsonAsync(
+            $"/api/v1/security/gatehouses/{gatehouse.Id}/activation",
+            new SetGatehouseActivationRequest(false));
+        foreignMutation.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        var disable = await clientA.PutAsJsonAsync(
+            $"/api/v1/security/gatehouses/{gatehouse.Id}/activation",
+            new SetGatehouseActivationRequest(false));
+        disable.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await disable.Content.ReadFromJsonAsync<GatehouseResponse>())!.Active.Should().BeFalse();
+
+        var operational = await clientA.GetFromJsonAsync<List<GatehouseResponse>>("/api/v1/security/gatehouses");
+        operational.Should().NotContain(item => item.Id == gatehouse.Id);
+        var management = await clientA.GetFromJsonAsync<List<GatehouseResponse>>(
+            "/api/v1/security/gatehouses?includeInactive=true");
+        management.Should().ContainSingle(item => item.Id == gatehouse.Id).Which.Active.Should().BeFalse();
+
+        var enable = await clientA.PutAsJsonAsync(
+            $"/api/v1/security/gatehouses/{gatehouse.Id}/activation",
+            new SetGatehouseActivationRequest(true));
+        enable.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await enable.Content.ReadFromJsonAsync<GatehouseResponse>())!.Active.Should().BeTrue();
+
+        operational = await clientA.GetFromJsonAsync<List<GatehouseResponse>>("/api/v1/security/gatehouses");
+        operational.Should().Contain(item => item.Id == gatehouse.Id);
+    }
+
+    [Fact]
+    public async Task Gatehouse_operator_can_list_locations_but_cannot_change_lifecycle()
+    {
+        var client = _factory.CreateClient();
+        var token = JwtTestHelper.GenerateTenantToken(
+            Guid.NewGuid(),
+            "gatehouse-operator@tenanta.test",
+            TenantAwareWebApplicationFactory.TenantAId,
+            roles: new[] { "GatehouseOperator" },
+            permissions: new[] { "Access.Read", "Access.Access.Operate" });
+        client.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var list = await client.GetAsync("/api/v1/security/gatehouses");
+        list.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var managementList = await client.GetAsync("/api/v1/security/gatehouses?includeInactive=true");
+        managementList.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        var activation = await client.PutAsJsonAsync(
+            $"/api/v1/security/gatehouses/{Guid.NewGuid()}/activation",
+            new SetGatehouseActivationRequest(false));
+        activation.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
 }

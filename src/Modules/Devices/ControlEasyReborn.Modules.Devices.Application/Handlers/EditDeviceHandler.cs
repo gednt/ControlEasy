@@ -65,10 +65,12 @@ public sealed class EditDeviceHandler
         }
 
         // Cross-tenant gatehouse check (same rule as register).
-        if (request.GatehouseId.HasValue && request.GatehouseId.Value != Guid.Empty)
+        var changesGatehouse = request.GatehouseId.HasValue && request.GatehouseId != device.GatehouseId;
+        if (changesGatehouse && request.GatehouseId!.Value != Guid.Empty)
         {
             var gatehouseTenant = await _gatehouses.GetGatehouseTenantAsync(request.GatehouseId.Value, ct);
-            if (gatehouseTenant is null || gatehouseTenant.Value != tenantId)
+            if (gatehouseTenant is null || gatehouseTenant.Value != tenantId ||
+                !await _gatehouses.IsActiveAsync(tenantId, request.GatehouseId.Value, ct))
             {
                 throw new NotFoundException($"Gatehouse {request.GatehouseId} not found for this tenant.");
             }

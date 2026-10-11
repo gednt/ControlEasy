@@ -60,6 +60,7 @@ public sealed class IngestDeviceEventHandler
     private readonly IngestHeartbeatHandler _ingestHeartbeat;
     private readonly IValidator<DeviceEventPayload> _validator;
     private readonly ILogger<IngestDeviceEventHandler> _logger;
+    private readonly IGatehouseLookup _gatehouses;
 
     public IngestDeviceEventHandler(
         IDeviceRepository devices,
@@ -72,6 +73,7 @@ public sealed class IngestDeviceEventHandler
         IVisitDirectory visitDirectory,
         IngestHeartbeatHandler ingestHeartbeat,
         IValidator<DeviceEventPayload> validator,
+        IGatehouseLookup gatehouses,
         ILogger<IngestDeviceEventHandler>? logger = null)
     {
         _devices = devices;
@@ -85,6 +87,7 @@ public sealed class IngestDeviceEventHandler
         _ingestHeartbeat = ingestHeartbeat;
         _validator = validator;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<IngestDeviceEventHandler>.Instance;
+        _gatehouses = gatehouses;
     }
 
     public async Task<DeviceEventIngestionDto> HandleAsync(
@@ -137,7 +140,6 @@ public sealed class IngestDeviceEventHandler
         {
             return BuildDto(DeviceEventResultCode.DeviceInactive, occurredAtUtc: payload.OccurredAtUtc, processedAtUtc: DateTime.UtcNow);
         }
-
         // 3. Idempotency-key check.
         var existing = await _events.GetByIdempotencyKeyAsync(tenantId, deviceId, payload.SequenceNumber, payload.ExternalEventId, ct);
         if (existing is not null)
@@ -150,6 +152,13 @@ public sealed class IngestDeviceEventHandler
                 refusedScanAttemptId: existing.RefusedScanAttemptId,
                 occurredAtUtc: existing.OccurredAtUtc,
                 processedAtUtc: existing.ProcessedAtUtc);
+        }
+
+        if (payload.EventType != DeviceEventType.ReaderReconnected &&
+            device.GatehouseId.HasValue &&
+            !await _gatehouses.IsActiveAsync(tenantId, device.GatehouseId.Value, ct))
+        {
+            return BuildDto(DeviceEventResultCode.DeviceInactive, occurredAtUtc: payload.OccurredAtUtc, processedAtUtc: DateTime.UtcNow);
         }
 
         // 4+5. Normalize through IDeviceHandler and dispatch.

@@ -167,6 +167,8 @@ export type { ApiV1SecurityGatehousesGet$Params as ApiV1SecurityGatehousesGet$Pa
 export { apiV1SecurityGatehousesGet as apiV1SecurityGatehousesGet } from './fn/security/api-v-1-security-gatehouses-get';
 export type { ApiV1SecurityGatehousesPost$Params as ApiV1SecurityGatehousesPost$Params } from './fn/security/api-v-1-security-gatehouses-post';
 export { apiV1SecurityGatehousesPost as apiV1SecurityGatehousesPost } from './fn/security/api-v-1-security-gatehouses-post';
+export type { ApiV1SecurityGatehousesIdActivationPut$Params as ApiV1SecurityGatehousesIdActivationPut$Params } from './fn/security/api-v-1-security-gatehouses-id-activation-put';
+export { apiV1SecurityGatehousesIdActivationPut as apiV1SecurityGatehousesIdActivationPut } from './fn/security/api-v-1-security-gatehouses-id-activation-put';
 export type { ApiV1ServiceProvidersGet$Params as ApiV1ServiceProvidersGet$Params } from './fn/service-providers/api-v-1-service-providers-get';
 export { apiV1ServiceProvidersGet as apiV1ServiceProvidersGet } from './fn/service-providers/api-v-1-service-providers-get';
 export type { ApiV1ServiceProvidersPost$Params as ApiV1ServiceProvidersPost$Params } from './fn/service-providers/api-v-1-service-providers-post';

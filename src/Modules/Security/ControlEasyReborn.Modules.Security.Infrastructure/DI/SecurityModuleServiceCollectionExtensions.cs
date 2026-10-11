@@ -50,6 +50,7 @@ public static class SecurityModuleServiceCollectionExtensions
         services.AddScoped<ListShiftsHandler>();
         services.AddScoped<CreateGatehouseHandler>();
         services.AddScoped<ListGatehousesHandler>();
+        services.AddScoped<SetGatehouseActivationHandler>();
         services.AddScoped<TenantLookupHandler>();
         services.AddScoped<TenantSwitchHandler>();
         services.AddScoped<GetSessionHandler>();

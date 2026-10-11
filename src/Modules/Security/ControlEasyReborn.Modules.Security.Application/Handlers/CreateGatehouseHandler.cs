@@ -38,5 +38,5 @@ public sealed class CreateGatehouseHandler
     }
 
     internal static GatehouseResponse ToResponse(Gatehouse g) =>
-        new(g.Id, g.TenantId, g.Name, g.Location);
+        new(g.Id, g.TenantId, g.Name, g.Location, g.Active);
 }

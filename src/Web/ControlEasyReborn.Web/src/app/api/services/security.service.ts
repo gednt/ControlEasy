@@ -34,6 +34,8 @@ import { apiV1SecurityBootstrapGet } from '../fn/security/api-v-1-security-boots
 import { ApiV1SecurityBootstrapGet$Params } from '../fn/security/api-v-1-security-bootstrap-get';
 import { apiV1SecurityGatehousesGet } from '../fn/security/api-v-1-security-gatehouses-get';
 import { ApiV1SecurityGatehousesGet$Params } from '../fn/security/api-v-1-security-gatehouses-get';
+import { apiV1SecurityGatehousesIdActivationPut } from '../fn/security/api-v-1-security-gatehouses-id-activation-put';
+import { ApiV1SecurityGatehousesIdActivationPut$Params } from '../fn/security/api-v-1-security-gatehouses-id-activation-put';
 import { apiV1SecurityGatehousesPost } from '../fn/security/api-v-1-security-gatehouses-post';
 import { ApiV1SecurityGatehousesPost$Params } from '../fn/security/api-v-1-security-gatehouses-post';
 import { apiV1SecuritySessionGet } from '../fn/security/api-v-1-security-session-get';
@@ -622,6 +624,33 @@ export class SecurityService extends BaseService {
    */
   apiV1SecurityGatehousesPost(params: ApiV1SecurityGatehousesPost$Params, context?: HttpContext): Observable<GatehouseResponse> {
     const resp = this.apiV1SecurityGatehousesPost$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<GatehouseResponse>): GatehouseResponse => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1SecurityGatehousesIdActivationPut()` */
+  static readonly ApiV1SecurityGatehousesIdActivationPutPath = '/api/v1/security/gatehouses/{id}/activation';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1SecurityGatehousesIdActivationPut()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityGatehousesIdActivationPut$Response(params: ApiV1SecurityGatehousesIdActivationPut$Params, context?: HttpContext): Observable<StrictHttpResponse<GatehouseResponse>> {
+    const obs = apiV1SecurityGatehousesIdActivationPut(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1SecurityGatehousesIdActivationPut$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1SecurityGatehousesIdActivationPut(params: ApiV1SecurityGatehousesIdActivationPut$Params, context?: HttpContext): Observable<GatehouseResponse> {
+    const resp = this.apiV1SecurityGatehousesIdActivationPut$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<GatehouseResponse>): GatehouseResponse => r.body)
     );

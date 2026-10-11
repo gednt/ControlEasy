@@ -9,8 +9,8 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import { SecurityService } from '../../../api/services/security.service';
 import { CeToggleComponent } from '../../../design-system/components/toggle/toggle.component';
 import {
   AdministrationApiService,
@@ -27,6 +27,8 @@ import { getApiErrorMessage } from '../../../core/utils/api-error.util';
 interface GatehouseOption {
   id: string;
   name: string;
+  location: string | null;
+  active: boolean;
 }
 
 interface DeviceRow {
@@ -99,8 +101,7 @@ interface DeviceRow {
         }
       </div>
 
-      @if (doorFlag()?.doorIntegrationEnabled) {
-        <div class="gatehouses-card" aria-labelledby="gatehouses-heading" data-test="gatehouses-card">
+      <div class="gatehouses-card" aria-labelledby="gatehouses-heading" data-test="gatehouses-card">
           <header class="gatehouses-header">
             <h3 id="gatehouses-heading">Gatehouses</h3>
           </header>
@@ -116,10 +117,28 @@ interface DeviceRow {
             <ul class="gatehouse-list" data-test="gatehouse-list">
               @for (g of gatehouseOptions(); track g.id) {
                 <li class="gatehouse-list-item" [attr.data-test]="'gatehouse-row-' + g.id">
-                  <span class="gatehouse-list-name">{{ g.name }}</span>
+                  <span class="gatehouse-list-name">
+                    {{ g.name }}
+                    @if (g.location) { <small>{{ g.location }}</small> }
+                  </span>
+                  <span class="ce-badge" [class.success]="g.active" [class.neutral]="!g.active">
+                    {{ g.active ? 'Active' : 'Inactive' }}
+                  </span>
+                  <button
+                    type="button"
+                    class="ce-button variant-ghost size-sm"
+                    [attr.data-test]="'gatehouse-activation-' + g.id"
+                    [disabled]="gatehouseActivationPendingId() === g.id"
+                    (click)="onSetGatehouseActivation(g)"
+                  >
+                    {{ gatehouseActivationPendingId() === g.id ? 'Saving...' : (g.active ? 'Disable' : 'Enable') }}
+                  </button>
                 </li>
               }
             </ul>
+          }
+          @if (gatehouseActivationError()) {
+            <p class="error-text" role="alert">{{ gatehouseActivationError() }}</p>
           }
 
           <form
@@ -168,8 +187,9 @@ interface DeviceRow {
               <p class="error-text" role="alert">{{ gatehouseCreateError() }}</p>
             }
           </form>
-        </div>
+      </div>
 
+      @if (doorFlag()?.doorIntegrationEnabled) {
         <div class="devices-card" aria-labelledby="devices-heading">
           <header class="devices-header">
             <h3 id="devices-heading">Devices</h3>
@@ -268,7 +288,7 @@ interface DeviceRow {
       <ce-device-form-modal
         [open]="modalOpen()"
         [device]="modalDevice()"
-        [gatehouseList]="gatehouseOptions()"
+        [gatehouseList]="modalGatehouseOptions()"
         (saved)="onDeviceSaved($event)"
         (cancelled)="onDeviceCancelled()"
       ></ce-device-form-modal>
@@ -340,10 +360,20 @@ interface DeviceRow {
         background: var(--color-surface-muted);
         border-radius: var(--radius-md, 6px);
         font-size: var(--font-size-sm, 14px);
+        display: flex;
+        align-items: center;
+        gap: var(--space-3, 12px);
       }
       .gatehouse-list-name {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
         font-weight: 500;
         color: var(--color-text-primary);
+      }
+      .gatehouse-list-name small {
+        color: var(--color-text-secondary);
+        font-weight: 400;
       }
       .gatehouse-create-form {
         display: grid;
@@ -495,7 +525,7 @@ interface DeviceRow {
 export class DoorIntegrationSectionComponent implements OnInit {
   private readonly adminApi = inject(AdministrationApiService);
   private readonly devicesApi = inject(DevicesApiService);
-  private readonly http = inject(HttpClient);
+  private readonly securityApi = inject(SecurityService);
 
   readonly doorFlag = signal<TenantDoorIntegrationFlagDto | null>(null);
   readonly toggling = signal(false);
@@ -505,11 +535,21 @@ export class DoorIntegrationSectionComponent implements OnInit {
   readonly devicesError = signal<string | null>(null);
   readonly devices = signal<DeviceDetail[]>([]);
   readonly gatehouseOptions = signal<GatehouseOption[]>([]);
+  readonly activeGatehouseOptions = computed(() => this.gatehouseOptions().filter((gatehouse) => gatehouse.active));
+  readonly modalGatehouseOptions = computed(() => {
+    const active = this.activeGatehouseOptions();
+    const currentGatehouseId = this.modalDevice()?.gatehouseId;
+    if (!currentGatehouseId || active.some((gatehouse) => gatehouse.id === currentGatehouseId)) return active;
+    const current = this.gatehouseOptions().find((gatehouse) => gatehouse.id === currentGatehouseId);
+    return current ? [...active, current] : active;
+  });
   readonly gatehousesLoading = signal(false);
   readonly gatehouseCreateName = signal('');
   readonly gatehouseCreateLocation = signal('');
   readonly gatehouseCreating = signal(false);
   readonly gatehouseCreateError = signal<string | null>(null);
+  readonly gatehouseActivationPendingId = signal<string | null>(null);
+  readonly gatehouseActivationError = signal<string | null>(null);
 
   readonly deviceRows = computed<DeviceRow[]>(() =>
     this.devices().map((d) => ({
@@ -544,9 +584,9 @@ export class DoorIntegrationSectionComponent implements OnInit {
     try {
       const flag = await firstValueFrom(this.adminApi.getDoorIntegration());
       this.doorFlag.set(flag);
+      void this.loadGatehouses();
       if (flag.doorIntegrationEnabled) {
         void this.loadDevices();
-        void this.loadGatehouses();
       }
     } catch {
       this.doorFlag.set({
@@ -591,7 +631,6 @@ export class DoorIntegrationSectionComponent implements OnInit {
         }
       }
       this.devices.set(details);
-      void this.loadGatehouses();
     } catch (err) {
       this.devicesError.set(getApiErrorMessage(err, 'Failed to load devices.'));
     } finally {
@@ -603,12 +642,13 @@ export class DoorIntegrationSectionComponent implements OnInit {
     this.gatehousesLoading.set(true);
     try {
       // Reuse the Security module's existing endpoint.
-      const result = await firstValueFrom(
-        this.http.get<unknown>('/api/v1/security/gatehouses')
-      );
-      const list = Array.isArray(result) ? result : [];
+      const list = await firstValueFrom(this.securityApi.apiV1SecurityGatehousesGet({ includeInactive: true }));
       this.gatehouseOptions.set(
-        list.map((g: { id: string; name: string }) => ({ id: g.id, name: g.name }))
+        list.flatMap((g) =>
+          g.id && g.name
+            ? [{ id: g.id, name: g.name, location: g.location ?? null, active: g.active !== false }]
+            : [],
+        ),
       );
     } catch {
       // Non-blocking: modal will still render with an empty gatehouse list.
@@ -630,15 +670,13 @@ export class DoorIntegrationSectionComponent implements OnInit {
     this.gatehouseCreating.set(true);
     this.gatehouseCreateError.set(null);
     try {
-      const created = await firstValueFrom(
-        this.http.post<{ id: string; name: string; tenantId: string; location: string | null }>(
-          '/api/v1/security/gatehouses',
-          { name, location: location || null }
-        )
-      );
+      const created = await firstValueFrom(this.securityApi.apiV1SecurityGatehousesPost({
+        body: { name, location: location || null },
+      }));
+      if (!created.id || !created.name) throw new Error('Gatehouse response was incomplete.');
       this.gatehouseOptions.set([
         ...this.gatehouseOptions(),
-        { id: created.id, name: created.name },
+        { id: created.id, name: created.name, location: created.location ?? null, active: created.active !== false },
       ]);
       this.gatehouseCreateName.set('');
       this.gatehouseCreateLocation.set('');
@@ -646,6 +684,29 @@ export class DoorIntegrationSectionComponent implements OnInit {
       this.gatehouseCreateError.set(getApiErrorMessage(err, 'Failed to create gatehouse.'));
     } finally {
       this.gatehouseCreating.set(false);
+    }
+  }
+
+  async onSetGatehouseActivation(gatehouse: GatehouseOption): Promise<void> {
+    const active = !gatehouse.active;
+    if (!active && !window.confirm(`Disable ${gatehouse.name}? Operators and devices will no longer be able to record activity there.`)) {
+      return;
+    }
+
+    this.gatehouseActivationPendingId.set(gatehouse.id);
+    this.gatehouseActivationError.set(null);
+    try {
+      const updated = await firstValueFrom(this.securityApi.apiV1SecurityGatehousesIdActivationPut({
+        id: gatehouse.id,
+        body: { active },
+      }));
+      this.gatehouseOptions.update((items) =>
+        items.map((item) => item.id === gatehouse.id ? { ...item, active: updated.active ?? active } : item),
+      );
+    } catch (err) {
+      this.gatehouseActivationError.set(getApiErrorMessage(err, `Failed to ${active ? 'enable' : 'disable'} gatehouse.`));
+    } finally {
+      this.gatehouseActivationPendingId.set(null);
     }
   }
 

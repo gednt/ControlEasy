@@ -43,8 +43,8 @@ export class GatehouseContextService {
     this.securityApi.apiV1SecurityGatehousesGet().subscribe({
       next: (response) => {
         if (this.sessionKey() !== sessionKey) return;
-        const gatehouses = response.flatMap(({ id, name, location }) =>
-          id && name ? [{ id, name, location: location ?? null }] : [],
+        const gatehouses = response.flatMap(({ id, name, location, active }) =>
+          id && name && active !== false ? [{ id, name, location: location ?? null }] : [],
         );
         this.gatehouses.set(gatehouses);
         this.restoreSelection(sessionKey, gatehouses);

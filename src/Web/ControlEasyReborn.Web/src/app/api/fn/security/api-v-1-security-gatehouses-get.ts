@@ -10,11 +10,13 @@ import { RequestBuilder } from '../../request-builder';
 import { GatehouseResponse } from '../../models/gatehouse-response';
 
 export interface ApiV1SecurityGatehousesGet$Params {
+  includeInactive?: boolean;
 }
 
 export function apiV1SecurityGatehousesGet(http: HttpClient, rootUrl: string, params?: ApiV1SecurityGatehousesGet$Params, context?: HttpContext): Observable<StrictHttpResponse<Array<GatehouseResponse>>> {
   const rb = new RequestBuilder(rootUrl, apiV1SecurityGatehousesGet.PATH, 'get');
   if (params) {
+    rb.query('includeInactive', params.includeInactive, {});
   }
 
   return http.request(

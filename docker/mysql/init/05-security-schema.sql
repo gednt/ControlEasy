@@ -36,10 +36,12 @@ CREATE TABLE IF NOT EXISTS Gatehouses (
     TenantId CHAR(36) NOT NULL,
     Name VARCHAR(120) NOT NULL,
     Location VARCHAR(500) NULL,
+    Active TINYINT(1) NOT NULL DEFAULT 1,
     tenant_id CHAR(36) NOT NULL,
     PRIMARY KEY (Id),
     INDEX IX_Gatehouses_TenantId (TenantId),
-    INDEX IX_Gatehouses_tenant_id (tenant_id)
+    INDEX IX_Gatehouses_tenant_id (tenant_id),
+    INDEX IX_Gatehouses_tenant_active (tenant_id, Active)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS RefreshTokens (

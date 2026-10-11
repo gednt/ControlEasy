@@ -8,11 +8,13 @@ import { AdministrationApiService, CondominiumSettingsDto, AuditLogResponse } fr
 import { AuthService, type StaffMemberResponse } from '../../core/services/auth.service';
 import { DevicesApiService } from '../devices/devices-api.service';
 import { DoorIntegrationSectionComponent } from '../devices/components/door-integration-section.component';
+import { SecurityService } from '../../api/services/security.service';
 
 describe('AdministrationPage', () => {
   let component: AdministrationPage;
   let fixture: ComponentFixture<AdministrationPage>;
   let apiMock: jasmine.SpyObj<AdministrationApiService>;
+  let securityMock: jasmine.SpyObj<SecurityService>;
   let authMock: {
     isTenantAdmin: ReturnType<typeof signal<boolean>>;
     isPlatformAdmin: ReturnType<typeof signal<boolean>>;
@@ -90,6 +92,12 @@ describe('AdministrationPage', () => {
         doorIntegrationChangedByProfileId: null,
       })
     );
+    securityMock = jasmine.createSpyObj<SecurityService>('SecurityService', [
+      'apiV1SecurityGatehousesGet',
+      'apiV1SecurityGatehousesPost',
+      'apiV1SecurityGatehousesIdActivationPut',
+    ]);
+    securityMock.apiV1SecurityGatehousesGet.and.returnValue(of([]));
 
     authMock = {
       isTenantAdmin: signal(true),
@@ -128,6 +136,7 @@ describe('AdministrationPage', () => {
         { provide: AdministrationApiService, useValue: apiMock },
         { provide: AuthService, useValue: authMock },
         { provide: DevicesApiService, useValue: devicesApiMock },
+        { provide: SecurityService, useValue: securityMock },
         provideHttpClient(),
       ],
     }).compileComponents();
@@ -454,6 +463,43 @@ describe('AdministrationPage', () => {
 
     const gatehouseSelect = fixture.nativeElement.querySelector('#gatehouse') as HTMLSelectElement | null;
     expect(gatehouseSelect).not.toBeNull();
+  });
+
+  it('DoorIntegrationSection_DisablesGatehouseWhileKeepingItVisible', async () => {
+    apiMock.getDoorIntegration.and.returnValue(of({
+      tenantId: 'test-tenant-id',
+      doorIntegrationEnabled: false,
+      doorIntegrationChangedAtUtc: null,
+      doorIntegrationChangedByProfileId: null,
+    }));
+    securityMock.apiV1SecurityGatehousesGet.and.returnValue(of([
+      { id: 'gatehouse-a', tenantId: 'test-tenant-id', name: 'Synthetic gatehouse', location: null, active: true },
+    ]));
+    securityMock.apiV1SecurityGatehousesIdActivationPut.and.returnValue(of({
+      id: 'gatehouse-a', tenantId: 'test-tenant-id', name: 'Synthetic gatehouse', location: null, active: false,
+    }));
+    spyOn(window, 'confirm').and.returnValue(true);
+
+    await refreshDoorFlag();
+    const section = fixture.debugElement.query(By.directive(DoorIntegrationSectionComponent))
+      .componentInstance as DoorIntegrationSectionComponent;
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const disable = fixture.nativeElement.querySelector(
+      '[data-test="gatehouse-activation-gatehouse-a"]',
+    ) as HTMLButtonElement;
+    disable.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(window.confirm).toHaveBeenCalled();
+    expect(securityMock.apiV1SecurityGatehousesIdActivationPut).toHaveBeenCalledWith({
+      id: 'gatehouse-a',
+      body: { active: false },
+    });
+    expect(section.gatehouseOptions()[0]!.active).toBeFalse();
+    expect(fixture.nativeElement.querySelector('[data-test="gatehouse-row-gatehouse-a"]')).not.toBeNull();
+    expect(section.activeGatehouseOptions()).toEqual([]);
   });
 
   it('DoorIntegrationSection_RegisterModalEmits', async () => {

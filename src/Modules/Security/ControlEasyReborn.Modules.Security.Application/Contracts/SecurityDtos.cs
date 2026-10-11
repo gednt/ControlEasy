@@ -33,7 +33,9 @@ public sealed record ShiftResponse(Guid Id, Guid TenantId, string Name, TimeSpan
 
 public sealed record CreateGatehouseRequest(string Name, string? Location);
 
-public sealed record GatehouseResponse(Guid Id, Guid TenantId, string Name, string? Location);
+public sealed record SetGatehouseActivationRequest(bool? Active);
+
+public sealed record GatehouseResponse(Guid Id, Guid TenantId, string Name, string? Location, bool Active);
 
 public sealed record TenantLookupResponse(Guid TenantId, string Slug, string DisplayName, string UserDisplayName);
 

@@ -221,6 +221,26 @@ public sealed class QrScanEndpointsTests
         await AssertNoAccessEventForTenantAsync(tenantB, scanAttemptId);
     }
 
+    [Fact]
+    public async Task PostScan_inactive_gatehouse_returns_bad_request_without_persisting_event()
+    {
+        var tenantId = NewTenantId();
+        var gatehouseId = await AccessControlFixture.SeedGatehouseAsync(_mySql.ConnectionString, tenantId);
+        await SetGatehouseActiveAsync(gatehouseId, active: false);
+        var scanAttemptId = Guid.NewGuid();
+        var client = QrScanTestClient.ForTenant(NewFactory(), tenantId);
+
+        var response = await client.PostAsJsonAsync("/api/v1/access-events/scans", new RecordAccessScanRequest(
+            QrPayload: Guid.NewGuid().ToString(),
+            Direction: "entrance",
+            ScanAttemptId: scanAttemptId,
+            GatehouseId: gatehouseId,
+            ConfirmDuplicate: false));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        await AssertNoAccessEventForTenantAsync(tenantId, scanAttemptId);
+    }
+
     private async Task SetCredentialStatusAsync(Guid credentialId, int statusValue)
     {
         await using var conn = new MySqlConnector.MySqlConnection(_mySql.ConnectionString);
@@ -229,6 +249,17 @@ public sealed class QrScanEndpointsTests
             "UPDATE AccessCredentials SET Status = @status, UpdatedAtUtc = UTC_TIMESTAMP(6) WHERE Id = @id", conn);
         cmd.Parameters.AddWithValue("@status", statusValue);
         cmd.Parameters.AddWithValue("@id", credentialId.ToString());
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private async Task SetGatehouseActiveAsync(Guid gatehouseId, bool active)
+    {
+        await using var conn = new MySqlConnector.MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        await using var cmd = new MySqlConnector.MySqlCommand(
+            "UPDATE Gatehouses SET Active = @active WHERE Id = @id", conn);
+        cmd.Parameters.AddWithValue("@active", active);
+        cmd.Parameters.AddWithValue("@id", gatehouseId.ToString());
         await cmd.ExecuteNonQueryAsync();
     }
 

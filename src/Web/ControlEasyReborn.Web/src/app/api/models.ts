@@ -28,6 +28,7 @@ export type { HttpValidationProblemDetails } from './models/http-validation-prob
 export type { IssueCredentialRequest } from './models/issue-credential-request';
 export type { LoginRequest } from './models/login-request';
 export type { LookupSubjectRequest } from './models/lookup-subject-request';
+export type { ProblemDetails } from './models/problem-details';
 export type { RecordAccessScanRequest } from './models/record-access-scan-request';
 export type { RecordManualAccessRequest } from './models/record-manual-access-request';
 export type { RefreshRequest } from './models/refresh-request';
@@ -37,6 +38,7 @@ export type { ResidentsPerApartmentResponse } from './models/residents-per-apart
 export type { ResumeTenantRequest } from './models/resume-tenant-request';
 export type { RevokeCredentialRequest } from './models/revoke-credential-request';
 export type { SetDeviceActivationRequest } from './models/set-device-activation-request';
+export type { SetGatehouseActivationRequest } from './models/set-gatehouse-activation-request';
 export type { SetSimulatorFailureModeRequest } from './models/set-simulator-failure-mode-request';
 export type { SetSimulatorOfflineRequest } from './models/set-simulator-offline-request';
 export type { SimulatorFailureMode } from './models/simulator-failure-mode';

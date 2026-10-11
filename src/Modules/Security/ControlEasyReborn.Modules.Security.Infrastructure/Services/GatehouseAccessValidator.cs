@@ -26,7 +26,7 @@ public sealed class GatehouseAccessValidator : IGatehouseAccessValidator
         }
 
         var gatehouse = await _gatehouses.FindAsync(gatehouseId.Value, ct);
-        if (gatehouse is null || gatehouse.TenantId != tenantId)
+        if (gatehouse is null || gatehouse.TenantId != tenantId || !gatehouse.Active)
         {
             throw InvalidGatehouse();
         }

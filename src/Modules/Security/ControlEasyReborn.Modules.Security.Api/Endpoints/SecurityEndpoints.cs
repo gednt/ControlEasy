@@ -4,6 +4,7 @@ using ControlEasyReborn.Modules.Security.Application.Errors;
 using ControlEasyReborn.Modules.Security.Application.Handlers;
 using ControlEasyReborn.Modules.Tenants.Api.Auth;
 using ControlEasyReborn.SharedKernel.MultiTenancy;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -199,16 +200,52 @@ public static class SecurityEndpoints
         .ProducesValidationProblem(StatusCodes.Status400BadRequest);
 
         gatehousesGroup.MapGet("/", async (
+            [FromQuery] bool? includeInactive,
+            HttpContext httpContext,
+            IAuthorizationService authorizationService,
             ITenantContext tenantContext,
             ListGatehousesHandler handler,
             CancellationToken ct) =>
         {
+            if (includeInactive == true)
+            {
+                var authorized = await authorizationService.AuthorizeAsync(
+                    httpContext.User,
+                    resource: null,
+                    policyName: "Permission_devices.write");
+                if (!authorized.Succeeded)
+                {
+                    return Results.Forbid();
+                }
+            }
+
             var tenantId = tenantContext.TenantId
                 ?? throw new InvalidOperationException("Tenant context is not resolved.");
-            var response = await handler.HandleAsync(tenantId, ct);
+            var response = await handler.HandleAsync(tenantId, includeInactive == true, ct);
             return Results.Ok(response);
         })
         .Produces<IReadOnlyList<GatehouseResponse>>(StatusCodes.Status200OK);
+
+        gatehousesGroup.MapPut("/{id:guid}/activation", async (
+            Guid id,
+            [FromBody] SetGatehouseActivationRequest request,
+            SetGatehouseActivationHandler handler,
+            CancellationToken ct) =>
+        {
+            if (request.Active is not bool active)
+            {
+                return Results.ValidationProblem(new Dictionary<string, string[]>
+                {
+                    [nameof(request.Active)] = ["Active is required."],
+                });
+            }
+
+            var response = await handler.HandleAsync(id, active, ct);
+            return Results.Ok(response);
+        })
+        .Produces<GatehouseResponse>(StatusCodes.Status200OK)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .RequireAuthorization("Permission_devices.write");
 
         group.MapPost("/tenant-switch", async (
             [FromBody] TenantSwitchRequest request,
