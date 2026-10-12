@@ -3,6 +3,14 @@
 // API contract changes (Phase 23 ships the API; Phase 24/26 surface it in
 // the porteiro / administration pages).
 
+// Re-exported for the device simulator feature (Phase 27). The generated
+// module is the source of truth; the indirection lets consumers import the
+// alias from this barrel (the file they already use for the other device
+// DTOs) instead of the generated-models path. `export type` is required by
+// the project's `isolatedModules: true` setting.
+import type { SimulatorFailureMode } from '../../api/models/simulator-failure-mode';
+export type { SimulatorFailureMode };
+
 export type DoorUnlockOutcome =
   | 'success'
   | 'device_offline'
@@ -190,4 +198,65 @@ export interface DeviceHealthDto {
   offlineAfterSeconds: number;
   errorRateThresholdPercent: number;
   isOfflineExceeded: boolean;
+}
+
+// Phase 27 (DOOR-15) — device simulator inspector surface (UI only).
+// Mirrors the v2.3 backend inspector endpoints shipped in Phase 23/25.
+// No backend changes in this phase; the types are inferred from the C#
+// DTOs in src/Modules/Devices/ControlEasyReborn.Modules.Devices.Application
+// /Abstractions/IDoorSimulatorState.cs and the request bodies in
+// SimulatorInspectorEndpoints.cs. Update both files when the API contract
+// changes (the OpenAPI generation is the source of truth for path / method
+// shape, but the body types are hand-mirrored because the generated
+// service returns Observable<void> for these endpoints).
+
+export function simulatorFailureModeLabel(mode: SimulatorFailureMode): string {
+  switch (mode) {
+    case 0:
+      return 'None';
+    case 1:
+      return 'Always AuthFailed';
+    case 2:
+      return 'Always DeviceOffline';
+    case 3:
+      return 'Fails-Then-Recovers';
+    default:
+      return 'None';
+  }
+}
+
+// Tuple form for use in template literals and array iteration where
+// the index is statically 0..3. Prefer `simulatorFailureModeLabel(mode)`
+// for single-value rendering — this is a sibling API for select-option
+// rendering.
+export const SIMULATOR_FAILURE_MODE_LABELS: readonly [string, string, string, string] = [
+  'None',
+  'Always AuthFailed',
+  'Always DeviceOffline',
+  'Fails-Then-Recovers',
+];
+
+export interface SimulatedAttempt {
+  tenantId: string;
+  deviceId: string;
+  actorProfileId: string;
+  nonce: string;
+  timestampUtc: string;
+  outcome: string;
+  correlationId: string;
+  occurredAtUtc: string;
+}
+
+export interface EnqueueOfflineResult {
+  queued: number;
+}
+
+export interface SimulatorQueueItem {
+  // Mirrors ControlEasyReborn.Modules.Devices.Application.Contracts.DeviceEventPayload.
+  eventType: string;
+  occurredAtUtc: string;
+  sequenceNumber: number;
+  externalEventId: string | null;
+  opaqueToken: string | null;
+  payloadJson: string | null;
 }

@@ -1,6 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { DevicesInternalService } from '../../api/services/devices-internal.service';
 import {
   DoorUnlockRequest,
   DoorUnlockResponse,
@@ -15,6 +17,9 @@ import {
   DeviceEventIngestionDto,
   DeviceEventListItem,
   DeviceHealthDto,
+  SimulatedAttempt,
+  EnqueueOfflineResult,
+  SimulatorQueueItem,
 } from './door-unlock.types';
 
 // Thin Angular wrapper around the Devices API. Phase 23 ships the service
@@ -36,6 +41,7 @@ import {
 @Injectable({ providedIn: 'root' })
 export class DevicesApiService {
   private readonly http = inject(HttpClient);
+  private readonly internalApi = inject(DevicesInternalService);
 
   unlock(deviceId: string, request: DoorUnlockRequest): Observable<DoorUnlockResponse> {
     return this.http.post<DoorUnlockResponse>(`/api/v1/devices/${deviceId}/unlock`, request);
@@ -101,5 +107,68 @@ export class DevicesApiService {
   // health list consumed by /devices page + the gatehouse-panel poller.
   getHealth(): Observable<DeviceHealthDto[]> {
     return this.http.get<DeviceHealthDto[]>('/api/v1/devices/health');
+  }
+
+  // Phase 27 (DOOR-15) — device simulator inspector (UI surface only).
+  // The generated DevicesInternalService returns Observable<void> for
+  // these endpoints because the OpenAPI generator drops body shapes for
+  // 204 / list-returning endpoints. We use direct HttpClient for the two
+  // endpoints whose body the UI consumes (getSimulatorAttempts,
+  // drainSimulatorQueue) and the generated service for the rest.
+  getSimulatorAttempts(deviceId: string): Observable<SimulatedAttempt[]> {
+    return this.http.get<SimulatedAttempt[]>(
+      `/api/v1/_internal/devices/${deviceId}/simulator`,
+      { responseType: 'json' as const }
+    );
+  }
+
+  setSimulatorFailureMode(
+    deviceId: string,
+    mode: 0 | 1 | 2 | 3
+  ): Observable<void> {
+    return this.internalApi.apiV1InternalDevicesDeviceIdSimulatorFailureModePost({
+      deviceId,
+      body: { mode },
+    });
+  }
+
+  setSimulatorOffline(deviceId: string, untilUtc: Date): Observable<void> {
+    return this.internalApi.apiV1InternalDevicesDeviceIdSimulatorOfflinePost({
+      deviceId,
+      body: { untilUtc: untilUtc.toISOString() },
+    });
+  }
+
+  resetSimulator(deviceId: string): Observable<void> {
+    return this.internalApi.apiV1InternalDevicesDeviceIdSimulatorResetPost({
+      deviceId,
+    });
+  }
+
+  // The generated DevicesInternalService returns Observable<void> for this
+  // endpoint because the OpenAPI generator drops the { queued: N } body
+  // shape. We hit the endpoint directly to read the body. The backend
+  // serializes the field as `Queued` (PascalCase); Angular's HttpClient
+  // is case-insensitive when binding JSON keys, but we accept both for
+  // defense in depth.
+  enqueueSimulatorOfflineEvents(
+    deviceId: string,
+    count: number,
+    fromSequence: number
+  ): Observable<EnqueueOfflineResult> {
+    return this.http.post<{ queued?: number; Queued?: number }>(
+      `/api/v1/_internal/devices/${deviceId}/simulator/enqueue-offline`,
+      { count, fromSequence },
+      { responseType: 'json' as const }
+    ).pipe(
+      map((body) => ({ queued: body?.queued ?? body?.Queued ?? count }))
+    );
+  }
+
+  drainSimulatorQueue(deviceId: string): Observable<SimulatorQueueItem[]> {
+    return this.http.get<SimulatorQueueItem[]>(
+      `/api/v1/_internal/devices/${deviceId}/simulator/queue`,
+      { responseType: 'json' as const }
+    );
   }
 }
