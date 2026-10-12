@@ -92,7 +92,7 @@ import {
               id="simulator-failure-mode"
               data-testid="simulator-failure-mode"
               [ngModel]="failureMode()"
-              (ngModelChange)="failureMode.set(+$event)"
+              (ngModelChange)="onFailureModeChange($event)"
             >
               @for (mode of failureModeOptions; track mode.value) {
                 <option [value]="mode.value">{{ mode.label }}</option>
@@ -452,6 +452,17 @@ export class DeviceSimulatorSectionComponent implements OnInit {
   onDeviceChange(deviceId: string): void {
     this.service.clearError();
     this.service.selectDevice(deviceId);
+  }
+
+  onFailureModeChange(value: string | number): void {
+    // The <option [value]="'0'|'1'|'2'|'3'"> emits a string from ngModel,
+    // but the signal type is `SimulatorFailureMode = 0 | 1 | 2 | 3` — a
+    // literal numeric union. Coerce to number and narrow to the union;
+    // anything outside 0..3 (which the template can't produce) is ignored.
+    const numeric = typeof value === 'number' ? value : Number(value);
+    if (numeric === 0 || numeric === 1 || numeric === 2 || numeric === 3) {
+      this.failureMode.set(numeric);
+    }
   }
 
   onApplyFailureMode(): void {
