@@ -68,6 +68,44 @@ docker run --rm \
 - *Windows host with broken WSL, no Docker:* invoke via `& "C:\Program Files\Git\bin\bash.exe" -c "…"` (Git-for-Windows bash, not the PowerShell bash shim). Heads-up: a host-side Karma run is not bit-for-bit equivalent to the Gitea runner; always run the canonical Docker recipe before pushing.
 - *Host cannot serve a headless browser at all:* run the gate inside the devcontainer and stop. Do not claim "done" with the gate unverified.
 
+**Windows-host recipe (verified 2026-10-12, `feat/device-simulator-ui`):** Windows bind-mounts do not propagate `node_modules/.bin/` symlinks into Linux containers, and `cp -r` of an already-populated `node_modules/` against a concurrent `npm ci` races and fails. The host-script below copies the Web folder **excluding** `node_modules` into the container's native filesystem, runs `npm ci` there, and then runs the same lint + Playwright + Karma steps as the canonical recipe. Pass condition is identical: `npm run lint` exits 0 and `TOTAL: N SUCCESS` with no `FAILED`.
+
+```bash
+# C:/Users/<you>/AppData/Local/Temp/opencode/ci-lint-windows.sh
+#!/bin/sh
+set -eu
+SRC_DIR=/workspace/src/Web/ControlEasyReborn.Web
+WORK_DIR=/tmp/spa-gate
+rm -rf "$WORK_DIR"
+mkdir -p "$WORK_DIR/repo"
+# Copy everything except node_modules / .angular / test-results.
+copy_tree() {
+  cd "$SRC_DIR"
+  for entry in $(ls -A); do
+    case "$entry" in
+      node_modules|.angular|test-results|.git) continue;;
+    esac
+    cp -r "$entry" "$WORK_DIR/repo/"
+  done
+}
+copy_tree
+cd "$WORK_DIR/repo"
+npm ci --legacy-peer-deps 2>&1 | tail -10
+npm run lint 2>&1 | tail -30
+npx playwright install --with-deps chromium 2>&1 | tail -10
+export CHROME_BIN="$(node -e "console.log(require('@playwright/test').chromium.executablePath())")"
+npm test -- --no-watch --browsers=ChromeHeadlessNoSandbox 2>&1 | tee /tmp/karma.log
+grep -E "TOTAL:" /tmp/karma.log || echo "TOTAL NOT FOUND"
+```
+
+Run from the worktree root (PowerShell, Git-Bash mounted with `MSYS_NO_PATHCONV=1` to avoid path mangling):
+
+```powershell
+cmd /c '"C:\Program Files\Git\bin\bash.exe" -c "MSYS_NO_PATHCONV=1 docker run --rm -v \"$PWD:/workspace\" -v \"C:/Users/<you>/AppData/Local/Temp/opencode/ci-lint-windows.sh:/tmp/ci-lint.sh:ro\" docker.gitea.com/runner-images:ubuntu-latest bash /tmp/ci-lint.sh"'
+```
+
+Always wait for the container to finish before reading the result; do not poll. The full log lands at `/tmp/karma.log` inside the container.
+
 Stop hooks in `.agents/hooks.json`, `.agent/hooks.json`, `.claude/settings.json`, `.codex/hooks.json`, `.cursor/hooks.json`, `.opencode/plugins/verify-ci.ts` enforce this.
 
 ## Platform-aware command execution (Constitution Principle VIII)
