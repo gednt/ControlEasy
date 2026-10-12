@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of, Subject, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { By } from '@angular/platform-browser';
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { AdministrationPage } from './administration.page';
 import { AdministrationApiService, CondominiumSettingsDto, AuditLogResponse } from './administration-api.service';
 import { AuthService, type StaffMemberResponse } from '../../core/services/auth.service';
@@ -95,6 +95,7 @@ describe('AdministrationPage', () => {
     securityMock = jasmine.createSpyObj<SecurityService>('SecurityService', [
       'apiV1SecurityGatehousesGet',
       'apiV1SecurityGatehousesPost',
+      'apiV1SecurityGatehousesIdPut',
       'apiV1SecurityGatehousesIdActivationPut',
     ]);
     securityMock.apiV1SecurityGatehousesGet.and.returnValue(of([]));
@@ -500,6 +501,210 @@ describe('AdministrationPage', () => {
     expect(section.gatehouseOptions()[0]!.active).toBeFalse();
     expect(fixture.nativeElement.querySelector('[data-test="gatehouse-row-gatehouse-a"]')).not.toBeNull();
     expect(section.activeGatehouseOptions()).toEqual([]);
+  });
+
+  it('DoorIntegrationSection_PopulatesAndCancelsGatehouseEdit', async () => {
+    securityMock.apiV1SecurityGatehousesGet.and.returnValue(of([
+      {
+        id: 'gatehouse-editable',
+        tenantId: 'test-tenant-id',
+        name: 'Synthetic north gate',
+        location: 'Building A',
+        active: true,
+      },
+      {
+        id: 'gatehouse-second',
+        tenantId: 'test-tenant-id',
+        name: 'Synthetic south gate',
+        location: null,
+        active: false,
+      },
+    ]));
+
+    await refreshDoorFlag();
+    const edit = fixture.nativeElement.querySelector(
+      '[data-test="gatehouse-edit-gatehouse-editable"]',
+    ) as HTMLButtonElement;
+    edit.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const name = fixture.nativeElement.querySelector(
+      '[data-test="gatehouse-edit-name-gatehouse-editable"]',
+    ) as HTMLInputElement;
+    const location = fixture.nativeElement.querySelector(
+      '[data-test="gatehouse-edit-location-gatehouse-editable"]',
+    ) as HTMLInputElement;
+    expect(name.value).toBe('Synthetic north gate');
+    expect(location.value).toBe('Building A');
+    expect(document.activeElement).toBe(name);
+    expect((fixture.nativeElement.querySelector(
+      '[data-test="gatehouse-edit-gatehouse-second"]',
+    ) as HTMLButtonElement).disabled).toBeTrue();
+
+    name.value = 'Unsaved rename';
+    name.dispatchEvent(new Event('input'));
+    const cancel = fixture.nativeElement.querySelector(
+      '[data-test="gatehouse-edit-cancel-gatehouse-editable"]',
+    ) as HTMLButtonElement;
+    cancel.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(securityMock.apiV1SecurityGatehousesIdPut).not.toHaveBeenCalled();
+    expect(fixture.nativeElement.querySelector('[data-test="gatehouse-edit-name-gatehouse-editable"]')).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Synthetic north gate');
+    expect(fixture.nativeElement.textContent).not.toContain('Unsaved rename');
+    expect(document.activeElement).toBe(fixture.nativeElement.querySelector(
+      '[data-test="gatehouse-edit-gatehouse-editable"]',
+    ));
+  });
+
+  it('DoorIntegrationSection_SavesTrimmedGatehouseAndRefreshesLiveProjections', async () => {
+    securityMock.apiV1SecurityGatehousesGet.and.returnValue(of([
+      {
+        id: 'gatehouse-editable',
+        tenantId: 'test-tenant-id',
+        name: 'Synthetic north gate',
+        location: 'Building A',
+        active: false,
+      },
+    ]));
+    const update = new Subject<{
+      id: string;
+      tenantId: string;
+      name: string;
+      location: string | null;
+      active: boolean;
+    }>();
+    securityMock.apiV1SecurityGatehousesIdPut.and.returnValue(update);
+
+    await refreshDoorFlag();
+    const section = fixture.debugElement.query(By.directive(DoorIntegrationSectionComponent))
+      .componentInstance as DoorIntegrationSectionComponent;
+    section.devices.set([
+      {
+        id: 'device-a',
+        tenantId: 'test-tenant-id',
+        deviceType: 'reader',
+        vendor: 'Synthetic Vendor',
+        connectionParams: { redacted: true, last4: '0000' },
+        gatehouseId: 'gatehouse-editable',
+        gatehouseName: 'Synthetic north gate',
+        isActive: true,
+        createdAtUtc: '2026-01-01T00:00:00Z',
+        updatedAtUtc: null,
+        removedAtUtc: null,
+        createdByProfileId: 'profile-a',
+      },
+    ]);
+    const gatehouse = section.gatehouseOptions()[0]!;
+    section.onEditGatehouse(gatehouse);
+    section.gatehouseEditName.set('  Synthetic arrivals gate  ');
+    section.gatehouseEditLocation.set('  Lobby desk  ');
+
+    const save = section.onSaveGatehouse(gatehouse);
+    fixture.detectChanges();
+    expect(section.gatehouseSavingId()).toBe('gatehouse-editable');
+    expect((fixture.nativeElement.querySelector(
+      '[data-test="gatehouse-activation-gatehouse-editable"]',
+    ) as HTMLButtonElement).disabled).toBeTrue();
+    update.next({
+      id: 'gatehouse-editable',
+      tenantId: 'test-tenant-id',
+      name: 'Synthetic arrivals gate',
+      location: 'Lobby desk',
+      active: false,
+    });
+    await save;
+    fixture.detectChanges();
+
+    expect(securityMock.apiV1SecurityGatehousesIdPut).toHaveBeenCalledWith({
+      id: 'gatehouse-editable',
+      body: { name: 'Synthetic arrivals gate', location: 'Lobby desk' },
+    });
+    expect(section.gatehouseOptions()[0]).toEqual({
+      id: 'gatehouse-editable',
+      name: 'Synthetic arrivals gate',
+      location: 'Lobby desk',
+      active: false,
+    });
+    expect(section.deviceRows()[0]!.gatehouseName).toBe('Synthetic arrivals gate');
+    expect(section.gatehouseEditingId()).toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Synthetic arrivals gate');
+    expect(fixture.nativeElement.textContent).toContain('Lobby desk');
+  });
+
+  it('DoorIntegrationSection_ClearsGatehouseLocation', async () => {
+    securityMock.apiV1SecurityGatehousesGet.and.returnValue(of([
+      {
+        id: 'gatehouse-editable',
+        tenantId: 'test-tenant-id',
+        name: 'Synthetic north gate',
+        location: 'Building A',
+        active: true,
+      },
+    ]));
+    securityMock.apiV1SecurityGatehousesIdPut.and.returnValue(of({
+      id: 'gatehouse-editable',
+      tenantId: 'test-tenant-id',
+      name: 'Synthetic north gate',
+      location: null,
+      active: true,
+    }));
+
+    await refreshDoorFlag();
+    const section = fixture.debugElement.query(By.directive(DoorIntegrationSectionComponent))
+      .componentInstance as DoorIntegrationSectionComponent;
+    const gatehouse = section.gatehouseOptions()[0]!;
+    section.onEditGatehouse(gatehouse);
+    section.gatehouseEditLocation.set('   ');
+    await section.onSaveGatehouse(gatehouse);
+    fixture.detectChanges();
+
+    expect(securityMock.apiV1SecurityGatehousesIdPut).toHaveBeenCalledWith({
+      id: 'gatehouse-editable',
+      body: { name: 'Synthetic north gate', location: null },
+    });
+    expect(section.gatehouseOptions()[0]!.location).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Building A');
+  });
+
+  it('DoorIntegrationSection_KeepsGatehouseEditOpenAfterSaveFailure', async () => {
+    securityMock.apiV1SecurityGatehousesGet.and.returnValue(of([
+      {
+        id: 'gatehouse-editable',
+        tenantId: 'test-tenant-id',
+        name: 'Synthetic north gate',
+        location: 'Building A',
+        active: true,
+      },
+    ]));
+    securityMock.apiV1SecurityGatehousesIdPut.and.returnValue(
+      throwError(() => new HttpErrorResponse({
+        status: 400,
+        error: { errors: { Name: ['Synthetic validation failure'] } },
+      })),
+    );
+
+    await refreshDoorFlag();
+    const section = fixture.debugElement.query(By.directive(DoorIntegrationSectionComponent))
+      .componentInstance as DoorIntegrationSectionComponent;
+    const gatehouse = section.gatehouseOptions()[0]!;
+    section.onEditGatehouse(gatehouse);
+    section.gatehouseEditName.set('Retry this gatehouse');
+    section.gatehouseEditLocation.set('Retry this location');
+    await section.onSaveGatehouse(gatehouse);
+    fixture.detectChanges();
+
+    expect(section.gatehouseEditingId()).toBe('gatehouse-editable');
+    expect(section.gatehouseEditName()).toBe('Retry this gatehouse');
+    expect(section.gatehouseEditLocation()).toBe('Retry this location');
+    expect(section.gatehouseOptions()[0]!.name).toBe('Synthetic north gate');
+    const alert = fixture.nativeElement.querySelector('[role="alert"]') as HTMLElement;
+    expect(alert.textContent).toContain('Synthetic validation failure');
   });
 
   it('DoorIntegrationSection_RegisterModalEmits', async () => {

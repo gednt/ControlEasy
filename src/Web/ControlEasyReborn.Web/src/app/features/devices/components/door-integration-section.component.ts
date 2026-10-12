@@ -7,7 +7,7 @@ import {
   Input,
   OnInit,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DOCUMENT } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { firstValueFrom } from 'rxjs';
 import { SecurityService } from '../../../api/services/security.service';
@@ -117,18 +117,91 @@ interface DeviceRow {
             <ul class="gatehouse-list" data-test="gatehouse-list">
               @for (g of gatehouseOptions(); track g.id) {
                 <li class="gatehouse-list-item" [attr.data-test]="'gatehouse-row-' + g.id">
-                  <span class="gatehouse-list-name">
-                    {{ g.name }}
-                    @if (g.location) { <small>{{ g.location }}</small> }
-                  </span>
+                  @if (gatehouseEditingId() === g.id) {
+                    <form class="gatehouse-edit-form" (ngSubmit)="onSaveGatehouse(g)">
+                      <label class="gatehouse-edit-field">
+                        <span>Name <span aria-hidden="true">*</span></span>
+                        <input
+                          [id]="'gatehouse-edit-name-' + g.id"
+                          type="text"
+                          class="ce-input"
+                          [attr.data-test]="'gatehouse-edit-name-' + g.id"
+                          [(ngModel)]="gatehouseEditName"
+                          name="gatehouseEditName"
+                          maxlength="120"
+                          required
+                          [attr.aria-invalid]="!gatehouseEditName().trim()"
+                          [attr.aria-describedby]="!gatehouseEditName().trim() || gatehouseEditError() ? 'gatehouse-edit-error-' + g.id : null"
+                          [disabled]="gatehouseSavingId() === g.id"
+                        />
+                      </label>
+                      <label class="gatehouse-edit-field">
+                        <span>Location</span>
+                        <input
+                          type="text"
+                          class="ce-input"
+                          [attr.data-test]="'gatehouse-edit-location-' + g.id"
+                          [(ngModel)]="gatehouseEditLocation"
+                          name="gatehouseEditLocation"
+                          maxlength="500"
+                          [disabled]="gatehouseSavingId() === g.id"
+                        />
+                      </label>
+                      <div class="gatehouse-edit-actions">
+                        <button
+                          type="submit"
+                          class="ce-button variant-primary size-sm"
+                          [attr.data-test]="'gatehouse-edit-save-' + g.id"
+                          [disabled]="gatehouseSavingId() === g.id || gatehouseActivationPendingId() === g.id || !gatehouseEditName().trim()"
+                        >
+                          {{ gatehouseSavingId() === g.id ? 'Saving...' : 'Save' }}
+                        </button>
+                        <button
+                          type="button"
+                          class="ce-button variant-ghost size-sm"
+                          [attr.data-test]="'gatehouse-edit-cancel-' + g.id"
+                          [disabled]="gatehouseSavingId() === g.id"
+                          (click)="onCancelGatehouseEdit()"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                      @if (!gatehouseEditName().trim()) {
+                        <p [id]="'gatehouse-edit-error-' + g.id" class="error-text gatehouse-edit-error" role="alert">
+                          Enter a gatehouse name before saving.
+                        </p>
+                      } @else if (gatehouseEditError()) {
+                        <p [id]="'gatehouse-edit-error-' + g.id" class="error-text gatehouse-edit-error" role="alert">
+                          {{ gatehouseEditError() }}
+                        </p>
+                      }
+                    </form>
+                  } @else {
+                    <span class="gatehouse-list-name">
+                      {{ g.name }}
+                      @if (g.location) { <small>{{ g.location }}</small> }
+                    </span>
+                  }
                   <span class="ce-badge" [class.success]="g.active" [class.neutral]="!g.active">
                     {{ g.active ? 'Active' : 'Inactive' }}
                   </span>
+                  @if (gatehouseEditingId() !== g.id) {
+                    <button
+                      [id]="'gatehouse-edit-' + g.id"
+                      type="button"
+                      class="ce-button variant-ghost size-sm"
+                      [attr.data-test]="'gatehouse-edit-' + g.id"
+                      [disabled]="gatehouseSavingId() !== null || gatehouseActivationPendingId() === g.id || gatehouseEditingId() !== null"
+                      (click)="onEditGatehouse(g)"
+                    >
+                      Edit
+                    </button>
+                  }
                   <button
                     type="button"
                     class="ce-button variant-ghost size-sm"
                     [attr.data-test]="'gatehouse-activation-' + g.id"
-                    [disabled]="gatehouseActivationPendingId() === g.id"
+                    [disabled]="gatehouseActivationPendingId() === g.id || gatehouseSavingId() === g.id || gatehouseEditingId() === g.id"
                     (click)="onSetGatehouseActivation(g)"
                   >
                     {{ gatehouseActivationPendingId() === g.id ? 'Saving...' : (g.active ? 'Disable' : 'Enable') }}
@@ -375,6 +448,35 @@ interface DeviceRow {
         color: var(--color-text-secondary);
         font-weight: 400;
       }
+      .gatehouse-edit-form {
+        display: grid;
+        flex: 1;
+        grid-template-columns: minmax(10rem, 1fr) minmax(10rem, 1fr) auto;
+        gap: var(--space-2, 8px) var(--space-3, 12px);
+        align-items: end;
+        min-width: 0;
+      }
+      .gatehouse-edit-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+      }
+      .gatehouse-edit-field > span {
+        font-family: var(--font-family-mono, monospace);
+        font-size: var(--font-size-xs, 12px);
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--color-text-secondary);
+      }
+      .gatehouse-edit-actions {
+        display: flex;
+        gap: var(--space-1, 4px);
+      }
+      .gatehouse-edit-error {
+        grid-column: 1 / -1;
+      }
       .gatehouse-create-form {
         display: grid;
         grid-template-columns: 2fr 2fr auto;
@@ -519,6 +621,23 @@ interface DeviceRow {
       .variant-ghost.danger {
         color: var(--color-danger);
       }
+      @media (max-width: 720px) {
+        .gatehouse-list-item {
+          align-items: flex-start;
+          flex-wrap: wrap;
+        }
+        .gatehouse-edit-form {
+          flex-basis: 100%;
+          grid-template-columns: 1fr;
+          order: 2;
+        }
+        .gatehouse-edit-actions {
+          justify-content: flex-start;
+        }
+        .gatehouse-create-form {
+          grid-template-columns: 1fr;
+        }
+      }
     `,
   ],
 })
@@ -526,6 +645,7 @@ export class DoorIntegrationSectionComponent implements OnInit {
   private readonly adminApi = inject(AdministrationApiService);
   private readonly devicesApi = inject(DevicesApiService);
   private readonly securityApi = inject(SecurityService);
+  private readonly document = inject(DOCUMENT);
 
   readonly doorFlag = signal<TenantDoorIntegrationFlagDto | null>(null);
   readonly toggling = signal(false);
@@ -550,6 +670,11 @@ export class DoorIntegrationSectionComponent implements OnInit {
   readonly gatehouseCreateError = signal<string | null>(null);
   readonly gatehouseActivationPendingId = signal<string | null>(null);
   readonly gatehouseActivationError = signal<string | null>(null);
+  readonly gatehouseEditingId = signal<string | null>(null);
+  readonly gatehouseEditName = signal('');
+  readonly gatehouseEditLocation = signal('');
+  readonly gatehouseSavingId = signal<string | null>(null);
+  readonly gatehouseEditError = signal<string | null>(null);
 
   readonly deviceRows = computed<DeviceRow[]>(() =>
     this.devices().map((d) => ({
@@ -707,6 +832,61 @@ export class DoorIntegrationSectionComponent implements OnInit {
       this.gatehouseActivationError.set(getApiErrorMessage(err, `Failed to ${active ? 'enable' : 'disable'} gatehouse.`));
     } finally {
       this.gatehouseActivationPendingId.set(null);
+    }
+  }
+
+  onEditGatehouse(gatehouse: GatehouseOption): void {
+    this.gatehouseEditingId.set(gatehouse.id);
+    this.gatehouseEditName.set(gatehouse.name);
+    this.gatehouseEditLocation.set(gatehouse.location ?? '');
+    this.gatehouseEditError.set(null);
+    this.focusGatehouseControl(`gatehouse-edit-name-${gatehouse.id}`);
+  }
+
+  onCancelGatehouseEdit(): void {
+    const gatehouseId = this.gatehouseEditingId();
+    this.gatehouseEditingId.set(null);
+    this.gatehouseEditName.set('');
+    this.gatehouseEditLocation.set('');
+    this.gatehouseEditError.set(null);
+    if (gatehouseId) this.focusGatehouseControl(`gatehouse-edit-${gatehouseId}`);
+  }
+
+  private focusGatehouseControl(id: string): void {
+    setTimeout(() => this.document.getElementById(id)?.focus());
+  }
+
+  async onSaveGatehouse(gatehouse: GatehouseOption): Promise<void> {
+    const name = this.gatehouseEditName().trim();
+    if (!name) {
+      this.gatehouseEditError.set('Enter a gatehouse name before saving.');
+      return;
+    }
+
+    const location = this.gatehouseEditLocation().trim();
+    this.gatehouseSavingId.set(gatehouse.id);
+    this.gatehouseEditError.set(null);
+    try {
+      const updated = await firstValueFrom(this.securityApi.apiV1SecurityGatehousesIdPut({
+        id: gatehouse.id,
+        body: { name, location: location || null },
+      }));
+      if (!updated.id || !updated.name) throw new Error('Gatehouse response was incomplete.');
+      this.gatehouseOptions.update((items) =>
+        items.map((item) => item.id === gatehouse.id
+          ? {
+              id: updated.id!,
+              name: updated.name!,
+              location: updated.location ?? null,
+              active: updated.active !== false,
+            }
+          : item),
+      );
+      this.onCancelGatehouseEdit();
+    } catch (err) {
+      this.gatehouseEditError.set(getApiErrorMessage(err, 'Failed to save gatehouse changes. Try again.'));
+    } finally {
+      this.gatehouseSavingId.set(null);
     }
   }
 

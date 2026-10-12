@@ -226,6 +226,20 @@ public static class SecurityEndpoints
         })
         .Produces<IReadOnlyList<GatehouseResponse>>(StatusCodes.Status200OK);
 
+        gatehousesGroup.MapPut("/{id:guid}", async (
+            Guid id,
+            [FromBody] UpdateGatehouseRequest request,
+            UpdateGatehouseHandler handler,
+            CancellationToken ct) =>
+        {
+            var response = await handler.HandleAsync(id, request, ct);
+            return Results.Ok(response);
+        })
+        .Produces<GatehouseResponse>(StatusCodes.Status200OK)
+        .ProducesValidationProblem(StatusCodes.Status400BadRequest)
+        .ProducesProblem(StatusCodes.Status404NotFound)
+        .RequireAuthorization("Permission_devices.write");
+
         gatehousesGroup.MapPut("/{id:guid}/activation", async (
             Guid id,
             [FromBody] SetGatehouseActivationRequest request,

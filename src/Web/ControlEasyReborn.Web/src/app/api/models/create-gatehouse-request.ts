@@ -3,5 +3,5 @@
 
 export interface CreateGatehouseRequest {
   location?: string | null;
-  name?: string | null;
+  name: string;
 }

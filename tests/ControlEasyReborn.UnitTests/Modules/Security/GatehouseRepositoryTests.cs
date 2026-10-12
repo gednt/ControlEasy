@@ -86,6 +86,48 @@ public sealed class GatehouseRepositoryTests
         operation.Parameters.Should().Contain(_tenantId.ToString());
     }
 
+    [Fact]
+    public async Task UpdateAsync_is_tenant_scoped_and_persists_null_location()
+    {
+        var gatehouse = CreateGatehouse(_tenantId, location: null);
+        var sut = CreateRepository(_tenantId);
+
+        await sut.UpdateAsync(gatehouse, CancellationToken.None);
+
+        var operation = _fakeClient.Operations.Should().ContainSingle().Subject;
+        operation.Sql.Should().Contain("tenant_id = @param3");
+        operation.Parameters.Should().ContainInOrder(
+            gatehouse.Name,
+            DBNull.Value,
+            gatehouse.Id.ToString(),
+            _tenantId.ToString());
+    }
+
+    [Fact]
+    public async Task UpdateAsync_when_tenant_does_not_match_rejects_before_update()
+    {
+        var sut = CreateRepository(_tenantId);
+
+        var action = () => sut.UpdateAsync(CreateGatehouse(Guid.NewGuid()), CancellationToken.None);
+
+        await action.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*does not match*");
+        _fakeClient.Operations.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_when_write_fails_throws_with_database_error()
+    {
+        _fakeClient.UpdateResultFactory = () => false;
+        _fakeClient.Error = "synthetic update failure";
+        var sut = CreateRepository(_tenantId);
+
+        var action = () => sut.UpdateAsync(CreateGatehouse(_tenantId), CancellationToken.None);
+
+        await action.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*synthetic update failure*");
+    }
+
     private GatehouseRepository CreateRepository(Guid? contextTenantId)
     {
         var context = new FakeTenantContext(contextTenantId);

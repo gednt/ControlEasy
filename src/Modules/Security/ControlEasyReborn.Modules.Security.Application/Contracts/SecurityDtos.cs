@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace ControlEasyReborn.Modules.Security.Application.Contracts;
 
 public sealed record CreateUserRequest(string Email, string Password, string DisplayName, string Roles, Guid TenantId);
@@ -31,7 +33,9 @@ public sealed record CreateShiftRequest(string Name, TimeSpan StartTime, TimeSpa
 
 public sealed record ShiftResponse(Guid Id, Guid TenantId, string Name, TimeSpan StartTime, TimeSpan EndTime, bool CrossesMidnight);
 
-public sealed record CreateGatehouseRequest(string Name, string? Location);
+public sealed record CreateGatehouseRequest([property: Required] string Name, string? Location);
+
+public sealed record UpdateGatehouseRequest([property: Required] string Name, string? Location);
 
 public sealed record SetGatehouseActivationRequest(bool? Active);
 

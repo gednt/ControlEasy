@@ -50,6 +50,7 @@ export type { UpdateAttendantProfileRequest } from './models/update-attendant-pr
 export type { UpdateCondominiumSettingsRequest } from './models/update-condominium-settings-request';
 export type { UpdateConfigurationRequest } from './models/update-configuration-request';
 export type { UpdateConsentPolicyRequest } from './models/update-consent-policy-request';
+export type { UpdateGatehouseRequest } from './models/update-gatehouse-request';
 export type { UpdatePorteiroRequest } from './models/update-porteiro-request';
 export type { UpdateResidentRequest } from './models/update-resident-request';
 export type { UpdateServiceProviderRequest } from './models/update-service-provider-request';

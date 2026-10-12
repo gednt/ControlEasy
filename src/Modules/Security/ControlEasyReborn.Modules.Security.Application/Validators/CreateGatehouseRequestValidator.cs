@@ -7,12 +7,6 @@ public sealed class CreateGatehouseRequestValidator : AbstractValidator<CreateGa
 {
     public CreateGatehouseRequestValidator()
     {
-        RuleFor(r => r.Name)
-            .NotEmpty()
-            .MaximumLength(120);
-
-        RuleFor(r => r.Location)
-            .MaximumLength(500)
-            .When(r => !string.IsNullOrEmpty(r.Location));
+        this.AddGatehouseDetailsRules(r => r.Name, r => r.Location);
     }
 }

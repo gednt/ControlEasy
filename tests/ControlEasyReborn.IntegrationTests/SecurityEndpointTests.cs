@@ -228,4 +228,81 @@ public sealed class SecurityEndpointTests
             new SetGatehouseActivationRequest(false));
         activation.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
+
+    [Fact]
+    public async Task UpdateGatehouse_normalizes_details_preserves_lifecycle_and_is_tenant_scoped()
+    {
+        var clientA = _factory.AsTenantA();
+        var clientB = _factory.AsTenantB();
+        var create = await clientA.PostAsJsonAsync(
+            "/api/v1/security/gatehouses",
+            new CreateGatehouseRequest($"Editable {Guid.NewGuid():N}", "Original location"));
+        create.EnsureSuccessStatusCode();
+        var gatehouse = (await create.Content.ReadFromJsonAsync<GatehouseResponse>())!;
+
+        var disable = await clientA.PutAsJsonAsync(
+            $"/api/v1/security/gatehouses/{gatehouse.Id}/activation",
+            new SetGatehouseActivationRequest(false));
+        disable.EnsureSuccessStatusCode();
+
+        var foreignUpdate = await clientB.PutAsJsonAsync(
+            $"/api/v1/security/gatehouses/{gatehouse.Id}",
+            new UpdateGatehouseRequest("Foreign rename", "Foreign location"));
+        foreignUpdate.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+        var update = await clientA.PutAsJsonAsync(
+            $"/api/v1/security/gatehouses/{gatehouse.Id}",
+            new UpdateGatehouseRequest("  Renamed gatehouse  ", "   "));
+        update.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updated = (await update.Content.ReadFromJsonAsync<GatehouseResponse>())!;
+        updated.Id.Should().Be(gatehouse.Id);
+        updated.TenantId.Should().Be(gatehouse.TenantId);
+        updated.Name.Should().Be("Renamed gatehouse");
+        updated.Location.Should().BeNull();
+        updated.Active.Should().BeFalse();
+
+        var management = await clientA.GetFromJsonAsync<List<GatehouseResponse>>(
+            "/api/v1/security/gatehouses?includeInactive=true");
+        management.Should().ContainSingle(item => item.Id == gatehouse.Id).Which.Should().Be(updated);
+    }
+
+    [Fact]
+    public async Task UpdateGatehouse_rejects_invalid_details_and_missing_permission_without_persisting()
+    {
+        var client = _factory.AsTenantA();
+        var create = await client.PostAsJsonAsync(
+            "/api/v1/security/gatehouses",
+            new CreateGatehouseRequest($"Protected {Guid.NewGuid():N}", "Original location"));
+        create.EnsureSuccessStatusCode();
+        var gatehouse = (await create.Content.ReadFromJsonAsync<GatehouseResponse>())!;
+
+        var invalid = await client.PutAsJsonAsync(
+            $"/api/v1/security/gatehouses/{gatehouse.Id}",
+            new UpdateGatehouseRequest("   ", new string('L', 501)));
+        invalid.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var overlongName = await client.PutAsJsonAsync(
+            $"/api/v1/security/gatehouses/{gatehouse.Id}",
+            new UpdateGatehouseRequest(new string('N', 121), null));
+        overlongName.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+        var operatorClient = _factory.CreateClient();
+        var token = JwtTestHelper.GenerateTenantToken(
+            Guid.NewGuid(),
+            "restricted-operator@tenanta.test",
+            TenantAwareWebApplicationFactory.TenantAId,
+            roles: new[] { "GatehouseOperator" },
+            permissions: new[] { "devices.read" });
+        operatorClient.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+        var forbidden = await operatorClient.PutAsJsonAsync(
+            $"/api/v1/security/gatehouses/{gatehouse.Id}",
+            new UpdateGatehouseRequest("Unauthorized rename", null));
+        forbidden.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+        var management = await client.GetFromJsonAsync<List<GatehouseResponse>>(
+            "/api/v1/security/gatehouses?includeInactive=true");
+        management.Should().ContainSingle(item => item.Id == gatehouse.Id).Which.Should().Be(gatehouse);
+    }
 }

@@ -78,14 +78,27 @@ public sealed class GatehouseRepository : IGatehouseRepository
 
     public async Task UpdateAsync(Gatehouse gatehouse, CancellationToken ct)
     {
+        var tenantId = _ctx.TenantId
+            ?? throw new InvalidOperationException("A resolved tenant context is required to update a gatehouse.");
+        if (tenantId != gatehouse.TenantId)
+        {
+            throw new InvalidOperationException("The gatehouse tenant does not match the authenticated tenant context.");
+        }
+
         var db = _factory.Create(_ctx);
-        await db.UpdateAsync(
+        var updated = await db.UpdateAsync(
             new[] { "Name", "Location" },
             TableName,
-            new[] { gatehouse.Name, gatehouse.Location ?? string.Empty },
-            "Id = @param0",
-            new object[] { gatehouse.Id },
+            new[] { gatehouse.Name, gatehouse.Location! },
+            "Id = @param2 AND tenant_id = @param3",
+            new object[] { gatehouse.Id.ToString(), tenantId.ToString() },
             ct: ct);
+
+        if (!updated || !string.IsNullOrEmpty(db.Error))
+        {
+            ct.ThrowIfCancellationRequested();
+            throw new InvalidOperationException($"Failed to update gatehouse {gatehouse.Id} details. {db.Error}");
+        }
     }
 
     public async Task SetActiveAsync(Gatehouse gatehouse, CancellationToken ct)

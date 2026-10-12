@@ -50,6 +50,7 @@ public static class SecurityModuleServiceCollectionExtensions
         services.AddScoped<ListShiftsHandler>();
         services.AddScoped<CreateGatehouseHandler>();
         services.AddScoped<ListGatehousesHandler>();
+        services.AddScoped<UpdateGatehouseHandler>();
         services.AddScoped<SetGatehouseActivationHandler>();
         services.AddScoped<TenantLookupHandler>();
         services.AddScoped<TenantSwitchHandler>();
@@ -63,6 +64,7 @@ public static class SecurityModuleServiceCollectionExtensions
         services.AddScoped<IValidator<UpdateAttendantProfileRequest>, UpdateAttendantProfileRequestValidator>();
         services.AddScoped<IValidator<CreateShiftRequest>, CreateShiftRequestValidator>();
         services.AddScoped<IValidator<CreateGatehouseRequest>, CreateGatehouseRequestValidator>();
+        services.AddScoped<IValidator<UpdateGatehouseRequest>, UpdateGatehouseRequestValidator>();
         services.AddScoped<IValidator<RefreshRequest>, RefreshRequestValidator>();
 
         return services;

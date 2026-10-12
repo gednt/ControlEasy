@@ -14,9 +14,15 @@ public sealed class Gatehouse
     {
         Id = id;
         TenantId = tenantId;
-        Name = name;
-        Location = location;
         Active = active;
+        UpdateDetails(name, location);
+    }
+
+    public void UpdateDetails(string name, string? location)
+    {
+        ArgumentNullException.ThrowIfNull(name);
+        Name = name.Trim();
+        Location = string.IsNullOrWhiteSpace(location) ? null : location.Trim();
     }
 
     public void SetActive(bool active) => Active = active;
