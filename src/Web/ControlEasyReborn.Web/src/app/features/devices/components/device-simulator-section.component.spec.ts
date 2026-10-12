@@ -9,6 +9,8 @@ import {
   SimulatorFailureMode,
 } from '../door-unlock.types';
 import { ToastService } from '../../../design-system/components/toast/toast.component';
+import { DevicesApiService } from '../devices-api.service';
+import { of } from 'rxjs';
 
 // Synthetic device id (per FR-011). Matches the canonical synthetic id used
 // elsewhere in the inspector surface for probe calls.
@@ -102,6 +104,7 @@ describe('DeviceSimulatorSectionComponent', () => {
   let component: DeviceSimulatorSectionComponent;
   let fakeService: FakeDeviceSimulatorService;
   let fakeToast: jasmine.SpyObj<ToastService>;
+  let fakeDevicesApi: jasmine.SpyObj<DevicesApiService>;
 
   beforeEach(async () => {
     fakeService = new FakeDeviceSimulatorService();
@@ -111,11 +114,13 @@ describe('DeviceSimulatorSectionComponent', () => {
       'warning',
       'error',
     ]);
+    fakeDevicesApi = jasmine.createSpyObj<DevicesApiService>('DevicesApiService', ['register']);
 
     await TestBed.configureTestingModule({
       imports: [DeviceSimulatorSectionComponent],
       providers: [
         { provide: DeviceSimulatorService, useValue: fakeService },
+        { provide: DevicesApiService, useValue: fakeDevicesApi },
         { provide: ToastService, useValue: fakeToast },
       ],
     }).compileComponents();
@@ -151,6 +156,38 @@ describe('DeviceSimulatorSectionComponent', () => {
 
     expect(byTestId('simulator-empty')).not.toBeNull();
     expect(byTestId('simulator-device-select')).toBeNull();
+    expect(byTestId('simulator-create-virtual-device')).not.toBeNull();
+  });
+
+  it('CreateVirtualDevice_RegistersAndSelectsSyntheticReader', () => {
+    const device = {
+      id: SYNTHETIC_DEVICE_ID_A,
+      tenantId: 'tenant-synthetic',
+      deviceType: 'reader' as const,
+      vendor: 'ControlEasy simulator',
+      connectionParams: { redacted: true as const, last4: '0000' },
+      gatehouseId: null,
+      gatehouseName: null,
+      isActive: true,
+      createdAtUtc: '2026-10-12T00:00:00.000Z',
+      updatedAtUtc: null,
+      removedAtUtc: null,
+      createdByProfileId: 'actor-synthetic',
+    };
+    fakeDevicesApi.register.and.returnValue(of(device));
+    spyOn(component.virtualDeviceCreated, 'emit');
+
+    (byTestId('simulator-create-virtual-device') as HTMLButtonElement).click();
+
+    expect(fakeDevicesApi.register).toHaveBeenCalledWith({
+      deviceType: 'reader',
+      vendor: 'ControlEasy simulator',
+      gatehouseId: null,
+      connectionParams: { simulator: true },
+    });
+    expect(fakeService.selectDevice).toHaveBeenCalledWith(SYNTHETIC_DEVICE_ID_A);
+    expect(component.virtualDeviceCreated.emit).toHaveBeenCalled();
+    expect(fakeToast.success).toHaveBeenCalled();
   });
 
   it('WithDevices_RendersDeviceSelect: renders one <option> per device and defaults to the first', () => {

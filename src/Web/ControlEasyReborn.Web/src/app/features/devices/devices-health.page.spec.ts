@@ -7,6 +7,7 @@ import { DevicesHealthPage } from './devices-health.page';
 import { DeviceHealthService } from './device-health.service';
 import { DeviceHealthDto } from './door-unlock.types';
 import { DeviceSimulatorService } from './device-simulator.service';
+import { DevicesApiService } from './devices-api.service';
 import { CE_LUCIDE_ICONS } from '../../design-system/components/icon/icon.registry';
 import { GatehouseContextService } from '../access-control/gatehouse-context.service';
 
@@ -124,6 +125,7 @@ describe('DevicesHealthPage', () => {
         { provide: DeviceHealthService, useValue: service },
         { provide: GatehouseContextService, useValue: new FakeGatehouseContextService() },
         { provide: DeviceSimulatorService, useValue: simulator },
+        { provide: DevicesApiService, useValue: jasmine.createSpyObj('DevicesApiService', ['register']) },
         provideRouter([]),
         importProvidersFrom(CE_LUCIDE_ICONS),
       ],

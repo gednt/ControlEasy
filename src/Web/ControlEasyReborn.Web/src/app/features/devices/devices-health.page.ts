@@ -201,6 +201,7 @@ import { GatehouseContextService } from '../access-control/gatehouse-context.ser
     @if (simulatorService.inspectorAvailable()) {
       <ce-device-simulator-section
         [devices]="devices()"
+        (virtualDeviceCreated)="refreshNow()"
       ></ce-device-simulator-section>
     }
   `,

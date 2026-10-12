@@ -2,6 +2,8 @@ import {
   Component,
   ChangeDetectionStrategy,
   Input,
+  Output,
+  EventEmitter,
   OnInit,
   effect,
   inject,
@@ -14,6 +16,7 @@ import { CeButtonComponent } from '../../../design-system/components/button/butt
 import { CeSpinnerComponent } from '../../../design-system/components/spinner/spinner.component';
 import { ToastService } from '../../../design-system/components/toast/toast.component';
 import { DeviceSimulatorService, SimulatorAction } from '../device-simulator.service';
+import { DevicesApiService } from '../devices-api.service';
 import {
   DeviceHealthDto,
   SIMULATOR_FAILURE_MODE_LABELS,
@@ -67,8 +70,17 @@ import {
 
         @if (devices.length === 0) {
           <p class="empty-hint" data-testid="simulator-empty">
-            No devices available. Register a device from Door Integration first.
+            No device is needed to start. Create a virtual reader for this simulator.
           </p>
+          <ce-button
+            variant="primary"
+            size="sm"
+            data-testid="simulator-create-virtual-device"
+            (click)="onCreateVirtualDevice()"
+            [disabled]="creatingVirtualDevice()"
+          >
+            @if (creatingVirtualDevice()) { <ce-spinner size="sm" /> } @else { Create virtual device }
+          </ce-button>
         } @else {
           <div class="device-picker">
             <label for="simulator-device-select">Device</label>
@@ -382,9 +394,11 @@ import {
 })
 export class DeviceSimulatorSectionComponent implements OnInit {
   protected readonly service = inject(DeviceSimulatorService);
+  private readonly devicesApi = inject(DevicesApiService);
   private readonly toast = inject(ToastService);
 
   @Input() devices: DeviceHealthDto[] = [];
+  @Output() virtualDeviceCreated = new EventEmitter<void>();
 
   protected readonly failureModes: SimulatorFailureMode[] = [0, 1, 2, 3];
   // Render the four failure modes with explicit string-valued <option>s so
@@ -408,6 +422,7 @@ export class DeviceSimulatorSectionComponent implements OnInit {
   );
   protected readonly enqueueCount = signal<number>(5);
   protected readonly enqueueFromSeq = signal<number>(0);
+  protected readonly creatingVirtualDevice = signal(false);
 
   protected readonly recordedAttempts = this.service.recordedAttempts;
   protected readonly hasMoreAttempts = this.service.hasMoreAttempts;
@@ -452,6 +467,28 @@ export class DeviceSimulatorSectionComponent implements OnInit {
   onDeviceChange(deviceId: string): void {
     this.service.clearError();
     this.service.selectDevice(deviceId);
+  }
+
+  onCreateVirtualDevice(): void {
+    if (this.creatingVirtualDevice()) return;
+    this.creatingVirtualDevice.set(true);
+    this.devicesApi.register({
+      deviceType: 'reader',
+      vendor: 'ControlEasy simulator',
+      gatehouseId: null,
+      connectionParams: { simulator: true },
+    }).subscribe({
+      next: (device) => {
+        this.toast.success('Virtual device created. You can now configure simulator behavior.');
+        this.virtualDeviceCreated.emit();
+        this.service.selectDevice(device.id);
+        this.creatingVirtualDevice.set(false);
+      },
+      error: () => {
+        this.toast.error('Could not create the virtual device. Try again.');
+        this.creatingVirtualDevice.set(false);
+      },
+    });
   }
 
   onFailureModeChange(value: string | number): void {
