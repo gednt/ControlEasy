@@ -6,6 +6,7 @@ import { provideRouter } from '@angular/router';
 import { DevicesHealthPage } from './devices-health.page';
 import { DeviceHealthService } from './device-health.service';
 import { DeviceHealthDto } from './door-unlock.types';
+import { DeviceSimulatorService } from './device-simulator.service';
 import { CE_LUCIDE_ICONS } from '../../design-system/components/icon/icon.registry';
 import { GatehouseContextService } from '../access-control/gatehouse-context.service';
 
@@ -64,6 +65,31 @@ class FakeGatehouseContextService {
   }
 }
 
+// Stand-in for DeviceSimulatorService. Mirrors the public surface the
+// T3 component spec commits to, so the page can read inspectorAvailable()
+// and we can assert probeInspector() was called. No real HTTP, no real
+// inspector probe; the synthetic device id used by the page's probe
+// 00000000-0000-0000-0000-000000000001 is irrelevant here because the
+// fake's probeInspector() never reads it.
+class FakeDeviceSimulatorService {
+  readonly inspectorAvailable = signal<boolean | null>(null);
+  readonly selectedDeviceId = signal<string | null>(null);
+  readonly recordedAttempts = signal<any[]>([]);
+  readonly hasMoreAttempts = signal<boolean>(false);
+  readonly pendingAction = signal<string | null>(null);
+  readonly lastError = signal<string | null>(null);
+  probeInspector = jasmine.createSpy('probeInspector').and.returnValue(Promise.resolve());
+  selectDevice = jasmine.createSpy('selectDevice');
+  clearAttempts = jasmine.createSpy('clearAttempts');
+  clearError = jasmine.createSpy('clearError');
+  loadAttempts = jasmine.createSpy('loadAttempts').and.returnValue(Promise.resolve());
+  setFailureMode = jasmine.createSpy('setFailureMode').and.returnValue(Promise.resolve());
+  setOfflineUntil = jasmine.createSpy('setOfflineUntil').and.returnValue(Promise.resolve());
+  reset = jasmine.createSpy('reset').and.returnValue(Promise.resolve());
+  enqueueOffline = jasmine.createSpy('enqueueOffline').and.returnValue(Promise.resolve({ queued: 0 }));
+  drainQueue = jasmine.createSpy('drainQueue').and.returnValue(Promise.resolve([]));
+}
+
 function makeDevice(overrides: Partial<DeviceHealthDto> = {}): DeviceHealthDto {
   return {
     deviceId: overrides.deviceId ?? 'device-1',
@@ -87,14 +113,17 @@ describe('DevicesHealthPage', () => {
   let fixture: ComponentFixture<DevicesHealthPage>;
   let component: DevicesHealthPage;
   let service: FakeDeviceHealthService;
+  let simulator: FakeDeviceSimulatorService;
 
   beforeEach(async () => {
     service = new FakeDeviceHealthService();
+    simulator = new FakeDeviceSimulatorService();
     await TestBed.configureTestingModule({
       imports: [DevicesHealthPage],
       providers: [
         { provide: DeviceHealthService, useValue: service },
         { provide: GatehouseContextService, useValue: new FakeGatehouseContextService() },
+        { provide: DeviceSimulatorService, useValue: simulator },
         provideRouter([]),
         importProvidersFrom(CE_LUCIDE_ICONS),
       ],
@@ -203,5 +232,96 @@ describe('DevicesHealthPage', () => {
     // The error clears; the row remains.
     expect(fixture.nativeElement.querySelector('[data-testid="device-status-d1"]')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('[role="alert"]')).toBeFalsy();
+  });
+
+  // ---- T4: simulator section visibility & probe-once wiring ----
+  //
+  // These tests cover the page-level wiring added by T4: the
+  // DeviceSimulatorSectionComponent is rendered inside the existing
+  // /devices page, gated on simulatorService.inspectorAvailable() (FR-007),
+  // and the page fires simulatorService.probeInspector() exactly once
+  // when the first health snapshot arrives. See .specs/.../tasks.md T4.
+
+  it('does NOT render the simulator section when inspectorAvailable() is null', () => {
+    // Initial state: the BehaviorSubject in the fake emits the
+    // current value synchronously on subscribe, so the page's
+    // `health$.subscribe` callback has already fired by the time the
+    // beforeEach finishes. With an empty health list, the page
+    // renders the empty-state card and never asks the simulator
+    // service anything — but the fake's inspectorAvailable() is
+    // still null because the fake's probeInspector() is a spy that
+    // never updates the signal.
+    expect(simulator.inspectorAvailable()).toBeNull();
+    const section = fixture.nativeElement.querySelector(
+      '[data-testid="device-simulator-section"]'
+    );
+    expect(section).toBeFalsy();
+  });
+
+  it('does NOT render the simulator section when inspectorAvailable() is false', () => {
+    // Drive a real health snapshot so the page is in the populated
+    // state, then flip the inspector gate off.
+    service.emit([makeDevice({ deviceId: 'd1', status: 'Online', statusLabel: 'Online' })]);
+    simulator.inspectorAvailable.set(false);
+    fixture.detectChanges();
+
+    const section = fixture.nativeElement.querySelector(
+      '[data-testid="device-simulator-section"]'
+    );
+    expect(section).toBeFalsy();
+  });
+
+  it('renders the simulator section when inspectorAvailable() is true', () => {
+    service.emit([makeDevice({ deviceId: 'd1', status: 'Online', statusLabel: 'Online' })]);
+    simulator.inspectorAvailable.set(true);
+    fixture.detectChanges();
+
+    const section = fixture.nativeElement.querySelector(
+      '[data-testid="device-simulator-section"]'
+    );
+    expect(section).toBeTruthy();
+  });
+
+  it('calls probeInspector() once on init, after the first health snapshot arrives', async () => {
+    // The beforeEach already ran fixture.detectChanges(), which means
+    // the page's health$ subscription has already received the
+    // BehaviorSubject's initial empty list. The page fires the probe
+    // on that first emission. Snapshot the call count and verify the
+    // probe has been invoked exactly once at this point — the
+    // contract under test is "after the first health snapshot
+    // arrives, the probe is fired once".
+    const callsBefore = simulator.probeInspector.calls.count();
+    expect(callsBefore).toBe(1);
+    // Emit a non-empty snapshot and confirm the call count does not
+    // increase — the probedInspector guard prevents re-firing.
+    service.emit([makeDevice({ deviceId: 'd1', status: 'Online' })]);
+    fixture.detectChanges();
+    // The page calls `void this.simulatorService.probeInspector()`,
+    // which is an unobserved promise. Wait one microtask so any
+    // (incorrectly added) re-firing would have run.
+    await Promise.resolve();
+    expect(simulator.probeInspector.calls.count()).toBe(1);
+  });
+
+  it('does NOT call probeInspector() more than once across multiple health emissions', async () => {
+    // The page's `probedInspector` flag prevents re-firing the probe
+    // on subsequent health$ emissions. The beforeEach's initial
+    // BehaviorSubject emission has already triggered the probe once;
+    // emit a second snapshot and a third snapshot and confirm the
+    // call count stays at 1.
+    expect(simulator.probeInspector.calls.count()).toBe(1);
+
+    service.emit([makeDevice({ deviceId: 'd1', status: 'Online' })]);
+    fixture.detectChanges();
+    await Promise.resolve();
+
+    service.emit([
+      makeDevice({ deviceId: 'd1', status: 'Online' }),
+      makeDevice({ deviceId: 'd2', status: 'Degraded', statusLabel: 'Degraded' }),
+    ]);
+    fixture.detectChanges();
+    await Promise.resolve();
+
+    expect(simulator.probeInspector.calls.count()).toBe(1);
   });
 });

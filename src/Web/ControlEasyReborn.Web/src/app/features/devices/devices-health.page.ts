@@ -18,6 +18,8 @@ import { CeSpinnerComponent } from '../../design-system/components/spinner/spinn
 import { CeTooltipDirective } from '../../design-system/components/tooltip/tooltip.directive';
 import { DeviceHealthService } from './device-health.service';
 import { DeviceHealthDto, DeviceStatus } from './door-unlock.types';
+import { DeviceSimulatorService } from './device-simulator.service';
+import { DeviceSimulatorSectionComponent } from './components/device-simulator-section.component';
 import { GatehouseContextService } from '../access-control/gatehouse-context.service';
 
 // Phase 26 (DOOR-13) — Device health dashboard page.
@@ -43,6 +45,7 @@ import { GatehouseContextService } from '../access-control/gatehouse-context.ser
     CeIconComponent,
     CeSpinnerComponent,
     CeTooltipDirective,
+    DeviceSimulatorSectionComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -194,6 +197,12 @@ import { GatehouseContextService } from '../access-control/gatehouse-context.ser
         </div>
       </ce-card>
     }
+
+    @if (simulatorService.inspectorAvailable()) {
+      <ce-device-simulator-section
+        [devices]="devices()"
+      ></ce-device-simulator-section>
+    }
   `,
   styles: [
     `
@@ -323,6 +332,7 @@ import { GatehouseContextService } from '../access-control/gatehouse-context.ser
 })
 export class DevicesHealthPage implements OnInit, OnDestroy {
   protected readonly service = inject(DeviceHealthService);
+  protected readonly simulatorService = inject(DeviceSimulatorService);
   readonly gatehouseContext = inject(GatehouseContextService);
 
   readonly devices = signal<DeviceHealthDto[]>([]);
@@ -331,6 +341,7 @@ export class DevicesHealthPage implements OnInit, OnDestroy {
   readonly lastRefreshedAtMs = signal<number | null>(null);
 
   private readonly sub = new Subscription();
+  private probedInspector = false;
 
   ngOnInit(): void {
     this.gatehouseContext.load();
@@ -341,6 +352,15 @@ export class DevicesHealthPage implements OnInit, OnDestroy {
         this.loading.set(false);
         this.error.set(null);
         this.lastRefreshedAtMs.set(this.service.getLastFetchAtMs());
+        // Probe the simulator inspector exactly once, after the first
+        // health snapshot lands. The page's `simulatorService` is a
+        // root-provided singleton; the probe uses the synthetic id
+        // 00000000-0000-0000-0000-000000000001 and the result drives
+        // whether the simulator section is rendered (FR-007).
+        if (!this.probedInspector) {
+          this.probedInspector = true;
+          void this.simulatorService.probeInspector();
+        }
       })
     );
     // Initial render: until the first snapshot arrives, show loading.
