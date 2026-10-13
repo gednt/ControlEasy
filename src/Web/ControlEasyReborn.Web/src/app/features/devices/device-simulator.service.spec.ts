@@ -7,6 +7,7 @@ import { DevicesApiService } from './devices-api.service';
 import {
   EnqueueOfflineResult,
   SimulatedAttempt,
+  SimulatorDeviceReadiness,
   SimulatorFailureMode,
   SimulatorQueueItem,
 } from './door-unlock.types';
@@ -407,4 +408,78 @@ describe('DeviceSimulatorService', () => {
     expect(api.lastOffline).toEqual({ deviceId: SYNTHETIC_DEVICE_ID, untilUtc: until });
     expect(service.pendingAction()).toBeNull();
   }));
+
+  // Operational-gatehouse-simulator — virtual physical reader execution.
+
+  it('ProbeReadiness_ReturnsReadinessBody: GET .../simulator/readiness returns the verdict and clears pendingAction', async () => {
+    const readiness = {
+      ready: true,
+      reason: null,
+      vendor: 'ControlEasy simulator',
+      gatehouseId: 'gatehouse-synthetic',
+      gatehouseName: 'Main gatehouse',
+    };
+    const p = service.probeReadiness(SYNTHETIC_DEVICE_ID);
+    const req = httpMock.expectOne(
+      (r) =>
+        r.method === 'GET' &&
+        r.url === `/api/v1/_internal/devices/${SYNTHETIC_DEVICE_ID}/simulator/readiness`
+    );
+    req.flush(readiness);
+    const result = await p;
+    expect(result).toEqual(readiness as SimulatorDeviceReadiness);
+    expect(service.pendingAction()).toBeNull();
+    expect(service.lastError()).toBeNull();
+  });
+
+  it('ProbeReadiness_OnProblemDetail: surfaces the detail and returns null', async () => {
+    const p = service.probeReadiness(SYNTHETIC_DEVICE_ID);
+    const req = httpMock.expectOne(
+      (r) => r.url === `/api/v1/_internal/devices/${SYNTHETIC_DEVICE_ID}/simulator/readiness`
+    );
+    req.flush({ detail: 'Inspection denied.' }, { status: 404, statusText: 'Not Found' });
+    const result = await p;
+    expect(result).toBeNull();
+    expect(service.lastError()).toBe('Inspection denied.');
+  });
+
+  it('PresentCredential_PostsBodyAndMapsResult: POSTs { token, direction } and maps the linked ids', async () => {
+    const p = service.presentCredential(SYNTHETIC_DEVICE_ID, 'issued-token', 'entrance');
+    const req = httpMock.expectOne(
+      (r) =>
+        r.method === 'POST' &&
+        r.url === `/api/v1/_internal/devices/${SYNTHETIC_DEVICE_ID}/simulator/present-credential`
+    );
+    expect(req.request.body).toEqual({ token: 'issued-token', direction: 'entrance' });
+    req.flush({
+      outcome: 'advanced_visit',
+      failureCode: null,
+      direction: 'entrance',
+      existingEventId: null,
+      visitId: 'visit-synthetic',
+      accessEventId: 'access-synthetic',
+      refusalId: null,
+      occurredAtUtc: '2026-10-12T00:00:00.000Z',
+      processedAtUtc: '2026-10-12T00:00:01.000Z',
+    });
+    const result = await p;
+    expect(result).not.toBeNull();
+    expect(result!.outcome).toBe('advanced_visit');
+    expect(result!.direction).toBe('entrance');
+    expect(result!.visitId).toBe('visit-synthetic');
+    expect(result!.accessEventId).toBe('access-synthetic');
+    expect(service.pendingAction()).toBeNull();
+    expect(service.lastError()).toBeNull();
+  });
+
+  it('PresentCredential_OnProblemDetail: surfaces the detail and returns null', async () => {
+    const p = service.presentCredential(SYNTHETIC_DEVICE_ID, 'issued-token', 'exit');
+    const req = httpMock.expectOne(
+      (r) => r.url === `/api/v1/_internal/devices/${SYNTHETIC_DEVICE_ID}/simulator/present-credential`
+    );
+    req.flush({ detail: 'Reader is not presentable.' }, { status: 404, statusText: 'Not Found' });
+    const result = await p;
+    expect(result).toBeNull();
+    expect(service.lastError()).toBe('Reader is not presentable.');
+  });
 });
