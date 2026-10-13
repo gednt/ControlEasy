@@ -23,8 +23,12 @@ import { ToastService } from '../../design-system/components/toast/toast.compone
 import { DeviceHealthService, DeviceStatusTransition } from '../devices/device-health.service';
 import { GatehouseContextService } from '../access-control/gatehouse-context.service';
 import { AuthService } from '../../core/services/auth.service';
+import { DeviceSimulatorService } from '../devices/device-simulator.service';
+import { VirtualDoorComponent } from '../devices/virtual-door/virtual-door.component';
 
-export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
+// 'virtual' is only reachable while the DeviceSimulatorService probe reports
+// the inspector as available — the tab is never rendered otherwise.
+export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits' | 'virtual';
 
 @Component({
   selector: 'ce-gatehouse-panel-page',
@@ -44,6 +48,7 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
     ManualLookupPage,
     ApartmentPickerComponent,
     QrPassModalComponent,
+    VirtualDoorComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -207,6 +212,25 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
             <span class="tab-badge">{{ openVisitsCount() }}</span>
           }
         </button>
+
+        <!-- Development-only virtual door. The tab is ABSENT from the DOM
+             until the inspector probe reports available, and disappears
+             entirely outside Development environments (production builds
+             never depend on the inspector). -->
+        @if (simulator.inspectorAvailable() === true) {
+          <button
+            type="button"
+            role="tab"
+            class="tab-btn"
+            [class.active]="activeTab() === 'virtual'"
+            [attr.aria-selected]="activeTab() === 'virtual'"
+            (click)="selectTab('virtual')"
+            data-testid="tab-virtual"
+          >
+            <ce-icon name="scan-line" [size]="18" />
+            <span>Virtual door</span>
+          </button>
+        }
       </nav>
 
       <main class="tab-content" [attr.aria-label]="activeTabLabel()">
@@ -454,6 +478,12 @@ export type GatehouseTab = 'qr' | 'manual' | 'walkin' | 'visits';
                 </div>
               }
             </section>
+          }
+
+          @case ('virtual') {
+            <div class="panel-section" data-testid="panel-virtual">
+              <ce-virtual-door />
+            </div>
           }
         }
       </main>
@@ -1119,6 +1149,10 @@ export class GatehousePanelPage implements OnInit, OnDestroy {
   private readonly deviceHealth = inject(DeviceHealthService);
   readonly gatehouseContext = inject(GatehouseContextService);
   readonly auth = inject(AuthService);
+  // Operational-gatehouse-simulator — the virtual door tab exists only in
+  // Development while the inspector flag is on. ngOnInit probes the
+  // inspector; the same singleton service drives Device health.
+  readonly simulator = inject(DeviceSimulatorService);
 
   readonly activeTab = signal<GatehouseTab>('qr');
 
@@ -1186,20 +1220,35 @@ export class GatehousePanelPage implements OnInit, OnDestroy {
     // 1. Initial tab from route data if provided (e.g. /gatehouse/qr, /gatehouse/manual)
     const initialDataTab = this.route.snapshot.data['initialTab'] as GatehouseTab | undefined;
     if (initialDataTab && this.isValidTab(initialDataTab)) {
-      this.activeTab.set(initialDataTab);
+      if (initialDataTab === 'virtual' && this.simulator.inspectorAvailable() !== true) {
+        this.activeTab.set('qr');
+      } else {
+        this.activeTab.set(initialDataTab);
+      }
     }
 
-    // 2. Query param ?tab=
+    // 2. Query param ?tab= — 'virtual' is honored only while the inspector
+    //    probe reports available; otherwise the QR console stays active.
     this.route.queryParamMap.subscribe((params) => {
       const tabParam = params.get('tab') as GatehouseTab | null;
       if (tabParam && this.isValidTab(tabParam)) {
-        this.activeTab.set(tabParam);
+        if (tabParam === 'virtual' && this.simulator.inspectorAvailable() !== true) {
+          this.activeTab.set('qr');
+        } else {
+          this.activeTab.set(tabParam);
+        }
       }
     });
 
     // 3. Preload apartments map and initial open visits count
     this.loadApartments();
     this.gatehouseContext.load();
+
+    // 3b. Probe the dev-only simulator inspector — it gates the 'virtual'
+    //     tab (tab absent from the DOM until available). When the probe is
+    //     not yet resolved, a deep link to ?tab=virtual falls back to the
+    //     QR console until the operator picks the tab.
+    void this.simulator.probeInspector();
 
     // 4. Phase 26 (DOOR-14) — subscribe to offline-alert transitions. The
     //    service is shared with the /devices dashboard; whoever started it
@@ -1214,6 +1263,7 @@ export class GatehousePanelPage implements OnInit, OnDestroy {
   }
 
   selectTab(tab: GatehouseTab): void {
+    if (tab === 'virtual' && this.simulator.inspectorAvailable() !== true) return;
     this.activeTab.set(tab);
     void this.router.navigate([], {
       relativeTo: this.route,
@@ -1236,6 +1286,8 @@ export class GatehousePanelPage implements OnInit, OnDestroy {
         return 'Walk-in Registration Form';
       case 'visits':
         return 'Open Visits Table';
+      case 'virtual':
+        return 'Virtual Door Console';
     }
   }
 
@@ -1526,6 +1578,6 @@ export class GatehousePanelPage implements OnInit, OnDestroy {
   }
 
   private isValidTab(tab: string): tab is GatehouseTab {
-    return tab === 'qr' || tab === 'manual' || tab === 'walkin' || tab === 'visits';
+    return tab === 'qr' || tab === 'manual' || tab === 'walkin' || tab === 'visits' || tab === 'virtual';
   }
 }

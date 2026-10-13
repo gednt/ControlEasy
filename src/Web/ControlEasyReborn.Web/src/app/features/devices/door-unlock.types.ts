@@ -161,6 +161,9 @@ export interface DeviceEventIngestionDto {
   refusedScanAttemptId: string | null;
   occurredAtUtc: string;
   processedAtUtc: string;
+  // Additive field. Canonical refusal code (e.g. invalid_credential) when
+  // the outcome is a denial; absent/null otherwise.
+  failureCode?: string | null;
 }
 
 export interface DeviceEventListItem {
@@ -259,4 +262,65 @@ export interface SimulatorQueueItem {
   externalEventId: string | null;
   opaqueToken: string | null;
   payloadJson: string | null;
+}
+
+// Operational-gatehouse-simulator — virtual physical reader surface
+// (development only). Mirrors the C# records in
+// SimulatorInspectorEndpoints.cs + PresentSimulatedCredentialHandler.cs +
+// VirtualDoorReadinessHandler.cs. Update all files together.
+
+export type VirtualDoorDirection = 'entrance' | 'exit';
+
+export interface SimulatorDeviceReadiness {
+  ready: boolean;
+  reason: string | null;
+  vendor: string;
+  gatehouseId: string | null;
+  gatehouseName: string | null;
+}
+
+export interface SimulatedPresentationResult {
+  // Either DeviceEventOutcome or the configured simulator failure
+  // ('device_offline' | 'auth_failed') when the failure short-circuit fired
+  // before ingestion.
+  outcome: string;
+  failureCode: string | null;
+  direction: string;
+  existingEventId: string | null;
+  visitId: string | null;
+  accessEventId: string | null;
+  refusalId: string | null;
+  occurredAtUtc: string;
+  processedAtUtc: string;
+}
+
+export function isConfiguredSimulatorFailure(outcome: string): boolean {
+  return outcome === 'device_offline' || outcome === 'auth_failed';
+}
+
+// Human labels for the canonical outcomes surfaced in the virtual-door
+// receipt (device-event result codes + the configured failure modes).
+export function virtualDoorOutcomeLabel(outcome: string): string {
+  switch (outcome) {
+    case 'advanced_visit':
+      return 'Visit advanced';
+    case 'created_visit':
+      return 'Visit created';
+    case 'matched_dweller':
+      return 'Access recorded';
+    case 'denied_attempt':
+      return 'Access denied';
+    case 'replay_duplicate':
+      return 'Replay (already recorded)';
+    case 'device_offline':
+      return 'Reader offline';
+    case 'auth_failed':
+      return 'Credential refused by reader';
+    case 'device_inactive':
+      return 'Reader inactive';
+    case 'tenant_flag_off':
+      return 'Door integration disabled';
+    default:
+      return outcome;
+  }
 }

@@ -28,6 +28,7 @@ export type { HttpValidationProblemDetails } from './models/http-validation-prob
 export type { IssueCredentialRequest } from './models/issue-credential-request';
 export type { LoginRequest } from './models/login-request';
 export type { LookupSubjectRequest } from './models/lookup-subject-request';
+export type { PresentCredentialRequest } from './models/present-credential-request';
 export type { ProblemDetails } from './models/problem-details';
 export type { RecordAccessScanRequest } from './models/record-access-scan-request';
 export type { RecordManualAccessRequest } from './models/record-manual-access-request';

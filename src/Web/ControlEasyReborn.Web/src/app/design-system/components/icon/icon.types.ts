@@ -43,7 +43,10 @@ export type LucideIconName =
   | 'file-text'
   // Phase 26 (DOOR-13 + DOOR-14) — device health page + sidebar nav
   | 'pulse'
-  | 'activity';
+  | 'activity'
+  // Operational-gatehouse-simulator — virtual door tab (lucide log-in / scan-line).
+  | 'log-in'
+  | 'scan-line';
 
 const ICON_ALIASES: Partial<Record<LucideIconName, string>> = {
   dashboard: 'layout-dashboard',

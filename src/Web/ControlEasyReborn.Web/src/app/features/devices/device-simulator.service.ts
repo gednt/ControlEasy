@@ -5,8 +5,11 @@ import { DevicesApiService } from './devices-api.service';
 import {
   EnqueueOfflineResult,
   SimulatedAttempt,
+  SimulatedPresentationResult,
+  SimulatorDeviceReadiness,
   SimulatorFailureMode,
   SimulatorQueueItem,
+  VirtualDoorDirection,
 } from './door-unlock.types';
 
 // Phase 27 (DOOR-15) — device simulator inspector facade.
@@ -46,7 +49,9 @@ export type SimulatorAction =
   | 'offline'
   | 'reset'
   | 'enqueue'
-  | 'drain';
+  | 'drain'
+  | 'readiness'
+  | 'present';
 
 const PROBE_DEVICE_ID = '00000000-0000-0000-0000-000000000001';
 const MAX_ATTEMPTS_DISPLAYED = 200;
@@ -195,6 +200,58 @@ export class DeviceSimulatorService {
       })
     );
     return items;
+  }
+
+  // Operational-gatehouse-simulator — virtual physical reader execution.
+  // Both methods go through runAction so they inherit the 5-second timeout
+  // and the ProblemDetails `detail` extraction used by every other
+  // inspector action. The endpoint responses are consumed via a direct
+  // HttpClient call (the generated DevicesInternalService under-types
+  // these bodies, same precedent as enqueue/drain).
+
+  /**
+   * Device-readiness probe: can this simulator device present a credential
+   * right now? Returns the readiness verdict (ready=false carries the
+   * actionable reason) or null when the action failed (lastError set).
+   */
+  async probeReadiness(deviceId: string): Promise<SimulatorDeviceReadiness | null> {
+    let readiness: SimulatorDeviceReadiness | null = null;
+    await this.runAction('readiness', () =>
+      firstValueFrom(
+        this.http.get<SimulatorDeviceReadiness>(
+          `/api/v1/_internal/devices/${deviceId}/simulator/readiness`,
+          { responseType: 'json' as const }
+        )
+      ).then((body) => {
+        readiness = body;
+      })
+    );
+    return readiness;
+  }
+
+  /**
+   * Present an issued credential token at the virtual reader. Resolves to
+   * the presentation result (outcome, direction, linked ids) or null when
+   * the action failed (lastError set).
+   */
+  async presentCredential(
+    deviceId: string,
+    token: string,
+    direction: VirtualDoorDirection
+  ): Promise<SimulatedPresentationResult | null> {
+    let result: SimulatedPresentationResult | null = null;
+    await this.runAction('present', () =>
+      firstValueFrom(
+        this.http.post<SimulatedPresentationResult>(
+          `/api/v1/_internal/devices/${deviceId}/simulator/present-credential`,
+          { token, direction },
+          { responseType: 'json' as const }
+        )
+      ).then((body) => {
+        result = body;
+      })
+    );
+    return result;
   }
 
   private async runAction<T>(action: SimulatorAction, op: () => Promise<T>): Promise<boolean> {

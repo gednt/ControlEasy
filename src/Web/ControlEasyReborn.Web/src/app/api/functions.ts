@@ -97,6 +97,10 @@ export type { ApiV1InternalDevicesDeviceIdSimulatorEnqueueOfflinePost$Params as 
 export { apiV1InternalDevicesDeviceIdSimulatorEnqueueOfflinePost as apiV1InternalDevicesDeviceIdSimulatorEnqueueOfflinePost } from './fn/devices-internal/api-v-1-internal-devices-device-id-simulator-enqueue-offline-post';
 export type { ApiV1InternalDevicesDeviceIdSimulatorQueueGet$Params as ApiV1InternalDevicesDeviceIdSimulatorQueueGet$Params } from './fn/devices-internal/api-v-1-internal-devices-device-id-simulator-queue-get';
 export { apiV1InternalDevicesDeviceIdSimulatorQueueGet as apiV1InternalDevicesDeviceIdSimulatorQueueGet } from './fn/devices-internal/api-v-1-internal-devices-device-id-simulator-queue-get';
+export type { ApiV1InternalDevicesDeviceIdSimulatorReadinessGet$Params as ApiV1InternalDevicesDeviceIdSimulatorReadinessGet$Params } from './fn/devices-internal/api-v-1-internal-devices-device-id-simulator-readiness-get';
+export { apiV1InternalDevicesDeviceIdSimulatorReadinessGet as apiV1InternalDevicesDeviceIdSimulatorReadinessGet } from './fn/devices-internal/api-v-1-internal-devices-device-id-simulator-readiness-get';
+export type { ApiV1InternalDevicesDeviceIdSimulatorPresentCredentialPost$Params as ApiV1InternalDevicesDeviceIdSimulatorPresentCredentialPost$Params } from './fn/devices-internal/api-v-1-internal-devices-device-id-simulator-present-credential-post';
+export { apiV1InternalDevicesDeviceIdSimulatorPresentCredentialPost as apiV1InternalDevicesDeviceIdSimulatorPresentCredentialPost } from './fn/devices-internal/api-v-1-internal-devices-device-id-simulator-present-credential-post';
 export type { ApiV1EntryLogGet$Params as ApiV1EntryLogGet$Params } from './fn/entry-log/api-v-1-entry-log-get';
 export { apiV1EntryLogGet as apiV1EntryLogGet } from './fn/entry-log/api-v-1-entry-log-get';
 export type { ApiV1EntryLogExportGet$Params as ApiV1EntryLogExportGet$Params } from './fn/entry-log/api-v-1-entry-log-export-get';
