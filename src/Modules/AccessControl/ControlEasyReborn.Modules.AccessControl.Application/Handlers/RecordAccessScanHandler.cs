@@ -26,7 +26,12 @@ public sealed record ScanDecisionResult(
     Guid? DestinationApartmentId,
     string DestinationBlock,
     string DestinationUnit,
-    string? FailureCode);
+    string? FailureCode,
+    // The durable Visit link produced by the canonical visitor-arrival step
+    // (Entrance + Visitor only). The Devices ingestion path reads this to
+    // emit a truthful advanced_visit result code without running its own
+    // arrival registration.
+    Guid? VisitId = null);
 
 public sealed class RecordAccessScanHandler
 {
@@ -107,7 +112,8 @@ public sealed class RecordAccessScanHandler
                 DestinationApartmentId: existing.DestinationApartmentId,
                 DestinationBlock: existing.DestinationBlock,
                 DestinationUnit: existing.DestinationUnit,
-                FailureCode: null);
+                FailureCode: null,
+                VisitId: existing.VisitId);
             LogDecision(ScanDecisionKind.Recorded, "idempotent", null, stopwatch);
             return idempotentResult;
         }
@@ -247,7 +253,8 @@ public sealed class RecordAccessScanHandler
             DestinationApartmentId: accessEvent.DestinationApartmentId,
             DestinationBlock: accessEvent.DestinationBlock,
             DestinationUnit: accessEvent.DestinationUnit,
-            FailureCode: null);
+            FailureCode: null,
+            VisitId: visitId);
         LogDecision(ScanDecisionKind.Recorded, "recorded", accepted, stopwatch);
         return accepted;
     }

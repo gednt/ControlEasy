@@ -56,23 +56,18 @@ public sealed class DeviceEventIdempotentReplayTests : IAsyncLifetime
         var payloads = new List<DeviceEventPayload>();
         for (var i = 0; i < 5; i++)
         {
-            payloads.Add(new DeviceEventPayload(
-                EventType: ControlEasyReborn.Modules.Devices.Domain.Enums.DeviceEventType.CardRead,
-                OccurredAtUtc: DateTime.UtcNow.AddSeconds(-i),
-                SequenceNumber: 100 + i,
-                ExternalEventId: Guid.NewGuid(),
-                OpaqueToken: $"sim-test-resident-{residentId:N}",
-                PayloadJson: "{}"));
+            payloads.Add(_fx.BuildCardReadPayload(
+                opaqueToken: $"sim-test-resident-{residentId:N}",
+                sequenceNumber: 100 + i));
         }
 
-        // First pass — all 5 produce device_events rows. The sim-test-
-        // resident-* token resolves through DeviceCredentialResolver to
-        // a synthetic CredentialMatch; RecordAccessScanHandler then
-        // dispatches its own HMAC-token check which fails (the synthetic
-        // token isn't a real HMAC-issued QR). The refused-scan rows
-        // prove the single-write-path: even "matched-resident" simulator
-        // tokens end up via RecordRefusedScanHandler / RecordAccessScanHandler
-        // for the eventual ledger write.
+        // First pass — all 5 produce device_events rows. The sim-test-*
+        // synthetic token is not a real issued QR credential, so the
+        // canonical RecordAccessScanHandler refuses it (invalid_credential
+        // refusal through the single-write-path). The refused-scan rows
+        // prove the canonical path: even "matched-resident" simulator
+        // tokens end up via RecordAccessScanHandler for the eventual
+        // ledger write.
         foreach (var payload in payloads)
         {
             var response = await client.PostAsJsonAsync($"/api/v1/devices/{_fx.DeviceId}/events", payload);
@@ -106,13 +101,10 @@ public sealed class DeviceEventIdempotentReplayTests : IAsyncLifetime
         ResetInMemoryQueue();
         var client = PorteiroClient();
 
-        var payload1 = new DeviceEventPayload(
-            EventType: ControlEasyReborn.Modules.Devices.Domain.Enums.DeviceEventType.CardRead,
-            OccurredAtUtc: DateTime.UtcNow.AddSeconds(-1),
-            SequenceNumber: 42,
-            ExternalEventId: null,
-            OpaqueToken: $"sim-test-resident-{Guid.NewGuid():N}",
-            PayloadJson: "{}");
+        var payload1 = _fx.BuildCardReadPayload(
+            opaqueToken: $"sim-test-resident-{Guid.NewGuid():N}",
+            sequenceNumber: 42,
+            externalEventId: null);
 
         var first = await client.PostAsJsonAsync($"/api/v1/devices/{_fx.DeviceId}/events", payload1);
         first.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -133,13 +125,9 @@ public sealed class DeviceEventIdempotentReplayTests : IAsyncLifetime
         var queuedPayloads = new List<DeviceEventPayload>();
         for (var i = 0; i < 5; i++)
         {
-            queuedPayloads.Add(new DeviceEventPayload(
-                EventType: ControlEasyReborn.Modules.Devices.Domain.Enums.DeviceEventType.CardRead,
-                OccurredAtUtc: DateTime.UtcNow.AddSeconds(-i - 1),
-                SequenceNumber: 200 + i,
-                ExternalEventId: Guid.NewGuid(),
-                OpaqueToken: $"sim-test-resident-{Guid.NewGuid():N}",
-                PayloadJson: "{}"));
+            queuedPayloads.Add(_fx.BuildCardReadPayload(
+                opaqueToken: $"sim-test-resident-{Guid.NewGuid():N}",
+                sequenceNumber: 200 + i));
         }
 
         // "Reconnect" via sequential POST /events.

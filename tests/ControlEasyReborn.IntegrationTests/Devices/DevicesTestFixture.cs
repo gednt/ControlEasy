@@ -215,8 +215,209 @@ public sealed class DevicesTestFixture : IAsyncLifetime
         return Convert.ToInt32(result);
     }
 
+    // Operational-gatehouse-simulator — synthetic virtual reader: an ACTIVE
+    // reader device bound to the seeded gatehouse with the simulator marker
+    // in its (opaque) connection params.
+    public Guid VirtualReaderId { get; private set; }
+
+    public async Task<Guid> SeedVirtualReaderAsync()
+    {
+        VirtualReaderId = Guid.NewGuid();
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        await using var cmd = new MySqlCommand(
+            @"INSERT INTO Devices
+              (Id, TenantId, DeviceType, Vendor, ConnectionParams, GatehouseId, IsActive, CreatedAtUtc, CreatedByProfileId, tenant_id)
+              VALUES (@id, @tid, 'reader', 'ControlEasy simulator', @params, @gatehouse, 1, UTC_TIMESTAMP(6), @actor, @tid)",
+            conn);
+        cmd.Parameters.AddWithValue("@id", VirtualReaderId.ToString());
+        cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
+        cmd.Parameters.AddWithValue("@params", new byte[] { 0x10, 0x20, 0x30, 0x40 });
+        cmd.Parameters.AddWithValue("@gatehouse", GatehouseId.ToString());
+        cmd.Parameters.AddWithValue("@actor", ActorProfileId.ToString());
+        await cmd.ExecuteNonQueryAsync();
+        return VirtualReaderId;
+    }
+
+    // Synthetic apartment (all values generated, never real-user data).
+    public Guid LastApartmentId { get; private set; }
+
+    public async Task<Guid> SeedSyntheticApartmentAsync()
+    {
+        LastApartmentId = Guid.NewGuid();
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        await using var cmd = new MySqlCommand(
+            @"INSERT INTO Apartments (Id, TenantId, Block, Unit, Active, CreatedAtUtc, tenant_id)
+              VALUES (@id, @tid, @block, @unit, 1, UTC_TIMESTAMP(6), @tid)",
+            conn);
+        cmd.Parameters.AddWithValue("@id", LastApartmentId.ToString());
+        cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
+        cmd.Parameters.AddWithValue("@block", $"BLK-{Guid.NewGuid().ToString("N")[..6]}");
+        cmd.Parameters.AddWithValue("@unit", $"{Random.Shared.Next(1, 40):D2}");
+        await cmd.ExecuteNonQueryAsync();
+        return LastApartmentId;
+    }
+
+    // Synthetic visit (Pending by default) — a visitor credential issued for
+    // this visit carries SubjectId == visit.Id, exactly like the real
+    // administrative issuance flow ("Synthetic test data only" policy: the
+    // name / document below are generator output).
+    public Guid LastVisitId { get; private set; }
+
+    public async Task<(Guid VisitId, string Document)> SeedSyntheticVisitAsync(
+        Guid apartmentId,
+        int status = 0 /* Pending */,
+        string? document = null)
+    {
+        LastVisitId = Guid.NewGuid();
+        var doc = document ?? $"VIS-{Guid.NewGuid().ToString("N")[..11]}";
+        var visitorName = $"Test Visitor {Guid.NewGuid().ToString("N")[..6]}";
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        await using var cmd = new MySqlCommand(
+            @"INSERT INTO Visits (Id, TenantId, VisitorName, VisitorDocument, ApartmentId, DestinationBlock, DestinationUnit, Status, CreatedAtUtc, tenant_id)
+              VALUES (@id, @tid, @name, @doc, @apt, @block, @unit, @status, UTC_TIMESTAMP(6), @tid)",
+            conn);
+        cmd.Parameters.AddWithValue("@id", LastVisitId.ToString());
+        cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
+        cmd.Parameters.AddWithValue("@name", visitorName);
+        cmd.Parameters.AddWithValue("@doc", doc);
+        cmd.Parameters.AddWithValue("@apt", apartmentId.ToString());
+        cmd.Parameters.AddWithValue("@block", $"BLK-{Guid.NewGuid().ToString("N")[..6]}");
+        cmd.Parameters.AddWithValue("@unit", $"{Random.Shared.Next(1, 40):D2}");
+        cmd.Parameters.AddWithValue("@status", status);
+        await cmd.ExecuteNonQueryAsync();
+        return (LastVisitId, doc);
+    }
+
+    // Synthetic issued QR credential row for a subject. The direct-UUID
+    // resolution path in AccessControlCryptoService.ResolveByTokenAsync
+    // accepts the credential id or the subject id as the presented token, so
+    // tests present `subjectId` as the real-issued-credential token.
+    public Guid LastCredentialId { get; private set; }
+
+    public async Task<Guid> SeedSyntheticCredentialAsync(int subjectType, Guid subjectId, int status = 0 /* Active */)
+    {
+        LastCredentialId = Guid.NewGuid();
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        await using var cmd = new MySqlCommand(
+            @"INSERT INTO AccessCredentials
+              (Id, TenantId, SubjectType, SubjectId, Method, SecretVerifier, KeyVersion, Status,
+               ValidFromUtc, ExpiresAtUtc, ReplacedByCredentialId, IssuedByProfileId, CreatedAtUtc, UpdatedAtUtc, tenant_id)
+              VALUES (@id, @tid, @stype, @sid, 1, @verifier, 1, @status,
+                      UTC_TIMESTAMP(6), NULL, NULL, @actor, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6), @tid)",
+            conn);
+        cmd.Parameters.AddWithValue("@id", LastCredentialId.ToString());
+        cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
+        cmd.Parameters.AddWithValue("@stype", subjectType);
+        cmd.Parameters.AddWithValue("@sid", subjectId.ToString());
+        cmd.Parameters.AddWithValue("@verifier", new byte[] { 0x11, 0x22, 0x33, 0x44 });
+        cmd.Parameters.AddWithValue("@status", status);
+        cmd.Parameters.AddWithValue("@actor", ActorProfileId.ToString());
+        await cmd.ExecuteNonQueryAsync();
+        return LastCredentialId;
+    }
+
+    // Count visits rows filtered by status for this tenant.
+    public async Task<int> CountVisitsByStatusAsync(int status)
+    {
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        await using var cmd = new MySqlCommand(
+            "SELECT COUNT(*) FROM Visits WHERE tenant_id=@tid AND Status=@status", conn);
+        cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
+        cmd.Parameters.AddWithValue("@status", status);
+        var result = await cmd.ExecuteScalarAsync();
+        return Convert.ToInt32(result);
+    }
+
+    // Synthetic active resident bound to an apartment — needed for the
+    // real-issued-credential resident path (SubjectId == resident id).
+    public Guid LastResidentId { get; private set; }
+
+    public async Task<Guid> SeedSyntheticResidentAsync(Guid apartmentId)
+    {
+        LastResidentId = Guid.NewGuid();
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        await using var cmd = new MySqlCommand(
+            @"INSERT INTO Residents (Id, TenantId, Name, Cpf, Email, Phone, ApartmentId, Active, CreatedAtUtc, tenant_id)
+              VALUES (@id, @tid, @name, @cpf, NULL, NULL, @apt, 1, UTC_TIMESTAMP(6), @tid)",
+            conn);
+        cmd.Parameters.AddWithValue("@id", LastResidentId.ToString());
+        cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
+        cmd.Parameters.AddWithValue("@name", $"Test Resident {Guid.NewGuid().ToString("N")[..6]}");
+        cmd.Parameters.AddWithValue("@cpf", $"RES-{Guid.NewGuid().ToString("N")[..11]}");
+        cmd.Parameters.AddWithValue("@apt", apartmentId.ToString());
+        await cmd.ExecuteNonQueryAsync();
+        return LastResidentId;
+    }
+
+    // Set the in-process simulator failure mode for a device (dev-only state).
+    public void SetSimulatorFailureMode(Guid deviceId, SimulatorFailureMode mode)
+    {
+        using var scope = Factory.Services.CreateScope();
+        scope.ServiceProvider.GetRequiredService<IDoorSimulatorState>().SetFailureMode(deviceId, mode);
+    }
+
+    // A reader device with NO gatehouse binding — the presentation guard must
+    // report gatehouse_binding_missing instead of a cross-tenant fallback.
+    public async Task<Guid> SeedUnboundReaderAsync()
+    {
+        var id = Guid.NewGuid();
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        await using var cmd = new MySqlCommand(
+            @"INSERT INTO Devices
+              (Id, TenantId, DeviceType, Vendor, ConnectionParams, GatehouseId, IsActive, CreatedAtUtc, CreatedByProfileId, tenant_id)
+              VALUES (@id, @tid, 'reader', 'ControlEasy simulator', @params, NULL, 1, UTC_TIMESTAMP(6), @actor, @tid)",
+            conn);
+        cmd.Parameters.AddWithValue("@id", id.ToString());
+        cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
+        cmd.Parameters.AddWithValue("@params", new byte[] { 0x50, 0x60, 0x70, 0x80 });
+        cmd.Parameters.AddWithValue("@actor", ActorProfileId.ToString());
+        await cmd.ExecuteNonQueryAsync();
+        return id;
+    }
+
+    // Count AccessEvents rows filtered by Direction (0=entrance, 1=exit).
+    public async Task<int> CountAccessEventsWithDirectionAsync(int direction)
+    {
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        await using var cmd = new MySqlCommand(
+            "SELECT COUNT(*) FROM AccessEvents WHERE tenant_id=@tid AND Direction=@d", conn);
+        cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
+        cmd.Parameters.AddWithValue("@d", direction);
+        return Convert.ToInt32(await cmd.ExecuteScalarAsync());
+    }
+
+    // Count RefusedScanAttempts rows filtered by Direction.
+    public async Task<int> CountRefusalsWithDirectionAsync(int? direction)
+    {
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+        var sql = direction.HasValue
+            ? "SELECT COUNT(*) FROM RefusedScanAttempts WHERE tenant_id=@tid AND Direction=@d"
+            : "SELECT COUNT(*) FROM RefusedScanAttempts WHERE tenant_id=@tid AND Direction IS NULL";
+        await using var cmd = new MySqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
+        if (direction.HasValue) cmd.Parameters.AddWithValue("@d", direction.Value);
+        return Convert.ToInt32(await cmd.ExecuteScalarAsync());
+    }
+
     // Phase 25 — Build a CardRead payload with optional simulator token + sequence number.
-    public DeviceEventPayload BuildCardReadPayload(string? opaqueToken = null, long? sequenceNumber = null, Guid? externalEventId = null)
+    // Since the operational-simulator repair, card reads carry a strict
+    // "direction" inside payload_json (entrance|exit) — absent or unknown
+    // values are rejected by the ingestion validator.
+    public DeviceEventPayload BuildCardReadPayload(
+        string? opaqueToken = null,
+        long? sequenceNumber = null,
+        Guid? externalEventId = null,
+        string direction = "entrance",
+        string? payloadJson = null)
     {
         return new DeviceEventPayload(
             EventType: ControlEasyReborn.Modules.Devices.Domain.Enums.DeviceEventType.CardRead,
@@ -224,7 +425,7 @@ public sealed class DevicesTestFixture : IAsyncLifetime
             SequenceNumber: sequenceNumber ?? 1,
             ExternalEventId: externalEventId ?? Guid.NewGuid(),
             OpaqueToken: opaqueToken ?? $"sim-test-resident-{Guid.NewGuid():N}",
-            PayloadJson: "{}");
+            PayloadJson: payloadJson ?? $"{{\"direction\":\"{direction}\"}}");
     }
 
     // Phase 26 — Build a Heartbeat payload with optional error counters.

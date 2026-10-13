@@ -152,7 +152,10 @@ public sealed class DeviceEventCrossTenantTests : IAsyncLifetime
             SequenceNumber: 999,
             ExternalEventId: Guid.NewGuid(),
             OpaqueToken: token,
-            PayloadJson: "{}");
+            // Strict direction validation requires a valid "direction" in
+            // payload_json for card_read events (mirror
+            // DevicesTestFixture.BuildCardReadPayload's shape).
+            PayloadJson: "{\"direction\":\"entrance\"}");
 
         var response = await tenantBClient.PostAsJsonAsync($"/api/v1/devices/{DeviceBId}/events", payload);
         response.StatusCode.Should().Be(HttpStatusCode.OK);

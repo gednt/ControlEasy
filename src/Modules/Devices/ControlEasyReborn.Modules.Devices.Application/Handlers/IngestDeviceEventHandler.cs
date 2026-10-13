@@ -10,27 +10,29 @@ using ControlEasyReborn.Modules.Devices.Application.Contracts;
 using ControlEasyReborn.Modules.Devices.Application.Errors;
 using ControlEasyReborn.Modules.Devices.Domain.Entities;
 using ControlEasyReborn.Modules.Devices.Domain.Enums;
-using ControlEasyReborn.Modules.Visits.Application.Abstractions;
-using ControlEasyReborn.Modules.Visits.Application.Handlers;
 using FluentValidation;
 using Microsoft.Extensions.Logging;
 
 namespace ControlEasyReborn.Modules.Devices.Application.Handlers;
 
-// Heart of Phase 25 (DOOR-08..11):
+// Heart of Phase 25 (DOOR-08..11), repaired by the operational-simulator
+// spec so one canonical credential decision produces the whole ledger:
 //
 //   1. Tenant opt-in flag check (404 hides the feature).
 //   2. Device existence + IsActive + !RemovedAtUtc check.
 //   3. Idempotency-key check (no event lost, none double-processed).
-//   4. Card-credential resolution via SHA-256 hash + AccessCredentials.
+//   4. Strict direction validation for card_read / card_denied events
+//      (payload_json "direction"; absent or unknown is a 400 validation
+//      failure — the direction is never defaulted to Entrance).
 //   5. Switch on event type:
-//        CardRead:
-//          - unknown token       → refused scan (FailureCode=UnknownCard)
-//          - inactive/expired    → refused scan (CredentialInactive/Expired)
-//          - Resident            → RecordAccessScanHandler (creates AccessEvent)
-//          - Visitor             → VisitorArrivalHandler + RecordAccessScanHandler
-//                                 (creates/advances Visit + AccessEvent)
-//        CardDenied: refused scan (FailureCode=InvalidCredential)
+//        CardRead: delegate EXACTLY ONCE to RecordAccessScanHandler —
+//          the canonical credential decision (resolve, status/expiry,
+//          destination, policy, visitor arrival, refusals). The result's
+//          Decision/RefusalId/FailureCode/VisitId map onto truthful
+//          result codes: recorded+visit → advanced_visit, recorded →
+//          matched_dweller, refused/policy → denied_attempt.
+//        CardDenied: refused scan (FailureCode=InvalidCredential) with the
+//          validated direction.
 //        Tamper / DoorForced: refused scan (FailureCode=TamperDetected)
 //        ReaderReconnected: persist DeviceEvent, no ledger side effect
 //        Heartbeat (Phase 26): dispatched to IngestHeartbeatHandler —
@@ -43,20 +45,22 @@ namespace ControlEasyReborn.Modules.Devices.Application.Handlers;
 //      short-circuits before the insert.
 //
 // All cross-module write paths funnel through:
-//   VisitorArrivalHandler (Visits.Application)    — Visit creation / advance
-//   RecordAccessScanHandler   (AccessControl.Application) — AccessEvent creation
-//   RecordRefusedScanHandler  (AccessControl.Application) — RefusedScanAttempt
+//   RecordAccessScanHandler   (AccessControl.Application) — the ONLY
+//                             credential decision: AccessEvent creation,
+//                             visitor arrival (with the resolved visitor
+//                             profile), and refusal writes
+//   RecordRefusedScanHandler  (AccessControl.Application) — explicit
+//                             reader-denial signals (card_denied, tamper,
+//                             door_forced) that are not credential decisions
 //   IngestHeartbeatHandler    (Devices.Application)    — device_heartbeats row
 public sealed class IngestDeviceEventHandler
 {
     private readonly IDeviceRepository _devices;
     private readonly IDeviceEventRepository _events;
-    private readonly IDeviceCredentialResolver _credentialResolver;
     private readonly IDeviceHandler _deviceHandler;
     private readonly ITenantDoorIntegrationFlagLookup _tenantFlagLookup;
     private readonly RecordAccessScanHandler _recordScan;
     private readonly RecordRefusedScanHandler _recordRefused;
-    private readonly IVisitDirectory _visitDirectory;
     private readonly IngestHeartbeatHandler _ingestHeartbeat;
     private readonly IValidator<DeviceEventPayload> _validator;
     private readonly ILogger<IngestDeviceEventHandler> _logger;
@@ -65,12 +69,10 @@ public sealed class IngestDeviceEventHandler
     public IngestDeviceEventHandler(
         IDeviceRepository devices,
         IDeviceEventRepository events,
-        IDeviceCredentialResolver credentialResolver,
         IDeviceHandler deviceHandler,
         ITenantDoorIntegrationFlagLookup tenantFlagLookup,
         RecordAccessScanHandler recordScan,
         RecordRefusedScanHandler recordRefused,
-        IVisitDirectory visitDirectory,
         IngestHeartbeatHandler ingestHeartbeat,
         IValidator<DeviceEventPayload> validator,
         IGatehouseLookup gatehouses,
@@ -78,12 +80,10 @@ public sealed class IngestDeviceEventHandler
     {
         _devices = devices;
         _events = events;
-        _credentialResolver = credentialResolver;
         _deviceHandler = deviceHandler;
         _tenantFlagLookup = tenantFlagLookup;
         _recordScan = recordScan;
         _recordRefused = recordRefused;
-        _visitDirectory = visitDirectory;
         _ingestHeartbeat = ingestHeartbeat;
         _validator = validator;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<IngestDeviceEventHandler>.Instance;
@@ -151,7 +151,8 @@ public sealed class IngestDeviceEventHandler
                 accessEventId: existing.AccessEventId,
                 refusedScanAttemptId: existing.RefusedScanAttemptId,
                 occurredAtUtc: existing.OccurredAtUtc,
-                processedAtUtc: existing.ProcessedAtUtc);
+                processedAtUtc: existing.ProcessedAtUtc,
+                failureCode: existing.FailureCode);
         }
 
         if (payload.EventType != DeviceEventType.ReaderReconnected &&
@@ -159,6 +160,29 @@ public sealed class IngestDeviceEventHandler
             !await _gatehouses.IsActiveAsync(tenantId, device.GatehouseId.Value, ct))
         {
             return BuildDto(DeviceEventResultCode.DeviceInactive, occurredAtUtc: payload.OccurredAtUtc, processedAtUtc: DateTime.UtcNow);
+        }
+
+        // Strict event direction for card_read / card_denied. The canonical
+        // decision (RecordAccessScanHandler) must never be fed an inferred
+        // direction: a missing or unknown payload_json "direction" is a
+        // caller-side validation failure and rejects the event (HTTP 400
+        // via ProblemDetails), instead of silently coercing to Entrance.
+        CycleDirection eventDirection = CycleDirection.Entrance;
+        var directionRequired = payload.EventType is DeviceEventType.CardRead or DeviceEventType.CardDenied;
+        if (directionRequired)
+        {
+            if (!DeviceEventPayloadDirection.TryParse(payload.PayloadJson, out var parsedDirection))
+            {
+                throw new Application.Errors.ValidationException(new Dictionary<string, string[]>(StringComparer.Ordinal)
+                {
+                    ["direction"] = new[]
+                    {
+                        "payload_json must carry a valid \"direction\" of \"entrance\" or \"exit\" for card_read / card_denied events."
+                    }
+                });
+            }
+
+            eventDirection = parsedDirection;
         }
 
         // 4+5. Normalize through IDeviceHandler and dispatch.
@@ -185,139 +209,55 @@ public sealed class IngestDeviceEventHandler
         {
             case DeviceEventType.CardRead:
                 {
-                    var match = await _credentialResolver.ResolveAsync(tenantId, payload.OpaqueToken, ct);
-                    if (match is null)
-                    {
-                        refusedScanAttemptId = await _recordRefused.HandleAsync(
-                            new RecordRefusedScanCommand(
-                                TenantId: tenantId,
-                                ScanAttemptId: scanAttemptId,
-                                CredentialFingerprint: payload.OpaqueToken is null ? null : Sha256(payload.OpaqueToken),
-                                Direction: CycleDirection.Entrance,
-                                FailureCode: RefusedScanFailureCode.UnknownCard,
-                                PerformedByProfileId: actorProfileId ?? Guid.Empty,
-                                GatehouseId: device.GatehouseId,
-                                OccurredAtUtc: normalized.OccurredAtUtc,
-                                RelatedCredentialId: null,
-                                RelatedSubjectId: null),
-                            ct);
-                        resultCode = DeviceEventResultCode.DeniedAttempt;
-                        failureCode = RefusedScanFailureCode.UnknownCard;
-                        break;
-                    }
+                    // One canonical credential decision: RecordAccessScanHandler
+                    // owns credential resolution, status/expiry, destination,
+                    // consent policy, the visitor arrival (with the resolved
+                    // visitor profile), and every refused-scan write. The
+                    // ingestion path only carries the validated direction and
+                    // maps the decision onto truthful result codes — it never
+                    // resolves credentials itself and never registers arrivals.
+                    var scanResult = await _recordScan.HandleAsync(
+                        new RecordAccessScanCommand(
+                            TenantId: tenantId,
+                            QrPayload: payload.OpaqueToken ?? string.Empty,
+                            Direction: eventDirection,
+                            ScanAttemptId: scanAttemptId,
+                            PerformedByProfileId: actorProfileId ?? Guid.Empty,
+                            GatehouseId: device.GatehouseId,
+                            ConfirmDuplicate: false),
+                        ct);
 
-                    if (!match.IsActive || match.ExpiresAtUtc is { } exp && exp <= normalized.OccurredAtUtc)
+                    accessEventId = scanResult.AccessEventId;
+                    refusedScanAttemptId = scanResult.RefusalId;
+                    visitId = scanResult.VisitId;
+                    failureCode = scanResult.FailureCode;
+                    resultCode = scanResult.Decision switch
                     {
-                        refusedScanAttemptId = await _recordRefused.HandleAsync(
-                            new RecordRefusedScanCommand(
-                                TenantId: tenantId,
-                                ScanAttemptId: scanAttemptId,
-                                CredentialFingerprint: null,
-                                Direction: CycleDirection.Entrance,
-                                FailureCode: match.ExpiresAtUtc is { } e && e <= normalized.OccurredAtUtc
-                                    ? RefusedScanFailureCode.CredentialExpired
-                                    : RefusedScanFailureCode.CredentialInactive,
-                                PerformedByProfileId: actorProfileId ?? Guid.Empty,
-                                GatehouseId: device.GatehouseId,
-                                OccurredAtUtc: normalized.OccurredAtUtc,
-                                RelatedCredentialId: match.CredentialId,
-                                RelatedSubjectId: match.SubjectId),
-                            ct);
-                        resultCode = DeviceEventResultCode.DeniedAttempt;
-                        failureCode = match.ExpiresAtUtc is { } e2 && e2 <= normalized.OccurredAtUtc
-                            ? RefusedScanFailureCode.CredentialExpired
-                            : RefusedScanFailureCode.CredentialInactive;
-                        break;
-                    }
-
-                    // Matched + active. Dispatch through the unified scan handler.
-                    if (string.Equals(match.SubjectType, "Resident", StringComparison.Ordinal))
-                    {
-                        // Resident destination is looked up inside RecordAccessScanHandler
-                        // (via AccessEventDestinationResolver -> IResidentDirectory).
-                        var scanResult = await _recordScan.HandleAsync(
-                            new RecordAccessScanCommand(
-                                TenantId: tenantId,
-                                QrPayload: payload.OpaqueToken ?? string.Empty,
-                                Direction: CycleDirection.Entrance,
-                                ScanAttemptId: scanAttemptId,
-                                PerformedByProfileId: actorProfileId ?? Guid.Empty,
-                                GatehouseId: device.GatehouseId,
-                                ConfirmDuplicate: false),
-                            ct);
-                        accessEventId = scanResult.AccessEventId;
-                        visitId = scanResult.DestinationApartmentId is not null
-                            ? null  // Residents don't create Visits; AccessEvent is enough.
-                            : null;
-                        resultCode = DeviceEventResultCode.MatchedDweller;
-                    }
-                    else if (string.Equals(match.SubjectType, "Visitor", StringComparison.Ordinal))
-                    {
-                        // Step 1: register the visitor arrival (creates/advances the Visit)
-                        // — the canonical Phase 16 single-write-path. The destination
-                        // metadata is resolved by VisitDirectory from the credential's
-                        // SubjectId (a Visitor credential's SubjectId IS a Visit.Id).
-                        var arrivalResult = await _visitDirectory.RegisterArrivalAsync(
-                            new VisitorArrivalCommand(
-                                TenantId: tenantId,
-                                VisitorName: "Visitor",
-                                VisitorDocument: string.Empty,
-                                VisitorPhone: null,
-                                DestinationApartmentId: Guid.Empty,
-                                DestinationBlock: string.Empty,
-                                DestinationUnit: string.Empty,
-                                Purpose: null,
-                                AttendantProfileId: actorProfileId,
-                                GatehouseId: device.GatehouseId,
-                                OccurredAtUtc: normalized.OccurredAtUtc),
-                            ct);
-                        visitId = arrivalResult.VisitMutated ? arrivalResult.Visit.Id : null;
-
-                        // Step 2: dispatch through RecordAccessScanHandler (creates the
-                        // AccessEvent linked to the VisitId via its internal destination
-                        // resolver).
-                        var scanResult = await _recordScan.HandleAsync(
-                            new RecordAccessScanCommand(
-                                TenantId: tenantId,
-                                QrPayload: payload.OpaqueToken ?? string.Empty,
-                                Direction: CycleDirection.Entrance,
-                                ScanAttemptId: scanAttemptId,
-                                PerformedByProfileId: actorProfileId ?? Guid.Empty,
-                                GatehouseId: device.GatehouseId,
-                                ConfirmDuplicate: false),
-                            ct);
-                        accessEventId = scanResult.AccessEventId;
-                        resultCode = arrivalResult.VisitMutated ? DeviceEventResultCode.AdvancedVisit : DeviceEventResultCode.MatchedDweller;
-                    }
-                    else
-                    {
-                        // Unknown subject type — treat as denied.
-                        refusedScanAttemptId = await _recordRefused.HandleAsync(
-                            new RecordRefusedScanCommand(
-                                TenantId: tenantId,
-                                ScanAttemptId: scanAttemptId,
-                                CredentialFingerprint: null,
-                                Direction: CycleDirection.Entrance,
-                                FailureCode: RefusedScanFailureCode.SubjectInactive,
-                                PerformedByProfileId: actorProfileId ?? Guid.Empty,
-                                GatehouseId: device.GatehouseId,
-                                OccurredAtUtc: normalized.OccurredAtUtc,
-                                RelatedCredentialId: match.CredentialId,
-                                RelatedSubjectId: match.SubjectId),
-                            ct);
-                        resultCode = DeviceEventResultCode.DeniedAttempt;
-                        failureCode = RefusedScanFailureCode.SubjectInactive;
-                    }
+                        // Visitor Entrance with a visit mutation (created or
+                        // advanced) — exactly once, driven by the canonical
+                        // arrival's durable VisitId link. A no-op re-arrival
+                        // (already CheckedIn) returns VisitId null on purpose:
+                        // no visit mutated, so the result is matched_dweller.
+                        ScanDecisionKind.Recorded when scanResult.VisitId is not null
+                            => DeviceEventResultCode.AdvancedVisit,
+                        ScanDecisionKind.Recorded
+                            => DeviceEventResultCode.MatchedDweller,
+                        _ => DeviceEventResultCode.DeniedAttempt
+                    };
                     break;
                 }
 
             case DeviceEventType.CardDenied:
+                // The reader explicitly denies a credential — record one
+                // linked refusal with the validated direction. This is an
+                // explicit reader signal, not a credential decision, so the
+                // canonical scan handler is not involved.
                 refusedScanAttemptId = await _recordRefused.HandleAsync(
                     new RecordRefusedScanCommand(
                         TenantId: tenantId,
                         ScanAttemptId: scanAttemptId,
                         CredentialFingerprint: payload.OpaqueToken is null ? null : Sha256(payload.OpaqueToken),
-                        Direction: CycleDirection.Entrance,
+                        Direction: eventDirection,
                         FailureCode: RefusedScanFailureCode.InvalidCredential,
                         PerformedByProfileId: actorProfileId ?? Guid.Empty,
                         GatehouseId: device.GatehouseId,
@@ -393,7 +333,8 @@ public sealed class IngestDeviceEventHandler
                     accessEventId: existing2.AccessEventId,
                     refusedScanAttemptId: existing2.RefusedScanAttemptId,
                     occurredAtUtc: existing2.OccurredAtUtc,
-                    processedAtUtc: existing2.ProcessedAtUtc);
+                    processedAtUtc: existing2.ProcessedAtUtc,
+                    failureCode: existing2.FailureCode);
             }
             throw;
         }
@@ -408,7 +349,8 @@ public sealed class IngestDeviceEventHandler
             accessEventId: accessEventId,
             refusedScanAttemptId: refusedScanAttemptId,
             occurredAtUtc: deviceEvent.OccurredAtUtc,
-            processedAtUtc: deviceEvent.ProcessedAtUtc);
+            processedAtUtc: deviceEvent.ProcessedAtUtc,
+            failureCode: failureCode);
     }
 
     private static byte[] Sha256(string input)
@@ -461,7 +403,8 @@ public sealed class IngestDeviceEventHandler
         Guid? accessEventId = null,
         Guid? refusedScanAttemptId = null,
         DateTime occurredAtUtc = default,
-        DateTime processedAtUtc = default) =>
+        DateTime processedAtUtc = default,
+        string? failureCode = null) =>
         new(
             Outcome: resultCode,
             ExistingEventId: existingEventId,
@@ -469,5 +412,6 @@ public sealed class IngestDeviceEventHandler
             AccessEventId: accessEventId,
             RefusedScanAttemptId: refusedScanAttemptId,
             OccurredAtUtc: occurredAtUtc == default ? DateTime.UtcNow : occurredAtUtc,
-            ProcessedAtUtc: processedAtUtc == default ? DateTime.UtcNow : processedAtUtc);
+            ProcessedAtUtc: processedAtUtc == default ? DateTime.UtcNow : processedAtUtc,
+            FailureCode: failureCode);
 }
