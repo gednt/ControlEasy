@@ -119,7 +119,7 @@ import {
                   Bound to {{ readiness()?.gatehouseName ?? 'gatehouse' }}
                 </span>
               } @else if (readiness() && !readiness()!.ready) {
-                <span class="binding-status is-error" role="alert">{{ bindingFailureLabel(readiness()?.reason) }}</span>
+                <span class="binding-status is-error" role="alert">{{ bindingFailureLabel(readiness()!.reason) }}</span>
               } @else {
                 <span class="binding-status is-error" role="status">{{ simulator.lastError() ?? 'Reader unavailable.' }}</span>
               }
