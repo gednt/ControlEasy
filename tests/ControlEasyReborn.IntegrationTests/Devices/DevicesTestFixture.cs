@@ -306,7 +306,7 @@ public sealed class DevicesTestFixture : IAsyncLifetime
             @"INSERT INTO AccessCredentials
               (Id, TenantId, SubjectType, SubjectId, Method, SecretVerifier, KeyVersion, Status,
                ValidFromUtc, ExpiresAtUtc, ReplacedByCredentialId, IssuedByProfileId, CreatedAtUtc, UpdatedAtUtc, tenant_id)
-              VALUES (@id, @tid, @stype, @sid, 1, @verifier, 1, @status,
+              VALUES (@id, @tid, @stype, @sid, 0, @verifier, 1, @status,
                       UTC_TIMESTAMP(6), NULL, NULL, @actor, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6), @tid)",
             conn);
         cmd.Parameters.AddWithValue("@id", LastCredentialId.ToString());
@@ -349,7 +349,10 @@ public sealed class DevicesTestFixture : IAsyncLifetime
         cmd.Parameters.AddWithValue("@id", LastResidentId.ToString());
         cmd.Parameters.AddWithValue("@tid", TenantId.ToString());
         cmd.Parameters.AddWithValue("@name", $"Test Resident {Guid.NewGuid().ToString("N")[..6]}");
-        cmd.Parameters.AddWithValue("@cpf", $"RES-{Guid.NewGuid().ToString("N")[..11]}");
+        // Cpf is VARCHAR(14) and the Residents domain models the masked
+        // brazilian shape; seed generated digits only (never real data).
+        var cpfDigits = $"{Random.Shared.Next(100, 999)}.{Random.Shared.Next(100, 999)}.{Random.Shared.Next(100, 999)}-{Random.Shared.Next(10, 99)}";
+        cmd.Parameters.AddWithValue("@cpf", cpfDigits);
         cmd.Parameters.AddWithValue("@apt", apartmentId.ToString());
         await cmd.ExecuteNonQueryAsync();
         return LastResidentId;
