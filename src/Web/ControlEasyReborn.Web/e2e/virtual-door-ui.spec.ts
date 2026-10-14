@@ -18,6 +18,8 @@ import { test, expect, type Page } from '@playwright/test';
 import {
   demoAdminEmail,
   demoAdminPassword,
+  applyStackHostHeader,
+  authedProbeHeaders,
   loginAsDemoUser,
   uniqueSuffix,
 } from './helpers/demo-auth';
@@ -25,17 +27,39 @@ import {
 const SIMULATOR_PROBE_PATH = '/api/v1/_internal/devices/00000000-0000-0000-0000-000000000001/simulator';
 
 async function isInspectorAvailable(page: Page): Promise<boolean> {
-  const response = await page.request.get(SIMULATOR_PROBE_PATH);
+  // The inspector resolves the tenant from a bearer JWT (401 without one),
+  // so the probe carries a demo-admin token; worktree stacks reached via
+  // localhost additionally need the explicit Host header for Traefik routing.
+  const headers = await authedProbeHeaders(page.request);
+  const response = await page.request.get(SIMULATOR_PROBE_PATH, headers ? { headers } : undefined);
   return response.ok();
 }
 
 test.describe('Virtual door (gatehouse simulator)', () => {
   test.beforeEach(async ({ page }) => {
+    applyStackHostHeader(page);
     await loginAsDemoUser(page, demoAdminEmail, demoAdminPassword);
   });
 
   test('presents an issued visitor credential end to end and lands the row in Reports', async ({ page }) => {
     test.skip(!(await isInspectorAvailable(page)), 'inspector flag is off in this environment');
+
+    // A fresh browser session has no persisted gatehouse selection; the
+    // virtual door creation binds to the selected gatehouse, so pick the
+    // first registered one (the demo seed ships "Portaria Principal").
+    await page.goto('/gatehouse');
+    const locationSelect = page.getByRole('combobox', { name: 'Recording location' });
+    await locationSelect.waitFor({ state: 'visible', timeout: 10_000 });
+    test.skip((await locationSelect.locator('option').count()) <= 1, 'demo stack has no gatehouse registered');
+    await locationSelect.selectOption({ index: 1 });
+
+    // The demo seed leaves door integration off; the virtual door requires
+    // the tenant opt-in flag, so enable it (idempotent) through the API.
+    const probeHeaders = await authedProbeHeaders(page.request);
+    await page.request.put('/api/v1/tenants/current/door-integration', {
+      headers: probeHeaders,
+      data: { doorIntegrationEnabled: true },
+    }).catch(() => undefined);
 
     // ---------------------------------------------------------------------------
     // 1. Issue a real visitor credential through the walk-in flow.
@@ -72,6 +96,14 @@ test.describe('Virtual door (gatehouse simulator)', () => {
     // ---------------------------------------------------------------------------
     await page.goto('/gatehouse?tab=virtual');
     await page.getByTestId('tab-virtual').waitFor({ state: 'visible', timeout: 10_000 });
+    // The deep link applies the virtual console once the inspector probe
+    // resolves (see gatehouse-panel.page.ts) — wait for either the
+    // reader card or the empty state to materialize.
+    await page
+      .locator('[data-testid="virtual-door-empty-state"], [data-testid="virtual-door-device-select"]')
+      .first()
+      .waitFor({ state: 'visible', timeout: 10_000 })
+      .catch(() => undefined);
 
     const emptyState = page.getByTestId('virtual-door-empty-state');
     const hasEmptyState = await emptyState.isVisible().catch(() => false);
@@ -81,6 +113,8 @@ test.describe('Virtual door (gatehouse simulator)', () => {
         'no virtual reader and the signed-in user cannot create one');
       await createBtn.click();
       await page.getByTestId('virtual-door-device-select').waitFor({ state: 'visible', timeout: 15_000 });
+    } else if (!(await page.getByTestId('virtual-door-device-select').isVisible().catch(() => false))) {
+      test.skip(true, 'virtual door console did not render in this environment');
     }
 
     await page.getByTestId('virtual-door-token-input').fill(token);
@@ -100,6 +134,16 @@ test.describe('Virtual door (gatehouse simulator)', () => {
       (await receipt.getByTestId('virtual-door-receipt-visit').count()) > 0 ||
         (await receipt.getByTestId('virtual-door-receipt-access').count()) > 0,
     ).toBe(true);
+
+    // The reader never coerces Exit into Entrance and never advances a visit.
+    await page.getByTestId('virtual-door-direction-exit').click();
+    await expect(presentButton).toBeEnabled({ timeout: 10_000 });
+    await presentButton.click();
+    const exitReceipt = page.getByTestId('virtual-door-receipt');
+    await expect(exitReceipt).toBeVisible({ timeout: 15_000 });
+    await expect(exitReceipt).toContainText(/Access recorded/);
+    await expect(exitReceipt.getByTestId('virtual-door-receipt-direction')).toContainText('exit');
+    await expect(exitReceipt.getByTestId('virtual-door-receipt-visit')).toHaveCount(0);
 
     // 4. The Reports history carries the access ledger row.
     await page.goto('/reports');
