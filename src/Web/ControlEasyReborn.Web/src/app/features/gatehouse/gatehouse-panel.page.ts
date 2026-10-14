@@ -1155,6 +1155,9 @@ export class GatehousePanelPage implements OnInit, OnDestroy {
   readonly simulator = inject(DeviceSimulatorService);
 
   readonly activeTab = signal<GatehouseTab>('qr');
+  // A deep link requested ?tab=virtual while the inspector probe was still
+  // pending — re-applied once the probe reports available (see ngOnInit 3b).
+  private readonly pendingVirtualTab = signal(false);
 
   readonly openVisits = signal<VisitResponse[]>([]);
   readonly openVisitsCount = computed(() => this.openVisits().length);
@@ -1221,6 +1224,7 @@ export class GatehousePanelPage implements OnInit, OnDestroy {
     const initialDataTab = this.route.snapshot.data['initialTab'] as GatehouseTab | undefined;
     if (initialDataTab && this.isValidTab(initialDataTab)) {
       if (initialDataTab === 'virtual' && this.simulator.inspectorAvailable() !== true) {
+        this.pendingVirtualTab.set(true);
         this.activeTab.set('qr');
       } else {
         this.activeTab.set(initialDataTab);
@@ -1233,8 +1237,13 @@ export class GatehousePanelPage implements OnInit, OnDestroy {
       const tabParam = params.get('tab') as GatehouseTab | null;
       if (tabParam && this.isValidTab(tabParam)) {
         if (tabParam === 'virtual' && this.simulator.inspectorAvailable() !== true) {
+          // Probe still pending (or unavailable): fall back to the QR console
+          // for now, but remember the request so the tab auto-applies as soon
+          // as the probe confirms the inspector is available.
+          this.pendingVirtualTab.set(true);
           this.activeTab.set('qr');
         } else {
+          this.pendingVirtualTab.set(false);
           this.activeTab.set(tabParam);
         }
       }
@@ -1247,8 +1256,18 @@ export class GatehousePanelPage implements OnInit, OnDestroy {
     // 3b. Probe the dev-only simulator inspector — it gates the 'virtual'
     //     tab (tab absent from the DOM until available). When the probe is
     //     not yet resolved, a deep link to ?tab=virtual falls back to the
-    //     QR console until the operator picks the tab.
-    void this.simulator.probeInspector();
+    //     QR console until the operator picks the tab — or until the probe
+    //     resolves available, which re-applies the requested virtual tab.
+    void this.simulator.probeInspector().then(() => {
+      // A deep link to ?tab=virtual that arrived while the probe was pending
+      // falls back to the QR console; once the probe confirms the inspector
+      // is available, apply the requested virtual tab (outside any render
+      // cycle — a template-writing effect here trips NG0600).
+      if (this.simulator.inspectorAvailable() === true && this.pendingVirtualTab()) {
+        this.pendingVirtualTab.set(false);
+        this.activeTab.set('virtual');
+      }
+    });
 
     // 4. Phase 26 (DOOR-14) — subscribe to offline-alert transitions. The
     //    service is shared with the /devices dashboard; whoever started it
