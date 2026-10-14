@@ -125,7 +125,7 @@ describe('DevicesHealthPage', () => {
         { provide: DeviceHealthService, useValue: service },
         { provide: GatehouseContextService, useValue: new FakeGatehouseContextService() },
         { provide: DeviceSimulatorService, useValue: simulator },
-        { provide: DevicesApiService, useValue: jasmine.createSpyObj('DevicesApiService', ['register']) },
+        { provide: DevicesApiService, useValue: jasmine.createSpyObj('DevicesApiService', ['register', 'update', 'updateThresholds']) },
         provideRouter([]),
         importProvidersFrom(CE_LUCIDE_ICONS),
       ],
@@ -303,6 +303,87 @@ describe('DevicesHealthPage', () => {
     // (incorrectly added) re-firing would have run.
     await Promise.resolve();
     expect(simulator.probeInspector.calls.count()).toBe(1);
+  });
+
+  // ---- Per-device Configure (binding + thresholds) ----
+  //
+  // The Configure action used to be a hard-disabled ghost button whose
+  // tooltip never fired (disabled buttons swallow pointer events). The
+  // enabled button must open the Configure dialog, and `saved` must
+  // trigger refreshNow() so the row reflects the binding/thresholds.
+
+  it('renders the Configure button ENABLED for each device row', () => {
+    service.emit([makeDevice({ deviceId: 'd1', status: 'Online' })]);
+    fixture.detectChanges();
+
+    const btn = fixture.nativeElement.querySelector('[data-testid="configure-btn"]') as HTMLButtonElement;
+    // The CeButtonComponent host renders an inner <button>; assert it is
+    // not disabled and no longer swallowed by pointer-events.
+    expect(btn).toBeTruthy();
+    expect(btn.getAttribute('disabled')).toBeNull();
+    const ariaDisabled = btn.getAttribute('aria-disabled');
+    expect(ariaDisabled === null || ariaDisabled === 'false').toBe(true);
+
+    const style = getComputedStyle(btn);
+    expect(style.pointerEvents).not.toBe('none');
+  });
+
+  it('opens the Configure dialog for the clicked device', () => {
+    service.emit([
+      makeDevice({ deviceId: 'd1', status: 'Online' }),
+      makeDevice({ deviceId: 'd2', status: 'Offline', statusLabel: 'Offline' }),
+    ]);
+    fixture.detectChanges();
+
+    const rows = Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('tr'));
+    const d2row = rows.find(
+      (r: HTMLElement) => r.getAttribute('data-testid') === 'device-row-d2'
+    ) as HTMLElement;
+    const btn = d2row.querySelector('[data-testid="configure-btn"]') as HTMLElement;
+    const inner = btn.querySelector('button') as HTMLButtonElement;
+    inner.click();
+    fixture.detectChanges();
+
+    expect(component.configureOpen()).toBe(true);
+    expect(component.configureDevice()!.deviceId).toBe('d2');
+
+    const modal = fixture.nativeElement.querySelector('[data-testid="configure-device-line"]') as HTMLElement;
+    expect(modal).toBeTruthy();
+  });
+
+  it('closes the Configure dialog on cancelled and re-hydrates on reopen', () => {
+    component.openConfigure(makeDevice({ deviceId: 'd1' }));
+    fixture.detectChanges();
+
+    component.onConfigureCancelled();
+    fixture.detectChanges();
+
+    expect(component.configureOpen()).toBe(false);
+    expect(component.configureDevice()).toBeUndefined();
+
+    component.openConfigure(makeDevice({ deviceId: 'd1', offlineAfterSeconds: 300 }));
+    fixture.detectChanges();
+    expect(component.configureDevice()!.offlineAfterSeconds).toBe(300);
+  });
+
+  it('refreshes the health snapshot after the Configure dialog saves', () => {
+    service.emit([makeDevice({ deviceId: 'd1', status: 'Online' })]);
+    fixture.detectChanges();
+
+    const refreshSpy = spyOn(service, 'refreshNow');
+    component.onConfigureSaved();
+
+    expect(component.configureOpen()).toBe(false);
+    expect(refreshSpy).toHaveBeenCalled();
+    expect(component.configureDevice()).toBeUndefined();
+  });
+
+  it('does NOT refresh the health snapshot when the Configure dialog is dismissed', () => {
+    component.openConfigure(makeDevice({ deviceId: 'd1' }));
+    const refreshSpy = spyOn(service, 'refreshNow');
+    component.onConfigureCancelled();
+
+    expect(refreshSpy).not.toHaveBeenCalled();
   });
 
   it('does NOT call probeInspector() more than once across multiple health emissions', async () => {
