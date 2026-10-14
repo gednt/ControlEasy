@@ -42,6 +42,12 @@
   summary: Make the access-control migration tolerant of databases that lack the Vehicles table.
   evidence: `0009-access-control.sql` conditionally alters `Vehicles` but does not first create it, so a nonstandard legacy schema without that table makes `db-migrate` fail before the API starts.
 
+## Deferred from: split of spec-devices-per-device-configure (2026-10-14)
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-devices-per-device-configure.md`
+  summary: Simulator usability trio — auto-bind gatehouse at virtual-device creation (with disabled-create guard when no gatehouse), admin deep-link from the Virtual door "no gatehouse binding" error to /devices, and a visible rotate chevron on the Device-simulator <details> disclosure.
+  evidence: Carved to bring the Configure dialog + thresholds endpoint spec under the 1600-token ceiling; trio is frontend-only, small, and independently reviewable via a fresh bmad-build run.
+
 - source_spec: `_bmad-output/implementation-artifacts/spec-operational-gatehouse-simulator.md`
   summary: Consider an ExternalEventId-level replay precheck in device-event ingestion (same external event with a different SequenceNumber currently writes one extra device_events row reporting the re-run outcome).
   evidence: Idempotency precheck keys on the (tenant, device, sequence, externalEventId) tuple (pre-existing contract); the canonical ScanAttemptId guard dedupes visit/access/refusal rows, so only the device-events row is duplicated and the matrix requirement (no duplicated ledger rows) still holds. Settling it needs a contract decision on ExternalEventId semantics; verify with a same-external-id/different-sequence integration test if pursued.
