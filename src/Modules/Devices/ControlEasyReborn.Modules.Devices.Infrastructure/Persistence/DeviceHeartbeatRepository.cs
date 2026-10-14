@@ -94,15 +94,18 @@ ON DUPLICATE KEY UPDATE
     }
 
     // Per-device Configure flow — the first production write path for the
-    // threshold columns. Existing row: tenant-scoped UPDATE of ONLY the
-    // threshold columns + UpdatedAtUtc (LastHeartbeatAtUtc / Status / counters
-    // stay untouched so re-configuring a live device cannot corrupt the
-    // rolling data). Absent row: sentinel INSERT so the health dashboard
-    // surfaces the configured thresholds with a "never" heartbeat display.
-    // Real ingest keeps the configured thresholds via UpsertAsync's ON
-    // DUPLICATE branch, which deliberately excludes these columns
-    // (carry-forward). The entity's threshold invariants must already have
-    // been enforced by UpdateDeviceThresholdsValidator.
+    // threshold columns. One atomic INSERT ... ON DUPLICATE KEY UPDATE (same
+    // shape as the ingest pipeline, no read/race window):
+    //   - Existing row (duplicate branch): ONLY the threshold columns +
+    //     UpdatedAtUtc change — LastHeartbeatAtUtc / Status / counters stay
+    //     untouched so re-configuring a live device cannot corrupt the
+    //     rolling data, and real ingest keeps the configured thresholds
+    //     (carry-forward; UpsertAsync's update-set deliberately excludes
+    //     these columns).
+    //   - Absent row (insert branch): sentinel row so the health dashboard
+    //     surfaces the configured thresholds with a "never" heartbeat display.
+    // The entity's threshold invariants must already have been enforced by
+    // UpdateDeviceThresholdsValidator.
     public async Task SetThresholdsAsync(
         Guid tenantId,
         Guid deviceId,
@@ -112,46 +115,27 @@ ON DUPLICATE KEY UPDATE
     {
         await using var conn = new MySqlConnection(_factory.Create(_ctx).ConnectionString);
         await conn.OpenAsync(ct);
-        var updatedAt = DateTime.UtcNow;
 
-        const string updateSql = @"
-UPDATE device_heartbeats
-SET OfflineAfterSeconds = @offlineAfterSeconds,
-    ErrorRateThresholdPercent = @errorRateThreshold,
-    UpdatedAtUtc = @updatedAt
-WHERE DeviceId = @deviceId AND tenant_id = @tenantId;";
-
-        await using (var update = new MySqlCommand(updateSql, conn))
-        {
-            update.Parameters.AddWithValue("@offlineAfterSeconds", offlineAfterSeconds);
-            update.Parameters.AddWithValue("@errorRateThreshold", errorRateThresholdPercent);
-            update.Parameters.AddWithValue("@updatedAt", updatedAt);
-            update.Parameters.AddWithValue("@deviceId", deviceId.ToString());
-            update.Parameters.AddWithValue("@tenantId", tenantId.ToString());
-            if (await update.ExecuteNonQueryAsync(ct) > 0)
-            {
-                return;
-            }
-        }
-
-        // Absent row: sentinel INSERT so health shows the configured values
-        // with last heartbeat "never" (truthful Offline display).
-        const string insertSql = @"
+        const string sql = @"
 INSERT INTO device_heartbeats
   (Id, DeviceId, TenantId, LastHeartbeatAtUtc, Status, ErrorCount, EventsSinceLastSuccess, OfflineAfterSeconds, ErrorRateThresholdPercent, UpdatedAtUtc, tenant_id)
 VALUES
-  (@id, @deviceId, @tenantId, @lastHeartbeat, @status, 0, 0, @offlineAfterSeconds, @errorRateThreshold, @updatedAt, @tenantId);";
+  (@id, @deviceId, @tenantId, @lastHeartbeat, @status, 0, 0, @offlineAfterSeconds, @errorRateThreshold, @updatedAt, @tenantId)
+ON DUPLICATE KEY UPDATE
+  OfflineAfterSeconds = VALUES(OfflineAfterSeconds),
+  ErrorRateThresholdPercent = VALUES(ErrorRateThresholdPercent),
+  UpdatedAtUtc = VALUES(UpdatedAtUtc);";
 
-        await using var insert = new MySqlCommand(insertSql, conn);
-        insert.Parameters.AddWithValue("@id", Guid.NewGuid().ToString());
-        insert.Parameters.AddWithValue("@deviceId", deviceId.ToString());
-        insert.Parameters.AddWithValue("@tenantId", tenantId.ToString());
-        insert.Parameters.AddWithValue("@lastHeartbeat", DeviceHeartbeat.SentinelLastHeartbeatAtUtc);
-        insert.Parameters.AddWithValue("@status", (int)DeviceStatus.Offline);
-        insert.Parameters.AddWithValue("@offlineAfterSeconds", offlineAfterSeconds);
-        insert.Parameters.AddWithValue("@errorRateThreshold", errorRateThresholdPercent);
-        insert.Parameters.AddWithValue("@updatedAt", updatedAt);
-        await insert.ExecuteNonQueryAsync(ct);
+        await using var cmd = new MySqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("@id", Guid.NewGuid().ToString());
+        cmd.Parameters.AddWithValue("@deviceId", deviceId.ToString());
+        cmd.Parameters.AddWithValue("@tenantId", tenantId.ToString());
+        cmd.Parameters.AddWithValue("@lastHeartbeat", DeviceHeartbeat.SentinelLastHeartbeatAtUtc);
+        cmd.Parameters.AddWithValue("@status", (int)DeviceStatus.Offline);
+        cmd.Parameters.AddWithValue("@offlineAfterSeconds", offlineAfterSeconds);
+        cmd.Parameters.AddWithValue("@errorRateThreshold", errorRateThresholdPercent);
+        cmd.Parameters.AddWithValue("@updatedAt", DateTime.UtcNow);
+        await cmd.ExecuteNonQueryAsync(ct);
     }
 
     private static DeviceHeartbeat? MapFirstOrDefault(DataTable rows)
