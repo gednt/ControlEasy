@@ -365,8 +365,11 @@ else
     _die "API container failed to start within 45s. Check: docker logs ${API_CONTAINER}"
   fi
 
+  # Relative output path: with MSYS_NO_PATHCONV=1 (Windows Git-Bash runs of
+  # this script) an absolute POSIX-style path reaches Windows curl unconverted
+  # and cannot be written; the script cwd is already REPO_ROOT.
   curl --fail --silent --show-error \
-    "http://127.0.0.1:${API_PORT}/swagger/v1/swagger.json" -o "$SWAGGER_TEMP"
+    "http://127.0.0.1:${API_PORT}/swagger/v1/swagger.json" -o ".tmp-ci-swagger.json"
   docker rm -f "$API_CONTAINER" >/dev/null 2>&1 || true
 
   # Run ng-openapi-gen in node container.
