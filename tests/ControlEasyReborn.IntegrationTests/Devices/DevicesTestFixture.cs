@@ -520,6 +520,43 @@ public sealed class DevicesTestFixture : IAsyncLifetime
         return Convert.ToInt32(await cmd.ExecuteScalarAsync());
     }
 
+    // Tenant-B isolation surface (device health / thresholds tests): a
+    // synthetic second tenant with its own ACTIVE, UNBOUND reader device and
+    // NO heartbeat row. TenantBId + TenantBDeviceId are readable afterwards.
+    public Guid TenantBId { get; private set; }
+    public Guid TenantBDeviceId { get; private set; }
+
+    public async Task SeedTenantBDeviceAsync()
+    {
+        TenantBId = Guid.NewGuid();
+        TenantBDeviceId = Guid.NewGuid();
+        await using var conn = new MySqlConnection(_mySql.ConnectionString);
+        await conn.OpenAsync();
+
+        await using (var cmd = new MySqlCommand(
+            @"INSERT INTO Tenants (Id, Slug, DisplayName, Status, CreatedAtUtc, DoorIntegrationEnabled)
+              VALUES (@id, @slug, @name, 0, UTC_TIMESTAMP(6), 1)
+              ON DUPLICATE KEY UPDATE DoorIntegrationEnabled = 1", conn))
+        {
+            cmd.Parameters.AddWithValue("@id", TenantBId.ToString());
+            cmd.Parameters.AddWithValue("@slug", $"tenantb-{TenantBId:N}".Substring(0, 32));
+            cmd.Parameters.AddWithValue("@name", "Tenant B Condo");
+            await cmd.ExecuteNonQueryAsync();
+        }
+
+        await using (var cmd = new MySqlCommand(
+            @"INSERT INTO Devices
+              (Id, TenantId, DeviceType, Vendor, ConnectionParams, GatehouseId, IsActive, CreatedAtUtc, CreatedByProfileId, tenant_id)
+              VALUES (@id, @tid, 'reader', 'TenantB synthetic reader', @params, NULL, 1, UTC_TIMESTAMP(6), @actor, @tid)", conn))
+        {
+            cmd.Parameters.AddWithValue("@id", TenantBDeviceId.ToString());
+            cmd.Parameters.AddWithValue("@tid", TenantBId.ToString());
+            cmd.Parameters.AddWithValue("@params", new byte[] { 0x09, 0x0a, 0x0b, 0x0c });
+            cmd.Parameters.AddWithValue("@actor", Guid.NewGuid().ToString());
+            await cmd.ExecuteNonQueryAsync();
+        }
+    }
+
     public async Task<DateTime?> GetHeartbeatLastSeenAsync(Guid deviceId)
     {
         await using var conn = new MySqlConnection(_mySql.ConnectionString);

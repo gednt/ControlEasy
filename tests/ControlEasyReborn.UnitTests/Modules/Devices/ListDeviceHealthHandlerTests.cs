@@ -45,12 +45,13 @@ public sealed class ListDeviceHealthHandlerTests
         result[0].LastHeartbeatAtUtc.Should().BeNull();
     }
 
-    // Per-device Configure sentinel (DOOR-13+Configure): a heartbeat row
-    // stamped with the 2000-01-01 sentinel means "thresholds configured but no
-    // real heartbeat seen yet". The chosen human-approved display is
+    // Per-device Configure sentinel: a heartbeat row stamped with the
+    // 2000-01-01 sentinel means "thresholds configured but no real heartbeat
+    // seen yet". The human-approved behavior for such rows is
     // truthful-Offline + last heartbeat "never" (DTO LastHeartbeatAtUtc=null)
-    // while the configured thresholds surface — replacing the pre-Configure
-    // special-case "configured simulator row shows Online + never".
+    // while the configured thresholds surface. The Phase-26 branch that
+    // shows a configured-less simulator WITHOUT any heartbeat row as
+    // Online + never stays unchanged by that same decision (first test).
     [Fact]
     public async Task HandleAsync_SentinelNeverHeartbeatenRow_ShowsOfflineWithNeverHeartbeat()
     {

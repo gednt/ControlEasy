@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using ControlEasyReborn.Modules.Devices.Application.Contracts;
@@ -58,8 +57,17 @@ public sealed class DeviceThresholdsEndpointTests : IAsyncLifetime
     [Fact]
     public async Task PutThresholds_OnDeviceWithHeartbeatRow_UpdatesRow_AndHealthReflects()
     {
+        // Distinctive counters prove the write is threshold-columns-only:
+        // a full-row overwrite would clobber the seeded Status/counters and
+        // replace the seeded last-heartbeat with the sentinel/@updatedAt.
         await _fx.SeedHeartbeatRowAsync(
-            _fx.DeviceId, DateTime.UtcNow.AddSeconds(-2), status: 0 /* Online */);
+            _fx.DeviceId,
+            DateTime.UtcNow.AddSeconds(-2),
+            status: 0 /* Online */,
+            errorCount: 2,
+            eventsSinceLastSuccess: 10);
+        var seededLastSeen = await _fx.GetHeartbeatLastSeenAsync(_fx.DeviceId);
+        seededLastSeen.Should().NotBeNull();
 
         var client = TenantAdminClient();
         var response = await client.PutAsJsonAsync(
@@ -79,7 +87,14 @@ public sealed class DeviceThresholdsEndpointTests : IAsyncLifetime
         var row = health!.Single(d => d.DeviceId == _fx.DeviceId);
         row.OfflineAfterSeconds.Should().Be(300);
         row.ErrorRateThresholdPercent.Should().Be(12.50m);
-        row.LastHeartbeatAtUtc.Should().NotBeNull(); // real heartbeat stays visible
+        // Heartbeat-derived data untouched by the Configure write.
+        row.Status.Should().Be(DeviceStatus.Online);
+        row.StatusLabel.Should().Be("Online");
+        row.ErrorCount.Should().Be(2);
+        row.EventsSinceLastSuccess.Should().Be(10);
+        row.ErrorRatePercent.Should().Be(20m); // 2 / 10 = 20%
+        row.LastHeartbeatAtUtc.Should().NotBeNull();
+        row.LastHeartbeatAtUtc!.Value.Should().BeCloseTo(seededLastSeen!.Value, TimeSpan.FromSeconds(2));
     }
 
     [Fact]
@@ -97,7 +112,7 @@ public sealed class DeviceThresholdsEndpointTests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         // Sentinel row exists in the DB with the 2000-01-01 timestamp.
-        var sentinel = await GetHeartbeatLastSeenAsync(neverHeard);
+        var sentinel = await _fx.GetHeartbeatLastSeenAsync(neverHeard);
         sentinel.Should().NotBeNull();
         sentinel!.Value.Should().BeBefore(new DateTime(2001, 1, 1, 0, 0, 0, DateTimeKind.Utc));
 
@@ -181,7 +196,7 @@ public sealed class DeviceThresholdsEndpointTests : IAsyncLifetime
         // No row INSERTed / mutated.
         var rowsAfter = await _fx.CountDeviceHeartbeatsAsync();
         rowsAfter.Should().Be(rowsBefore);
-        (await GetHeartbeatLastSeenAsync(neverHeard)).Should().BeNull();
+        (await _fx.GetHeartbeatLastSeenAsync(neverHeard)).Should().BeNull();
     }
 
     [Fact]
@@ -209,9 +224,9 @@ public sealed class DeviceThresholdsEndpointTests : IAsyncLifetime
     [Fact]
     public async Task PutThresholds_CrossTenantDevice_Returns404_AndLeavesRowUntouched()
     {
-        // Tenant B device (seeded directly).
-        var tenantB = Guid.NewGuid();
-        var deviceB = await SeedTenantBDeviceAsync(tenantB);
+        // Tenant B device (seeded via the fixture's reusable helpers).
+        await _fx.SeedTenantBDeviceAsync();
+        var deviceB = _fx.TenantBDeviceId;
 
         var client = TenantAdminClient();
         var response = await client.PutAsJsonAsync(
@@ -226,47 +241,6 @@ public sealed class DeviceThresholdsEndpointTests : IAsyncLifetime
     }
 
     // ---- helpers ----
-
-    private async Task<Guid> SeedTenantBDeviceAsync(Guid tenantB)
-    {
-        var deviceB = Guid.NewGuid();
-        await using var conn = new MySqlConnection(_fx.MySql.ConnectionString);
-        await conn.OpenAsync();
-        await using (var cmd = new MySqlCommand(
-            @"INSERT INTO Tenants (Id, Slug, DisplayName, Status, CreatedAtUtc, DoorIntegrationEnabled)
-              VALUES (@id, @slug, @name, 0, UTC_TIMESTAMP(6), 1)
-              ON DUPLICATE KEY UPDATE DoorIntegrationEnabled = 1", conn))
-        {
-            cmd.Parameters.AddWithValue("@id", tenantB.ToString());
-            cmd.Parameters.AddWithValue("@slug", $"thr-b-{tenantB:N}".Substring(0, 32));
-            cmd.Parameters.AddWithValue("@name", "Threshold Tenant B Condo");
-            await cmd.ExecuteNonQueryAsync();
-        }
-        await using (var cmd = new MySqlCommand(
-            @"INSERT INTO Devices
-              (Id, TenantId, DeviceType, Vendor, ConnectionParams, GatehouseId, IsActive, CreatedAtUtc, CreatedByProfileId, tenant_id)
-              VALUES (@id, @tid, 'reader', 'TenantB synthetic reader', @params, NULL, 1, UTC_TIMESTAMP(6), @actor, @tid)", conn))
-        {
-            cmd.Parameters.AddWithValue("@id", deviceB.ToString());
-            cmd.Parameters.AddWithValue("@tid", tenantB.ToString());
-            cmd.Parameters.AddWithValue("@params", new byte[] { 0x0d, 0x0e, 0x0f, 0x10 });
-            cmd.Parameters.AddWithValue("@actor", Guid.NewGuid().ToString());
-            await cmd.ExecuteNonQueryAsync();
-        }
-        return deviceB;
-    }
-
-    private async Task<DateTime?> GetHeartbeatLastSeenAsync(Guid deviceId)
-    {
-        await using var conn = new MySqlConnection(_fx.MySql.ConnectionString);
-        await conn.OpenAsync();
-        await using var cmd = new MySqlCommand(
-            "SELECT LastHeartbeatAtUtc FROM device_heartbeats WHERE DeviceId = @did AND tenant_id = @tid", conn);
-        cmd.Parameters.AddWithValue("@did", deviceId.ToString());
-        cmd.Parameters.AddWithValue("@tid", _fx.TenantId.ToString());
-        var result = await cmd.ExecuteScalarAsync();
-        return result is null || result is DBNull ? null : Convert.ToDateTime(result);
-    }
 
     private async Task<int> CountRowsForDeviceAsync(Guid deviceId)
     {

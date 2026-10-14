@@ -1,5 +1,3 @@
-using ControlEasyReborn.Modules.Devices.Application.Errors;
-using ControlEasyReborn.Modules.Devices.Application.Validators;
 using ControlEasyReborn.Modules.Devices.Domain.Entities;
 using FluentAssertions;
 using Xunit;
@@ -9,7 +7,8 @@ namespace ControlEasyReborn.UnitTests.Modules.Devices;
 // Device.UpdateMetadata gatehouse semantics (EditDeviceRequest contract):
 // null = leave the binding unchanged, Guid.Empty = clear the binding, any
 // other value = rebind. The unbind path backs the Configure dialog's
-// "No binding" option on /devices.
+// "No binding" option on /devices. Validator facts live in
+// EditDeviceValidatorTests.
 public sealed class DeviceEntityTests
 {
     private static Device SyntheticDevice(Guid? gatehouseId = null) =>
@@ -55,33 +54,5 @@ public sealed class DeviceEntityTests
         device.UpdateMetadata(vendor: null, gatehouseId: newGatehouseId);
 
         device.GatehouseId.Should().Be(newGatehouseId);
-    }
-
-    [Fact]
-    public async Task EditDeviceValidator_EmptyGatehouseId_IsAcceptedAsUnbindMarker()
-    {
-        var validator = new EditDeviceValidator();
-        var request = new ControlEasyReborn.Modules.Devices.Application.Contracts.EditDeviceRequest(
-            Vendor: null,
-            GatehouseId: Guid.Empty,
-            ConnectionParams: null);
-
-        var result = await validator.ValidateAsync(request);
-
-        result.IsValid.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task EditDeviceValidator_VendorOnly_Passes()
-    {
-        var validator = new EditDeviceValidator();
-        var request = new ControlEasyReborn.Modules.Devices.Application.Contracts.EditDeviceRequest(
-            Vendor: "ControlEasy simulator",
-            GatehouseId: null,
-            ConnectionParams: null);
-
-        var result = await validator.ValidateAsync(request);
-
-        result.IsValid.Should().BeTrue();
     }
 }
