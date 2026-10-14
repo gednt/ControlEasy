@@ -341,13 +341,18 @@ else
     >/dev/null
 
   # Poll swagger endpoint until ready (curl is an HTTP client — not a build tool)
-  deadline=$((SECONDS + 45))
+  # A 200 status code counts as ready even when curl exits non-zero from the
+  # --max-time body timeout on a cold-started API (Windows Docker Desktop:
+  # first swagger.json download can exceed 5s while headers already returned).
+  deadline=$((SECONDS + 90))
   READY=false
   while (( SECONDS < deadline )); do
     STATUS=$(curl --connect-timeout 2 --max-time 5 --silent \
       -o /dev/null -w "%{http_code}" \
       "http://127.0.0.1:${API_PORT}/swagger/v1/swagger.json" 2>/dev/null || echo "000")
-    [ "$STATUS" = "200" ] && { READY=true; break; }
+    case "$STATUS" in
+      200*) READY=true; break ;;
+    esac
     sleep 1
   done
 
