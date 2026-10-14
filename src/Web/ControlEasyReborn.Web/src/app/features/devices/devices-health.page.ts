@@ -23,6 +23,7 @@ import { DeviceSimulatorSectionComponent } from './components/device-simulator-s
 import { DeviceConfigureModalComponent } from './components/device-configure-modal.component';
 import { GatehouseContextService } from '../access-control/gatehouse-context.service';
 import { ToastService } from '../../design-system/components/toast/toast.component';
+import { AuthService } from '../../core/services/auth.service';
 import { ConfigureGatehouseOption } from './components/device-configure-modal.component';
 
 // Phase 26 (DOOR-13) — Device health dashboard page.
@@ -186,8 +187,11 @@ import { ConfigureGatehouseOption } from './components/device-configure-modal.co
                       variant="ghost"
                       size="sm"
                       (click)="openConfigure(device)"
+                      [disabled]="!canConfigure()"
+                      ceTooltip="Configure requires the devices.write permission (admin only)."
                       [attr.aria-label]="
                         'Configure gatehouse binding and thresholds for ' + device.vendor + ' device'
+                        + (canConfigure() ? '' : ' — requires the devices.write permission (admin only)')
                       "
                       data-testid="configure-btn"
                     >
@@ -348,6 +352,14 @@ export class DevicesHealthPage implements OnInit, OnDestroy {
   protected readonly simulatorService = inject(DeviceSimulatorService);
   readonly gatehouseContext = inject(GatehouseContextService);
   private readonly toast = inject(ToastService);
+  private readonly auth = inject(AuthService);
+
+  // Configure writes via PATCH /devices/{id} + PUT /devices/{id}/thresholds
+  // need devices.write — granted to TenantAdmin (TenantAdminDefaults) but
+  // NOT to the Porteiro role (PorteiroDefaults), which passes the shared
+  // porteiroGuard onto this page. Keep the action discoverable (disabled +
+  // explanatory tooltip / aria-label) rather than hidden.
+  readonly canConfigure = computed(() => this.auth.permissions().includes('devices.write'));
 
   readonly devices = signal<DeviceHealthDto[]>([]);
   readonly loading = signal(true);

@@ -96,6 +96,7 @@ const integerValidator: ValidatorFn = (control: AbstractControl): ValidationErro
             class="ce-input"
             type="number"
             min="1"
+            max="86400"
             step="1"
             formControlName="offlineAfterSeconds"
             data-testid="configure-offline"
@@ -273,6 +274,9 @@ export class DeviceConfigureModalComponent implements OnInit {
     offlineAfterSeconds: this.fb.nonNullable.control<number | null>(60, [
       Validators.required,
       Validators.min(1),
+      // Mirrors the backend validator's upper bound: an offline threshold
+      // beyond a day is almost certainly a data-entry error.
+      Validators.max(86400),
       integerValidator,
     ]),
     errorRateThresholdPercent: this.fb.nonNullable.control<number | null>(10, [
@@ -334,6 +338,7 @@ export class DeviceConfigureModalComponent implements OnInit {
     this.offlineError.set(this.fieldErrorText(offlineControl, [
       ['required', 'Offline threshold is required.'],
       ['min', 'Offline threshold must be at least 1 second.'],
+      ['max', 'Offline threshold must be at most 86400 seconds (24 hours).'],
       ['notInteger', 'Offline threshold must be a whole number of seconds.'],
     ], 'Offline threshold is invalid.'));
 
@@ -416,11 +421,6 @@ export class DeviceConfigureModalComponent implements OnInit {
             error: (e) => reject(e),
           });
         });
-        if (gatehouseId) {
-          this.toast.success('Gatehouse binding updated.');
-        } else {
-          this.toast.success('Gatehouse binding cleared.');
-        }
       }
 
       if (this.thresholdsChanged() && offline !== null && percent !== null) {
@@ -434,10 +434,12 @@ export class DeviceConfigureModalComponent implements OnInit {
             error: (e) => reject(e),
           });
         });
-        this.toast.success('Thresholds updated.');
       }
 
       this.saving.set(false);
+      // One consolidated confirmation for the whole dialog save (binding
+      // and/or thresholds) — no stacked duplicate toasts.
+      this.toast.success('Device configuration saved.');
       this.saved.emit();
     } catch (err) {
       this.saving.set(false);
