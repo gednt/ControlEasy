@@ -44,4 +44,110 @@ public sealed class ListDeviceHealthHandlerTests
         result[0].IsOfflineExceeded.Should().BeFalse();
         result[0].LastHeartbeatAtUtc.Should().BeNull();
     }
+
+    // Per-device Configure sentinel (DOOR-13+Configure): a heartbeat row
+    // stamped with the 2000-01-01 sentinel means "thresholds configured but no
+    // real heartbeat seen yet". The chosen human-approved display is
+    // truthful-Offline + last heartbeat "never" (DTO LastHeartbeatAtUtc=null)
+    // while the configured thresholds surface — replacing the pre-Configure
+    // special-case "configured simulator row shows Online + never".
+    [Fact]
+    public async Task HandleAsync_SentinelNeverHeartbeatenRow_ShowsOfflineWithNeverHeartbeat()
+    {
+        var tenantId = Guid.NewGuid();
+        var deviceId = Guid.NewGuid();
+        var devices = Substitute.For<IDeviceRepository>();
+        var heartbeats = Substitute.For<IDeviceHeartbeatRepository>();
+        var gatehouses = Substitute.For<IGatehouseLookup>();
+        var device = new Device(
+            deviceId,
+            tenantId,
+            "reader",
+            "ControlEasy simulator",
+            [1],
+            null,
+            true,
+            Guid.NewGuid(),
+            DateTime.UtcNow);
+
+        var sentinelRow = new DeviceHeartbeat(
+            id: Guid.NewGuid(),
+            deviceId: deviceId,
+            tenantId: tenantId,
+            lastHeartbeatAtUtc: DeviceHeartbeat.SentinelLastHeartbeatAtUtc,
+            status: DeviceStatus.Offline,
+            errorCount: 0,
+            eventsSinceLastSuccess: 0,
+            offlineAfterSeconds: 300,
+            errorRateThresholdPercent: 12.50m,
+            updatedAtUtc: DateTime.UtcNow);
+
+        devices.ListAsync(tenantId, Arg.Any<CancellationToken>())
+            .Returns(new[] { device });
+        heartbeats.ListAsync(tenantId, Arg.Any<CancellationToken>())
+            .Returns(new[] { sentinelRow });
+
+        var sut = new ListDeviceHealthHandler(devices, heartbeats, gatehouses);
+
+        var result = await sut.HandleAsync(tenantId, CancellationToken.None);
+
+        result.Should().ContainSingle();
+        result[0].Status.Should().Be(DeviceStatus.Offline);
+        result[0].StatusLabel.Should().Be("Offline");
+        result[0].LastHeartbeatAtUtc.Should().BeNull();
+        result[0].OfflineAfterSeconds.Should().Be(300);
+        result[0].ErrorRateThresholdPercent.Should().Be(12.50m);
+        result[0].ErrorCount.Should().Be(0);
+        result[0].EventsSinceLastSuccess.Should().Be(0);
+        result[0].IsOfflineExceeded.Should().BeTrue();
+    }
+
+    // A row with a REAL heartbeat timestamp must keep its timestamp on the DTO
+    // (the sentinel mapping must not over-reach into normal rows).
+    [Fact]
+    public async Task HandleAsync_RealHeartbeatRow_KeepsTimestampValue()
+    {
+        var tenantId = Guid.NewGuid();
+        var deviceId = Guid.NewGuid();
+        var devices = Substitute.For<IDeviceRepository>();
+        var heartbeats = Substitute.For<IDeviceHeartbeatRepository>();
+        var gatehouses = Substitute.For<IGatehouseLookup>();
+        var device = new Device(
+            deviceId,
+            tenantId,
+            "reader",
+            "Generic",
+            [1],
+            null,
+            true,
+            Guid.NewGuid(),
+            DateTime.UtcNow);
+
+        var lastSeen = DateTime.UtcNow.AddSeconds(-2);
+        var row = new DeviceHeartbeat(
+            id: Guid.NewGuid(),
+            deviceId: deviceId,
+            tenantId: tenantId,
+            lastHeartbeatAtUtc: lastSeen,
+            status: DeviceStatus.Online,
+            errorCount: 0,
+            eventsSinceLastSuccess: 10,
+            offlineAfterSeconds: 60,
+            errorRateThresholdPercent: 10.00m,
+            updatedAtUtc: DateTime.UtcNow);
+
+        devices.ListAsync(tenantId, Arg.Any<CancellationToken>())
+            .Returns(new[] { device });
+        heartbeats.ListAsync(tenantId, Arg.Any<CancellationToken>())
+            .Returns(new[] { row });
+
+        var sut = new ListDeviceHealthHandler(devices, heartbeats, gatehouses);
+
+        var result = await sut.HandleAsync(tenantId, CancellationToken.None);
+
+        result.Should().ContainSingle();
+        result[0].LastHeartbeatAtUtc.Should().NotBeNull();
+        result[0].Status.Should().Be(DeviceStatus.Online);
+        result[0].OfflineAfterSeconds.Should().Be(60);
+    }
 }
