@@ -14,7 +14,9 @@ public sealed class UpdateDeviceThresholdsValidator : AbstractValidator<UpdateDe
     {
         RuleFor(r => r.OfflineAfterSeconds)
             .GreaterThanOrEqualTo(1)
-            .WithMessage("offlineAfterSeconds must be at least 1 second.");
+            .WithMessage("offlineAfterSeconds must be at least 1 second.")
+            .LessThanOrEqualTo(86400)
+            .WithMessage("offlineAfterSeconds must be at most 86400 seconds (24 hours).");
 
         RuleFor(r => r.ErrorRateThresholdPercent)
             .InclusiveBetween(0m, 100m)

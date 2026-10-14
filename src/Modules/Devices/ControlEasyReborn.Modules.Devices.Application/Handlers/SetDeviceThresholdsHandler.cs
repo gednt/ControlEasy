@@ -53,23 +53,31 @@ public sealed class SetDeviceThresholdsHandler
             throw new NotFoundException($"Device {deviceId} not found.");
         }
 
+        // ErrorRateThresholdPercent is DECIMAL(5,2) in device_heartbeats — a
+        // request like 12.345 would be silently rounded by MySQL on store
+        // while the 200 body echoed the un-rounded value. Round to the stored
+        // scale (AwayFromZero, matching MySQL's default) before persisting
+        // AND echoing so the response always tells the truth.
+        var errorRateThresholdPercent =
+            decimal.Round(request.ErrorRateThresholdPercent, 2, MidpointRounding.AwayFromZero);
+
         await _heartbeats.SetThresholdsAsync(
             tenantId,
             deviceId,
             request.OfflineAfterSeconds,
-            request.ErrorRateThresholdPercent,
+            errorRateThresholdPercent,
             ct);
 
         using (DeviceLoggingProperties.BeginScope(tenantId, device.Id, outcome: "device.thresholds.set"))
         {
             _logger.LogInformation(
                 "device.thresholds.set tenant {TenantId} device {DeviceId} offlineAfterSeconds {OfflineAfterSeconds} errorRateThresholdPercent {ErrorRateThresholdPercent}.",
-                tenantId, device.Id, request.OfflineAfterSeconds, request.ErrorRateThresholdPercent);
+                tenantId, device.Id, request.OfflineAfterSeconds, errorRateThresholdPercent);
         }
 
         return new DeviceThresholdsDto(
             DeviceId: device.Id,
             OfflineAfterSeconds: request.OfflineAfterSeconds,
-            ErrorRateThresholdPercent: request.ErrorRateThresholdPercent);
+            ErrorRateThresholdPercent: errorRateThresholdPercent);
     }
 }

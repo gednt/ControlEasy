@@ -37,6 +37,23 @@ public sealed class UpdateDeviceThresholdsValidatorTests
     }
 
     [Fact]
+    public async Task OfflineAfterSecondsAtUpperBound_Passes()
+    {
+        var req = ValidRequest() with { OfflineAfterSeconds = 86400 };
+        var result = await _sut.ValidateAsync(req);
+        result.IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task OfflineAfterSecondsAboveUpperBound_Fails()
+    {
+        var req = ValidRequest() with { OfflineAfterSeconds = 86401 };
+        var result = await _sut.ValidateAsync(req);
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "OfflineAfterSeconds");
+    }
+
+    [Fact]
     public async Task DecimalPercent_Passes()
     {
         var req = ValidRequest() with { ErrorRateThresholdPercent = 12.5m };

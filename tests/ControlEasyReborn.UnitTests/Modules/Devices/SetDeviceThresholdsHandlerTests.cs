@@ -118,4 +118,40 @@ public sealed class SetDeviceThresholdsHandlerTests
         await _heartbeats.Received(1).SetThresholdsAsync(
             tenantId, deviceId, 300, 12.5m, Arg.Any<CancellationToken>());
     }
+
+    // ErrorRateThresholdPercent is DECIMAL(5,2) on device_heartbeats: a
+    // request percent with more than 2 decimals (e.g. 12.345) passes
+    // validation and would otherwise be rounded by MySQL on store while the
+    // 200 body echoed the un-rounded value. The handler rounds to the stored
+    // scale (AwayFromZero) BEFORE persisting and echoes the rounded value.
+    [Fact]
+    public async Task PercentWithMoreThanTwoDecimals_IsRoundedToStoredScale_BeforePersistAndEcho()
+    {
+        var tenantId = Guid.NewGuid();
+        var deviceId = Guid.NewGuid();
+        _devices.GetByIdAsync(tenantId, deviceId, Arg.Any<CancellationToken>())
+            .Returns(SyntheticDevice(tenantId, deviceId));
+
+        var dto = await CreateSut().HandleAsync(
+            tenantId, deviceId, new UpdateDeviceThresholdsRequest(60, 12.345m), CancellationToken.None);
+
+        dto.ErrorRateThresholdPercent.Should().Be(12.35m);
+
+        await _heartbeats.Received(1).SetThresholdsAsync(
+            tenantId, deviceId, 60, 12.35m, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task PercentRounding_UsesAwayFromZero()
+    {
+        var tenantId = Guid.NewGuid();
+        var deviceId = Guid.NewGuid();
+        _devices.GetByIdAsync(tenantId, deviceId, Arg.Any<CancellationToken>())
+            .Returns(SyntheticDevice(tenantId, deviceId));
+
+        var dto = await CreateSut().HandleAsync(
+            tenantId, deviceId, new UpdateDeviceThresholdsRequest(60, 10.005m), CancellationToken.None);
+
+        dto.ErrorRateThresholdPercent.Should().Be(10.01m);
+    }
 }
