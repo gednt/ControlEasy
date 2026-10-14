@@ -85,6 +85,8 @@ export type { ApiV1DevicesDeviceIdPatch$Params as ApiV1DevicesDeviceIdPatch$Para
 export { apiV1DevicesDeviceIdPatch as apiV1DevicesDeviceIdPatch } from './fn/devices/api-v-1-devices-device-id-patch';
 export type { ApiV1DevicesDeviceIdActivationPut$Params as ApiV1DevicesDeviceIdActivationPut$Params } from './fn/devices/api-v-1-devices-device-id-activation-put';
 export { apiV1DevicesDeviceIdActivationPut as apiV1DevicesDeviceIdActivationPut } from './fn/devices/api-v-1-devices-device-id-activation-put';
+export type { ApiV1DevicesDeviceIdThresholdsPut$Params as ApiV1DevicesDeviceIdThresholdsPut$Params } from './fn/devices/api-v-1-devices-device-id-thresholds-put';
+export { apiV1DevicesDeviceIdThresholdsPut as apiV1DevicesDeviceIdThresholdsPut } from './fn/devices/api-v-1-devices-device-id-thresholds-put';
 export type { ApiV1InternalDevicesDeviceIdSimulatorGet$Params as ApiV1InternalDevicesDeviceIdSimulatorGet$Params } from './fn/devices-internal/api-v-1-internal-devices-device-id-simulator-get';
 export { apiV1InternalDevicesDeviceIdSimulatorGet as apiV1InternalDevicesDeviceIdSimulatorGet } from './fn/devices-internal/api-v-1-internal-devices-device-id-simulator-get';
 export type { ApiV1InternalDevicesDeviceIdSimulatorFailureModePost$Params as ApiV1InternalDevicesDeviceIdSimulatorFailureModePost$Params } from './fn/devices-internal/api-v-1-internal-devices-device-id-simulator-failure-mode-post';

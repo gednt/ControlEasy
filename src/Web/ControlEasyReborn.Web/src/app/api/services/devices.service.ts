@@ -18,6 +18,8 @@ import { apiV1DevicesDeviceIdGet } from '../fn/devices/api-v-1-devices-device-id
 import { ApiV1DevicesDeviceIdGet$Params } from '../fn/devices/api-v-1-devices-device-id-get';
 import { apiV1DevicesDeviceIdPatch } from '../fn/devices/api-v-1-devices-device-id-patch';
 import { ApiV1DevicesDeviceIdPatch$Params } from '../fn/devices/api-v-1-devices-device-id-patch';
+import { apiV1DevicesDeviceIdThresholdsPut } from '../fn/devices/api-v-1-devices-device-id-thresholds-put';
+import { ApiV1DevicesDeviceIdThresholdsPut$Params } from '../fn/devices/api-v-1-devices-device-id-thresholds-put';
 import { apiV1DevicesDeviceIdUnlockPost } from '../fn/devices/api-v-1-devices-device-id-unlock-post';
 import { ApiV1DevicesDeviceIdUnlockPost$Params } from '../fn/devices/api-v-1-devices-device-id-unlock-post';
 import { apiV1DevicesGet } from '../fn/devices/api-v-1-devices-get';
@@ -215,6 +217,33 @@ export class DevicesService extends BaseService {
    */
   apiV1DevicesDeviceIdActivationPut(params: ApiV1DevicesDeviceIdActivationPut$Params, context?: HttpContext): Observable<void> {
     const resp = this.apiV1DevicesDeviceIdActivationPut$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1DevicesDeviceIdThresholdsPut()` */
+  static readonly ApiV1DevicesDeviceIdThresholdsPutPath = '/api/v1/devices/{deviceId}/thresholds';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1DevicesDeviceIdThresholdsPut()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1DevicesDeviceIdThresholdsPut$Response(params: ApiV1DevicesDeviceIdThresholdsPut$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = apiV1DevicesDeviceIdThresholdsPut(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1DevicesDeviceIdThresholdsPut$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1DevicesDeviceIdThresholdsPut(params: ApiV1DevicesDeviceIdThresholdsPut$Params, context?: HttpContext): Observable<void> {
+    const resp = this.apiV1DevicesDeviceIdThresholdsPut$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<void>): void => r.body)
     );
