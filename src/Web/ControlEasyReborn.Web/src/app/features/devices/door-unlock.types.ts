@@ -104,6 +104,24 @@ export interface EditDeviceRequest {
   connectionParams?: Record<string, unknown>;
 }
 
+// Per-device Configure dialog on /devices — persisted heartbeat thresholds.
+// Mirrors the C# records in
+// src/Modules/Devices/ControlEasyReborn.Modules.Devices.Application/Contracts/
+// UpdateDeviceThresholdsRequest.cs. Guid.Empty gatehouseId ("No binding")
+// clears the device's gatehouse binding.
+export const DEVICE_UNBOUND_GATEHOUSE_ID = '00000000-0000-0000-0000-000000000000';
+
+export interface UpdateDeviceThresholdsRequest {
+  offlineAfterSeconds: number;
+  errorRateThresholdPercent: number;
+}
+
+export interface DeviceThresholdsDto {
+  deviceId: string;
+  offlineAfterSeconds: number;
+  errorRateThresholdPercent: number;
+}
+
 export interface SetDeviceActivationRequest {
   isActive: boolean;
 }

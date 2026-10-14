@@ -10,6 +10,8 @@ import {
   DeviceListItem,
   RegisterDeviceRequest,
   EditDeviceRequest,
+  UpdateDeviceThresholdsRequest,
+  DeviceThresholdsDto,
   SetDeviceActivationRequest,
   ToggleDoorIntegrationRequest,
   TenantDoorIntegrationDto,
@@ -61,6 +63,21 @@ export class DevicesApiService {
 
   update(deviceId: string, request: EditDeviceRequest): Observable<DeviceDetail> {
     return this.http.patch<DeviceDetail>(`/api/v1/devices/${deviceId}`, request);
+  }
+
+  // Per-device Configure flow — persisted heartbeat thresholds. Hand-written
+  // (direct HttpClient) like the other body-consuming endpoints: the
+  // generated DevicesInternalService drops response bodies for some routes,
+  // and this endpoint's 200 body (DeviceThresholdsDto) is used by tests and
+  // future callers.
+  updateThresholds(
+    deviceId: string,
+    request: UpdateDeviceThresholdsRequest
+  ): Observable<DeviceThresholdsDto> {
+    return this.http.put<DeviceThresholdsDto>(
+      `/api/v1/devices/${deviceId}/thresholds`,
+      request
+    );
   }
 
   setActivation(deviceId: string, isActive: boolean): Observable<DeviceDetail> {

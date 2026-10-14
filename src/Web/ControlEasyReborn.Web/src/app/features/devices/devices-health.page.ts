@@ -20,7 +20,10 @@ import { DeviceHealthService } from './device-health.service';
 import { DeviceHealthDto, DeviceStatus } from './door-unlock.types';
 import { DeviceSimulatorService } from './device-simulator.service';
 import { DeviceSimulatorSectionComponent } from './components/device-simulator-section.component';
+import { DeviceConfigureModalComponent } from './components/device-configure-modal.component';
 import { GatehouseContextService } from '../access-control/gatehouse-context.service';
+import { ToastService } from '../../design-system/components/toast/toast.component';
+import { ConfigureGatehouseOption } from './components/device-configure-modal.component';
 
 // Phase 26 (DOOR-13) — Device health dashboard page.
 //
@@ -46,6 +49,7 @@ import { GatehouseContextService } from '../access-control/gatehouse-context.ser
     CeSpinnerComponent,
     CeTooltipDirective,
     DeviceSimulatorSectionComponent,
+    DeviceConfigureModalComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -181,11 +185,11 @@ import { GatehouseContextService } from '../access-control/gatehouse-context.ser
                     <ce-button
                       variant="ghost"
                       size="sm"
-                      [disabled]="true"
-                      ceTooltip="Permissions for per-device threshold override ships in a future phase."
+                      (click)="openConfigure(device)"
                       [attr.aria-label]="
-                        'Configure thresholds for ' + device.vendor + ' device'
+                        'Configure gatehouse binding and thresholds for ' + device.vendor + ' device'
                       "
+                      data-testid="configure-btn"
                     >
                       Configure
                     </ce-button>
@@ -204,6 +208,14 @@ import { GatehouseContextService } from '../access-control/gatehouse-context.ser
         (virtualDeviceCreated)="refreshNow()"
       ></ce-device-simulator-section>
     }
+
+    <ce-device-configure-modal
+      [open]="configureOpen()"
+      [device]="configureDevice()"
+      [gatehouseList]="configureGatehouseOptions()"
+      (saved)="onConfigureSaved()"
+      (cancelled)="onConfigureCancelled()"
+    ></ce-device-configure-modal>
   `,
   styles: [
     `
@@ -335,11 +347,28 @@ export class DevicesHealthPage implements OnInit, OnDestroy {
   protected readonly service = inject(DeviceHealthService);
   protected readonly simulatorService = inject(DeviceSimulatorService);
   readonly gatehouseContext = inject(GatehouseContextService);
+  private readonly toast = inject(ToastService);
 
   readonly devices = signal<DeviceHealthDto[]>([]);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly lastRefreshedAtMs = signal<number | null>(null);
+
+  // Per-device Configure dialog state. The modal re-hydrates from the
+  // device input on every reopen (the page clears configureDevice on close).
+  readonly configureOpen = signal(false);
+  readonly configureDevice = signal<DeviceHealthDto | undefined>(undefined);
+
+  // Registered (active) gatehouses plus the configured device's current
+  // binding when it is not in the active list (e.g. an inactive gatehouse),
+  // so the select never shows a blank current value.
+  readonly configureGatehouseOptions = computed<ConfigureGatehouseOption[]>(() => {
+    const active = this.gatehouseContext.gatehouses().map((g) => ({ id: g.id, name: g.name }));
+    const currentId = this.configureDevice()?.gatehouseId;
+    if (!currentId || active.some((g) => g.id === currentId)) return active;
+    const current = this.devices().find((d) => d.deviceId === this.configureDevice()!.deviceId);
+    return [...active, { id: currentId, name: current?.gatehouseName ?? currentId }];
+  });
 
   private readonly sub = new Subscription();
   private probedInspector = false;
@@ -384,6 +413,25 @@ export class DevicesHealthPage implements OnInit, OnDestroy {
   refreshNow(): void {
     this.loading.set(true);
     this.service.refreshNow();
+  }
+
+  openConfigure(device: DeviceHealthDto): void {
+    this.configureDevice.set(device);
+    this.configureOpen.set(true);
+  }
+
+  onConfigureSaved(): void {
+    this.configureOpen.set(false);
+    this.configureDevice.set(undefined);
+    // Health reflects the new binding / thresholds after the next snapshot;
+    // pull it immediately so the row updates without waiting for the poll.
+    this.refreshNow();
+  }
+
+  onConfigureCancelled(): void {
+    // Dismissal (ESC / backdrop / Cancel button) closes without any API call.
+    this.configureOpen.set(false);
+    this.configureDevice.set(undefined);
   }
 
   lastRefreshedLabel(): string {
