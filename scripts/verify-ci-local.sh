@@ -160,7 +160,12 @@ if [ "${FAST_ONLY:-false}" = "true" ] && ! has_cs_changes; then
   _ok "Stage 1/6: Skipped C# format check (no .cs files modified)."
 else
   _log "Stage 1/6: Checking C# code format..."
-  dotnet restore src/ControlEasyReborn.sln --verbosity quiet --nologo
+  # Build BEFORE the format verify: dotnet format's verdict is only stable
+  # when obj/ carries a consistent msbuild/editorgenerated state (a bare
+  # restore on a never-built tree can misclassify analyzer context and
+  # flag perfectly formatted comment lines). Stage 2 then reuses this
+  # build incrementally.
+  dotnet build src/ControlEasyReborn.sln --configuration Release --nologo
   dotnet format src/ControlEasyReborn.sln --verify-no-changes --no-restore \
     || _fail "Format check failed! Run 'dotnet format src/ControlEasyReborn.sln' to fix formatting."
   _ok "Code format verified."
