@@ -41,3 +41,10 @@
 - source_spec: `_bmad-output/implementation-artifacts/spec-fix-vehicle-create-500.md`
   summary: Make the access-control migration tolerant of databases that lack the Vehicles table.
   evidence: `0009-access-control.sql` conditionally alters `Vehicles` but does not first create it, so a nonstandard legacy schema without that table makes `db-migrate` fail before the API starts.
+
+- source_spec: `_bmad-output/implementation-artifacts/spec-operational-gatehouse-simulator.md`
+  summary: Consider an ExternalEventId-level replay precheck in device-event ingestion (same external event with a different SequenceNumber currently writes one extra device_events row reporting the re-run outcome).
+  evidence: Idempotency precheck keys on the (tenant, device, sequence, externalEventId) tuple (pre-existing contract); the canonical ScanAttemptId guard dedupes visit/access/refusal rows, so only the device-events row is duplicated and the matrix requirement (no duplicated ledger rows) still holds. Settling it needs a contract decision on ExternalEventId semantics; verify with a same-external-id/different-sequence integration test if pursued.
+- source_spec: `_bmad-output/implementation-artifacts/spec-operational-gatehouse-simulator.md`
+  summary: Extract a shared Playwright helper for the simulator-inspector availability probe (SIMULATOR_PROBE_PATH GUID + isInspectorAvailable duplicated across e2e specs).
+  evidence: device-simulator-ui.spec.ts established the copy-pasted pattern; virtual-door-ui.spec.ts continued it. Shared e2e helper refactor, not caused by this story.
