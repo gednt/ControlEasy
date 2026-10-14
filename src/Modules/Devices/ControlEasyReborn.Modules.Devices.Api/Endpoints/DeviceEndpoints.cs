@@ -134,6 +134,26 @@ public static class DeviceEndpoints
         })
         .RequireAuthorization("Permission_devices.write");
 
+        // PUT /api/v1/devices/{deviceId}/thresholds — per-device Configure
+        // flow: persist the heartbeat thresholds (offline-after + error-rate).
+        // Validation failures surface as 400 ProblemDetails with an errors
+        // dict via the global exception handler; unknown / removed / foreign
+        // devices are 404 (NotFoundException).
+        group.MapPut("/{deviceId:guid}/thresholds", async (
+            Guid deviceId,
+            [FromBody] UpdateDeviceThresholdsRequest request,
+            ITenantContext tenantContext,
+            SetDeviceThresholdsHandler handler,
+            CancellationToken ct) =>
+        {
+            var tenantId = tenantContext.TenantId
+                ?? throw new InvalidOperationException("Tenant context is not resolved.");
+
+            var dto = await handler.HandleAsync(tenantId, deviceId, request, ct);
+            return Results.Ok(dto);
+        })
+        .RequireAuthorization("Permission_devices.write");
+
         // DELETE /api/v1/devices/{deviceId} — soft-delete (DOOR-06).
         group.MapDelete("/{deviceId:guid}", async (
             Guid deviceId,

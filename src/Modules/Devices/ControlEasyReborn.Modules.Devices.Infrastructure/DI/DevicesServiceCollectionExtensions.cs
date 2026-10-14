@@ -59,6 +59,7 @@ public static class DevicesServiceCollectionExtensions
         services.AddScoped<ListDeviceEventsHandler>();
         services.AddScoped<IngestHeartbeatHandler>();
         services.AddScoped<ListDeviceHealthHandler>();
+        services.AddScoped<SetDeviceThresholdsHandler>();
 
         // Operational-gatehouse-simulator — virtual physical reader contract
         // (development-only execution surface, all endpoints dev-flag gated).
@@ -70,6 +71,7 @@ public static class DevicesServiceCollectionExtensions
         services.AddScoped<IValidator<EditDeviceRequest>, EditDeviceValidator>();
         services.AddScoped<IValidator<DeviceEventPayload>, IngestDeviceEventValidator>();
         services.AddScoped<IValidator<HeartbeatValidatorPayload>, HeartbeatValidator>();
+        services.AddScoped<IValidator<UpdateDeviceThresholdsRequest>, UpdateDeviceThresholdsValidator>();
 
         return services;
     }

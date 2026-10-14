@@ -62,6 +62,11 @@ public sealed class ListDeviceHealthHandler
             {
                 var pct = (decimal)heartbeat.ErrorCount / Math.Max(heartbeat.EventsSinceLastSuccess, 1) * 100m;
                 var isOffline = heartbeat.IsOfflineExceeded(nowUtc);
+                // Sentinel row (configured-but-never-heartbeaten): the
+                // 2000-01-01 timestamp marks "thresholds configured, no real
+                // heartbeat seen yet". Display truthfully — the row's Offline
+                // status with a "never" heartbeat — instead of a 25-year-old
+                // timestamp; the configured thresholds are still surfaced.
                 items.Add(new DeviceHealthDto(
                     DeviceId: device.Id,
                     Vendor: device.Vendor,
@@ -70,7 +75,7 @@ public sealed class ListDeviceHealthHandler
                     GatehouseName: gatehouseName,
                     Status: heartbeat.Status,
                     StatusLabel: StatusLabel(heartbeat.Status),
-                    LastHeartbeatAtUtc: heartbeat.LastHeartbeatAtUtc,
+                    LastHeartbeatAtUtc: heartbeat.IsSentinelNeverHeartbeaten ? null : heartbeat.LastHeartbeatAtUtc,
                     ErrorCount: heartbeat.ErrorCount,
                     EventsSinceLastSuccess: heartbeat.EventsSinceLastSuccess,
                     ErrorRatePercent: Math.Round(pct, 2),
