@@ -3,13 +3,20 @@ import { signal } from '@angular/core';
 import { importProvidersFrom } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { DevicesHealthPage } from './devices-health.page';
 import { DeviceHealthService } from './device-health.service';
 import { DeviceHealthDto } from './door-unlock.types';
 import { DeviceSimulatorService } from './device-simulator.service';
 import { DevicesApiService } from './devices-api.service';
+import { AuthService } from '../../core/services/auth.service';
 import { CE_LUCIDE_ICONS } from '../../design-system/components/icon/icon.registry';
 import { GatehouseContextService } from '../access-control/gatehouse-context.service';
+
+class FakeAuthService {
+  readonly permissions = signal<string[]>(['devices.write']);
+}
 
 class FakeDeviceHealthService {
   readonly health$ = new BehaviorSubject<DeviceHealthDto[]>([]);
@@ -115,6 +122,7 @@ describe('DevicesHealthPage', () => {
   let component: DevicesHealthPage;
   let service: FakeDeviceHealthService;
   let simulator: FakeDeviceSimulatorService;
+  let httpMock: HttpTestingController;
 
   beforeEach(async () => {
     service = new FakeDeviceHealthService();
@@ -125,7 +133,12 @@ describe('DevicesHealthPage', () => {
         { provide: DeviceHealthService, useValue: service },
         { provide: GatehouseContextService, useValue: new FakeGatehouseContextService() },
         { provide: DeviceSimulatorService, useValue: simulator },
-        { provide: DevicesApiService, useValue: jasmine.createSpyObj('DevicesApiService', ['register', 'update', 'updateThresholds']) },
+        { provide: AuthService, useValue: new FakeAuthService() },
+        // The REAL DevicesApiService over HttpClientTesting: the page-modal
+        // interaction tests below drive a rendered save through the wire
+        // (HttpTestingController), matching the modal spec's http style.
+        provideHttpClient(),
+        provideHttpClientTesting(),
         provideRouter([]),
         importProvidersFrom(CE_LUCIDE_ICONS),
       ],
@@ -133,10 +146,12 @@ describe('DevicesHealthPage', () => {
 
     fixture = TestBed.createComponent(DevicesHealthPage);
     component = fixture.componentInstance;
+    httpMock = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
   });
 
   afterEach(() => {
+    httpMock.verify();
     service.stopPolling();
   });
 
@@ -364,6 +379,99 @@ describe('DevicesHealthPage', () => {
     component.openConfigure(makeDevice({ deviceId: 'd1', offlineAfterSeconds: 300 }));
     fixture.detectChanges();
     expect(component.configureDevice()!.offlineAfterSeconds).toBe(300);
+  });
+
+  // ---- page <-> rendered-modal interaction (real DevicesApiService over
+  // HttpClientTesting, same style as the modal spec) ----
+
+  function openConfigureForRenderedRow(deviceId: string): void {
+    const rows = Array.from<HTMLElement>(fixture.nativeElement.querySelectorAll('tr'));
+    const row = rows.find((r) => r.getAttribute('data-testid') === `device-row-${deviceId}`)!;
+    (row.querySelector('[data-testid="configure-btn"] button') as HTMLButtonElement).click();
+    fixture.detectChanges();
+  }
+
+  it('render-driven Save: threshold change flushes PUT and closes + refreshes', async () => {
+    service.emit([makeDevice({ deviceId: 'd1', gatehouseId: null, gatehouseName: null })]);
+    fixture.detectChanges();
+
+    openConfigureForRenderedRow('d1');
+    expect(component.configureOpen()).toBe(true);
+
+    // Type a new offline threshold into the rendered dialog input.
+    const modal = fixture.nativeElement.querySelector('ce-device-configure-modal') as HTMLElement;
+    const offlineInput = modal.querySelector('[data-testid="configure-offline"]') as HTMLInputElement;
+    offlineInput.value = '300';
+    offlineInput.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+
+    const refreshSpy = spyOn(service, 'refreshNow');
+    (modal.querySelector('[data-testid="configure-save"]') as HTMLButtonElement).click();
+
+    const put = httpMock.expectOne('/api/v1/devices/d1/thresholds');
+    expect(put.request.method).toBe('PUT');
+    expect(put.request.body as object).toEqual({ offlineAfterSeconds: 300, errorRateThresholdPercent: 10 });
+    put.flush({ deviceId: 'd1', offlineAfterSeconds: 300, errorRateThresholdPercent: 10 });
+
+    // The modal emits saved asynchronously (await on the PUT promise).
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(component.configureOpen()).toBe(false);
+    expect(component.configureDevice()).toBeUndefined();
+    expect(refreshSpy).toHaveBeenCalled();
+  });
+
+  it('render-driven Cancel: dialog closes with no refresh and no API call', async () => {
+    service.emit([makeDevice({ deviceId: 'd1', gatehouseId: null, gatehouseName: null })]);
+    fixture.detectChanges();
+
+    openConfigureForRenderedRow('d1');
+    expect(component.configureOpen()).toBe(true);
+
+    const refreshSpy = spyOn(service, 'refreshNow');
+    const modal = fixture.nativeElement.querySelector('ce-device-configure-modal') as HTMLElement;
+    const cancel = Array.from<HTMLButtonElement>(modal.querySelectorAll('.modal-footer button'))
+      .find((b) => (b.textContent ?? '').trim() === 'Cancel')!;
+    cancel.click();
+    fixture.detectChanges();
+
+    expect(component.configureOpen()).toBe(false);
+    expect(component.configureDevice()).toBeUndefined();
+    expect(refreshSpy).not.toHaveBeenCalled();
+    httpMock.expectNone('/api/v1/devices/d1/thresholds');
+  });
+
+  it('Configure is visibly disabled for a user without devices.write', () => {
+    const auth = TestBed.inject(AuthService) as unknown as FakeAuthService;
+    auth.permissions.set(['devices.read', 'devices.read_health']);
+    fixture.detectChanges();
+    // A device row must be present for the per-row action check.
+    service.emit([makeDevice({ deviceId: 'd1', status: 'Online' })]);
+    fixture.detectChanges();
+
+    const btnHost = fixture.nativeElement.querySelector('[data-testid="configure-btn"]');
+    expect(btnHost).toBeTruthy();
+    const inner = btnHost.querySelector('button') as HTMLButtonElement;
+    expect(inner.disabled).toBe(true);
+    expect((inner.textContent ?? '').trim()).toBe('Configure');
+    // Explanation must be present for sighted users (tooltip) and screen
+    // readers (aria-label) — the action stays discoverable, not hidden.
+    expect(btnHost.textContent).toContain('Configure');
+    // [attr.aria-label] on <ce-button> lands on the host element.
+    expect(btnHost.getAttribute('aria-label')).toContain('devices.write');
+  });
+
+  it('keeps Configure enabled (aria-labeled) for devices.write holders', () => {
+    service.emit([makeDevice({ deviceId: 'd1', status: 'Online' })]);
+    fixture.detectChanges();
+
+    const btnHost = fixture.nativeElement.querySelector('[data-testid="configure-btn"]');
+    const inner = btnHost.querySelector('button') as HTMLButtonElement;
+    expect(inner.disabled).toBe(false);
+    expect(btnHost.getAttribute('aria-label')).toBe(
+      'Configure gatehouse binding and thresholds for Simulated device'
+    );
   });
 
   it('refreshes the health snapshot after the Configure dialog saves', () => {

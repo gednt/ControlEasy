@@ -112,7 +112,7 @@ describe('DeviceConfigureModalComponent', () => {
 
     const errorSpy = spyOn(toast, 'error');
 
-    for (const invalid of [0, -5, 90.5]) {
+    for (const invalid of [0, -5, 90.5, 90000]) {
       component.form.controls.offlineAfterSeconds.setValue(invalid);
       fixture.detectChanges();
       expect(component.form.valid).toBe(false);
@@ -195,7 +195,7 @@ describe('DeviceConfigureModalComponent', () => {
 
     httpMock.expectNone(`/api/v1/devices/d1/thresholds`);
     expect(savedSpy).toHaveBeenCalled();
-    expect(toastSpy).toHaveBeenCalled();
+    expect(toastSpy).toHaveBeenCalledWith('Device configuration saved.');
   });
 
   it('UnbindSave_SendsEmptyGuidMarker: "No binding" PATCHes the Guid.Empty marker', async () => {
@@ -248,7 +248,7 @@ describe('DeviceConfigureModalComponent', () => {
 
     httpMock.expectNone('/api/v1/devices/d1');
     expect(savedSpy).toHaveBeenCalled();
-    expect(toastSpy).toHaveBeenCalled();
+    expect(toastSpy).toHaveBeenCalledWith('Device configuration saved.');
   });
 
   it('BothChanged_CallsPatchThenPut: binding and thresholds save together', async () => {
@@ -278,7 +278,9 @@ describe('DeviceConfigureModalComponent', () => {
     await submitPromise;
 
     expect(savedSpy).toHaveBeenCalled();
-    expect(toastSpy.calls.count()).toBe(2);
+    // One consolidated confirmation — never two stacked success toasts.
+    expect(toastSpy.calls.count()).toBe(1);
+    expect(toastSpy).toHaveBeenCalledWith('Device configuration saved.');
   });
 
   it('SaveFailure_ShowsError_KeepsModalState: a failed PUT surfaces getApiErrorMessage without saved', async () => {
