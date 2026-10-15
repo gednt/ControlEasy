@@ -250,7 +250,14 @@ Plans:
   4. A resident sees ONLY their current apartment's data: scope is derived server-side per request (no apartment claim baked into the JWT; a stateless JWT must not outlive membership change), cross-apartment access (resident of 101 requesting 302's visitors/visits/pre-registrations) is denied on every resident-reachable endpoint with two-apartment-fixture integration tests, and a resident-surface architecture test enforces the tenant-aware (`ITenantAwareLinqFactory`) + apartment-scoped repository pattern for every new resident endpoint — the pattern re-used by Phases 28–30 (RES-03)
   5. Resident password recovery is TenantAdmin-reset only: no resident self-service forgot-password exists (a resident hitting the staff forgot-password flow gets a uniform denial with no enumeration signal), and the TenantAdmin reset path covers resident credentials with BCrypt ≥ 11 + `MustChangePassword` re-armed (RES-01, RES-02)
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 27-01-PLAN.md — Trust precondition: StaffPolicies deny matrix + endpoint-metadata arch scan + negative integration suite (resident JWT → 403 on the four endpoint classes)
+- [ ] 27-02-PLAN.md — ResidentCredential schema trio + repository/resolver + per-request credential-status/occupancy authorization machinery + suspension-sequence proof (session resident branch)
+- [ ] 27-03-PLAN.md — Resident login dispatch (LoginHandler/RefreshHandler/ChangePasswordHandler resident branches + resident JWT claim variant + uniform enumeration-safe denies)
+- [ ] 27-04-PLAN.md — TenantAdmin provisioning lifecycle endpoints + admin reset (BCrypt ≥ 11 + MustChangePassword re-arm + refresh revoke) + two-apartment isolation fixtures
+- [ ] 27-05-PLAN.md — Portal Access modal (Phase 24 device-admin pattern) + residents page integration per 27-UI-SPEC.md
 **UI hint**: yes
 
 ### Phase 28: Visitor Pre-Registration & Purpose Codes
