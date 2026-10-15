@@ -18,6 +18,22 @@ Built as a high-performance modular monolith with an Angular 18 SPA frontend and
 - **Client Generation:** OpenAPI 3 schema via Swashbuckle → Angular services via `ng-openapi-gen`
 - **Testing:** xUnit, FluentAssertions, NSubstitute, Testcontainers.MySql, NetArchTest.Rules, Playwright, Karma/Jasmine
 
+## Screenshots
+
+Captured from the live [Demo Mode](#demo-mode) stack (demo data, demo credentials):
+
+| Login | Dashboard — Shift Ledger |
+| --- | --- |
+| ![Login page](docs/images/01-login.png) | ![Dashboard — Shift Ledger](docs/images/02-dashboard.png) |
+
+| Gatehouse Operator Panel | Resident Register |
+| --- | --- |
+| ![Gatehouse operator panel](docs/images/03-gatehouse.png) | ![Resident register](docs/images/04-residents.png) |
+
+| Visit Register | Reports & Shift History |
+| --- | --- |
+| ![Visit register](docs/images/05-visits.png) | ![Reports and shift history](docs/images/06-reports.png) |
+
 ## Origin & Evolution
 
 **ControlEasy Reborn** is the modern evolution of the original **ControlEasy** project, which originated as a final course completion project (*Trabalho de Conclusão de Curso — TCC*) at **ETEC** (Escola Técnica Estadual), developed as a graduation requirement to obtain the technical degree.
