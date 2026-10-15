@@ -287,7 +287,11 @@ Four kinds of artifact, each with a fixed home:
 
 - The pre-commit adversarial review gate: `bmad-code-review`
   (or `bmad-review-adversarial-general` for non-code artifacts).
-  CRITICAL/HIGH findings block the commit.
+  CRITICAL/HIGH findings block the commit. Cross-CLI protocol
+  (`SUBAGENTS.md` Rule 6): the reviewer is an AI other than the
+  authoring one — OpenCode authors dispatch via `codex exec`,
+  Codex authors via `opencode run`; fallback is an in-harness
+  different-model-family subagent with the degradation noted.
 - Phase and milestone audits: `bmad-check-implementation-readiness`,
   `bmad-testarch-trace`, `bmad-testarch-nfr`.
 - Edge-case analysis of a diff or spec: `bmad-review-edge-case-hunter`.

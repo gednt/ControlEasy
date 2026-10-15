@@ -22,14 +22,19 @@ Do NOT `git add` anything — this is read-only inspection.
 
 ### Review
 
-Launch Blind Hunter and Edge Case Hunter in parallel without prior conversation context.
+Launch Blind Hunter and Edge Case Hunter in parallel, each in a fresh review session with no prior conversation context — dispatched **cross-CLI** (per `SUBAGENTS.md` Rule 6: the reviewer must be an AI other than the one that authored the change).
+
+1. **Sibling CLI (preferred).** Running in **OpenCode** → run each layer through the Codex CLI: `codex exec --sandbox read-only "<layer prompt>"`. Running in **Codex** → run each through the OpenCode CLI: `opencode run "<layer prompt>"`. Other harnesses → any available sibling CLI. Capture findings to `{implementation_artifacts}/review-{layer}.md`.
+2. **In-harness fallback.** If no sibling CLI is available or an invocation fails, launch the layer as an in-harness subagent (prompts below) on a model family different from the authoring model's, and record the degraded reviewer origin in the `Auto Run Result` details.
+
+External CLIs cannot resolve harness skill names by reference, so the prompts carry the skill file path explicitly:
 
 - **Blind Hunter** — prompt:
-  > Invoke the `bmad-review-adversarial-general` skill on this diff:
+  > First read `{project-root}/.claude/skills/bmad-review-adversarial-general/SKILL.md` and follow it as your review protocol. Review this diff:
   >
   > {diff_output}
-- **Edge Case Hunter** — prompt:
-  > Invoke the `bmad-review-edge-case-hunter` skill on this diff:
+- **Edge Case Hunter** — prompt (same — carried path):
+  > First read `{project-root}/.claude/skills/bmad-review-edge-case-hunter/SKILL.md` and follow it as your review protocol. Review this diff:
   >
   > {diff_output}
 

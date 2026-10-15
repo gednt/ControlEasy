@@ -40,4 +40,4 @@ Load when the task touches the corresponding language or stack.
 
 - **Concurrency budget.** Max 3 sub-agents in flight per level (1 main + 3 subs). Exceeding requires explicit rationale in the wave's `proposal.md` / `design.md` / `tasks.md`. <!-- VERIFY: rationale artifacts (proposal.md / design.md / tasks.md) not present in .planning/; convention unverifiable from filesystem -->
 - **Post-task verification.** See `AGENTS.POLICY.md` §Mandatory Local CI Verification Gate.
-- **Pre-commit adversarial review.** No `git commit` until (1) build + tests are green (full local CI gate) and (2) adversarial review returns zero CRITICAL/HIGH findings.
+- **Pre-commit adversarial review.** No `git commit` until (1) build + tests are green (full local CI gate) and (2) adversarial review returns zero CRITICAL/HIGH findings. Cross-CLI dispatch per `SUBAGENTS.md` Rule 6: OpenCode authors → review via `codex exec`; Codex authors → review via `opencode run`; else any available sibling CLI, last resort an in-harness different-model-family subagent with the degradation noted.

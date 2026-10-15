@@ -418,10 +418,20 @@ implementing or planning them. Concretely:
 - **Adversarial review gate.** The pre-commit gate from
   `AGENTS.md` ("Pre-commit adversarial review: no agent may
   `git commit` until (1) build + tests are green and (2) an
-  adversarial review subagent returns zero CRITICAL/HIGH findings")
+  adversarial review returns zero CRITICAL/HIGH findings")
   is a BMAD gate. The adversarial reviewer is `bmad-code-review`
-  (or `bmad-review-adversarial-general` for non-code artifacts),
-  invoked as a sub-agent (Principle VII). CRITICAL/HIGH findings
+  (or `bmad-review-adversarial-general` for non-code artifacts).
+  The review is **cross-agent**: the reviewer runs in a fresh
+  session of an AI *other than* the one that authored the change
+  (never a same-session self-review). Authoring harness routes the
+  reviewer through the sibling CLI — running in **OpenCode**,
+  dispatch via the Codex CLI (`codex exec`); running in **Codex**,
+  dispatch via the OpenCode CLI (`opencode run`). On other
+  harnesses, prefer an available sibling CLI. If no sibling CLI is
+  available or it fails, fall back to an in-harness sub-agent
+  (Principle VII) on a model family **different from the authoring
+  model's**, and record the degradation in the review output
+  (never downgrade silently). CRITICAL/HIGH findings
   block the commit; MEDIUM/LOW findings are advisory and MUST be
   filed into the deferred-work ledger if not fixed in the same
   commit.
