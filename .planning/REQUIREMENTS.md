@@ -97,5 +97,5 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-09-23 — v2.4 planning session (party-mode session 6, autonomous)*
-*Updated: 2026-10-15 — milestone start; party-mode gap-fill + Codex adversarial review decisions (RES-07/08/12 lifecycle contracts, RES-13 deny matrix, RES-14 PII protection)*
+*Updated: 2026-10-15 — milestone start; party-mode gap-fill + Codex adversarial review decisions (RES-07/08/12 lifecycle contracts, RES-13 deny matrix, RES-14 PII protection); v2.4 roadmap created same day — traceability confirmed 14/14 mapped to Phases 27–30 (all Pending)*
 *Sources: v2.1 REQUIREMENTS.md deferred pool (CPF pre-reg matching, purpose codes, resident visit history, visitor self check-in, badge printing), PROJECT.md Key Decisions (v2.1 visits unification: one data model), AGENTS.md security bar, party-mode session 6 decisions (single write path, apartment-scoped isolation), `.planning/notes/v2-4-codex-gap-review.md` (F01–F18), `.planning/research/` (v2.4 landscape: STACK/FEATURES/ARCHITECTURE/PITFALLS/SUMMARY)*

@@ -1,0 +1,33 @@
+{
+  "contract": "1.0.0",
+  "flavor": "core",
+  "milestone": "v2.4 — Resident Self-Service & Visitor Experience",
+  "phases": [
+    {
+      "number": "27",
+      "name": "Resident Access Foundation",
+      "status": "pending"
+    },
+    {
+      "number": "28",
+      "name": "Visitor Pre-Registration & Purpose Codes",
+      "status": "pending"
+    },
+    {
+      "number": "29",
+      "name": "Visitor Self Check-In",
+      "status": "pending"
+    },
+    {
+      "number": "30",
+      "name": "Resident Visibility, Notifications & Gatehouse Panel Integration",
+      "status": "pending"
+    }
+  ],
+  "next": {
+    "command": "/gsd:discuss-phase",
+    "label": "Discuss the first phase",
+    "reason": "Project initialized — plan your first phase"
+  },
+  "updated_at": "2026-10-15T22:14:03.542Z"
+}

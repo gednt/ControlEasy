@@ -3,10 +3,10 @@ gsd_state_version: "1.0"
 milestone: v2.4
 milestone_name: Resident Self-Service & Visitor Experience
 status: planning
-last_updated: "2026-10-15T22:14:03.537Z"
+last_updated: "2026-10-15T22:26:33.786Z"
 last_activity: 2026-10-15
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,17 +17,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-11)
+See: .planning/PROJECT.md (updated 2026-10-15)
 
 **Core value:** Gatehouse staff can reliably register and control access through a fast, tenant-isolated web UI.
-**Current focus:** v2.3 Door Integration & Hardware Access (Simulator-First) ✅ **archived 2026-10-11**. Requirements + roadmap defined 2026-09-22 on `feat/planning-lineage-unification` (15 DOOR-* requirements, Phases 23–26 with success criteria in `.planning/ROADMAP.md`); all 4 phases shipped with SUMMARY + VERIFICATION + audit `passed`; archive + tag `v2.3` in place. Next milestone: v2.4 (Resident Self-Service & Visitor Experience, Phases 27–30) via `/gsd-new-milestone`. v2.5 (Phases 31–34, real hardware) remains defined.
+**Current focus:** v2.4 Resident Self-Service & Visitor Experience — **current milestone** (started 2026-10-15 via party-mode gap-fill + Codex adversarial scope review, F01–F18 closed). Roadmap created 2026-10-15: 4 phases (27–30), 14/14 RES-* requirements mapped, gap-closure decisions woven into mechanically-testable success criteria (`.planning/ROADMAP.md`). Next: `/gsd-plan-phase 27`. v2.5 (Phases 31–34, real hardware) remains defined, follows v2.4.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 27 — Resident Access Foundation (not started)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-10-15 — Milestone v2.4 started
+Status: Roadmap created — ready for `/gsd-plan-phase 27`
+Last activity: 2026-10-15 — v2.4 roadmap created (Phases 27–30, 14/14 requirements mapped, sequential numbering continued from v2.3's Phase 26)
 
 ## Performance Metrics
 
@@ -114,6 +114,7 @@ Last activity: 2026-10-15 — Milestone v2.4 started
 - v2.0/v2.1 `*-VALIDATION.md` backfill (phases 11/12/13 + 16/17/18) is **out of scope** for TEST-02 (strictly 19–22); surfaced in `22-VERIFICATION.md` and `22-VALIDATION.md` cross-phase audit as a separate human decision, default deferred.
 - Multi-arch Docker/CI is fast-cycle (no milestone)
 - v2.3 milestone archived 2026-10-11: audit `passed` (15/15 DOOR-* requirements, 9/9 cross-phase integration checks verified, 0 constitutional regressions). Archive: `.planning/milestones/v2.3-ROADMAP.md` (full phase details + decisions + tech debt) + `v2.3-REQUIREMENTS.md` + `v2.3-MILESTONE-AUDIT.md`. Tag: `v2.3` (local, on `feat/milestone-v2.3` at `a42087c`, not pushed per AGENTS.WORKTREES.md). PROJECT.md + ROADMAP.md + STATE.md advanced. Next: v2.4 (Resident Self-Service & Visitor Experience, Phases 27–30) via `/gsd-new-milestone`. v2.5 (Phases 31–34, real hardware) remains defined and depends on v2.3's shipped abstractions.
+- v2.4 roadmap created 2026-10-15 (Phases 27–30, sequential numbering continued): Phase 27 = trust precondition (deny matrix + negative suite land BEFORE any resident data surface; resolver-dispatched login inside existing `LoginHandler`, no fake AttendantProfiles; resident-surface arch test reused by 28–30). Phase 28 = schema-first pre-regs (canonical CPF column + `(tenant_id, normalized_document, status)` index, Phase 19 `TenantDayBoundary` window helper, `max_uses` default 1 + per-tenant cap, derived expiry, purpose label snapshot, plate informational snapshot); ends with `VisitorArrivalHandler` signature carrying pre-reg binding. Phase 29 = lane route/UI ships HERE (F15), consent-parity composition (gate lives in `RecordAccessScanHandler`), atomic compare-and-consume + bounded idempotent replay in one transaction, `Visitor@Lane` actor, document-partitioned rate limits, badge = `AccessCredential` (verifier-only, reprint = new staff print). Phase 30 = UNION history with per-branch apartment predicates + masked docs, notification inserted in canonical transaction + per-unit read state, panel pending-today + porteiro disambiguation on same-document conflicts.
 
 ### Blockers/Concerns
 
@@ -141,12 +142,12 @@ Last activity: 2026-10-15 — Milestone v2.4 started
 
 ## Session Continuity
 
-Last session: 2026-10-11
-Stopped at: v2.3 milestone **archived** on `feat/milestone-v2.3` at `a42087c`. Audit `passed` (15/15 DOOR-* requirements, 9/9 cross-phase integration checks). Archive: `.planning/milestones/v2.3-ROADMAP.md` + `v2.3-REQUIREMENTS.md` + `v2.3-MILESTONE-AUDIT.md`. Tag: `v2.3` (local, not pushed per AGENTS.WORKTREES.md). Branch: `feat/milestone-v2.3`. Commit range: `4b9d5dd..a42087c` (26 atomic commits, 179 files, +15,894/−58 LOC). Next: `/gsd-new-milestone` to start v2.4 (Resident Self-Service & Visitor Experience, Phases 27–30).
+Last session: 2026-10-15
+Stopped at: v2.4 roadmap created — ROADMAP.md restructured in place (Current Milestone v2.4 section + rewritten Phase 27–30 details with mechanically-testable criteria inheriting the F01–F18 gap-closure decisions; shipped v2.3/v2.2/v2.1/v2.0/v1.x sections and the v2.5 section preserved). Phase numbering continued from v2.3 (ended Phase 26). Requirements traceability 14/14 mapped (Phases 27–30, all Pending). STATE.md positioned at Phase 27 / Not started.
 Resume file: None
 
 ## Operator Next Steps
 
-- v2.3 archived; tag `v2.3` created on `feat/milestone-v2.3` (local — not pushed per AGENTS.WORKTREES.md).
-- Merge `feat/milestone-v2.3` → `main` (manual, per AGENTS.WORKTREES.md) before starting v2.4 to keep the `devcontainer` history clean.
-- Kick off v2.4 (Resident Self-Service & Visitor Experience, Phases 27–30) via `/gsd-new-milestone`. v2.5 (Phases 31–34, real hardware) follows v2.4.
+- Start phase planning: `/gsd-plan-phase 27` — research-flagged decisions to settle: resident profile/login dispatch shape, mixed-role (TenantAdmin+Resident) token precedence, per-request status-check placement (middleware vs `OnTokenValidated` vs endpoint policy), deny-matrix endpoint inventory.
+- Research-flagged phases: 27 and 29 (highest complexity — transaction seam for compare-and-consume must be designed before lane endpoints; rate-limit partitioning + proxy-trust decision owed), 30 (UNION-arm extension + read-state semantics); Phase 28 standard patterns (cite PITFALLS 9/11/14 directly).
+- v2.5 (Phases 31–34, real vendor hardware) follows v2.4.

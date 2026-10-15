@@ -3,7 +3,7 @@
 ## Milestones
 
 - 🚧 **v2.5 — Real Vendor Hardware Integration (Control iD, Intelbras, Hikvision)** — Phases 31-34 (planning 2026-09-23)
-- 🚧 **v2.4 — Resident Self-Service & Visitor Experience** — Phases 27-30 (planning 2026-09-23)
+- 🚧 **v2.4 — Resident Self-Service & Visitor Experience** — Phases 27-30 (started 2026-10-15) — **current milestone**
 - ✅ **v2.3 — Door Integration & Hardware Access (simulator-first)** — Phases 23-26 (shipped 2026-10-11) — [archived](milestones/v2.3-ROADMAP.md) · [requirements](milestones/v2.3-REQUIREMENTS.md) · [audit](milestones/v2.3-MILESTONE-AUDIT.md)
 - 🚧 **v2.2 — UI Parity & Operational Closeout** — Phases 19-22 (started 2026-09-22, planning artifacts complete)
 - ✅ **v2.1 — Integrated Visits & Account Operations** — Phases 16-18 (shipped 2026-09-20)
@@ -26,12 +26,12 @@ Full details in Phase Details below · requirements: [milestones/v2.5-REQUIREMEN
 </details>
 
 <details>
-<summary>🚧 v2.4 Resident Self-Service & Visitor Experience (Phases 27-30) — PLANNING 2026-09-23</summary>
+<summary>🚧 v2.4 Resident Self-Service & Visitor Experience (Phases 27-30) — CURRENT — STARTED 2026-10-15</summary>
 
-- [ ] **Phase 27: Resident Access Foundation** - TenantAdmin resident-credential provisioning (activate/suspend/revoke), resident role login with BCrypt ≥ 11 + enumeration-safe responses, apartment-scoped isolation with cross-apartment integration tests
-- [ ] **Phase 28: Visitor Pre-Registration & Purpose Codes** - Resident pre-registration CRUD with validity windows, edit/cancel lifecycle with read-only consumed history, per-tenant purpose codes stamped on visits
-- [ ] **Phase 29: Visitor Self Check-In** - Pre-authorized self check-in through the unified `VisitorArrivalHandler` write path, denied-path security (uniform ProblemDetails, rate limiting, audit), printable badge at check-in
-- [ ] **Phase 30: Resident Visibility, Notifications & Gatehouse Panel Integration** - Apartment-scoped visit history, in-app arrival notifications, gatehouse panel pending pre-registrations with document matching + badge print trigger
+- [ ] **Phase 27: Resident Access Foundation** - Trust precondition lands FIRST: staff-endpoint deny matrix + negative integration suite (resident JWTs refused on every existing staff endpoint class, arch test mandates explicit policies), TenantAdmin resident-credential provisioning with next-request suspension, role-dispatched resident login inside the existing `LoginHandler`, apartment/occupancy-scoped isolation with the resident-surface arch test
+- [ ] **Phase 28: Visitor Pre-Registration & Purpose Codes** - Apartment-owned pre-registration CRUD (typed canonical CPF document column + `(tenant_id, normalized_document, status)` index, validity window on the Phase 19 tenant-day basis, `max_uses` default 1 + per-tenant cap, plate as informational snapshot), expiry derived at read time, purpose codes with immutable identity + historical label snapshot, PII masking/redaction hooks, `VisitorArrivalHandler` pre-reg binding ready for Phase 29/30 consumers
+- [ ] **Phase 29: Visitor Self Check-In** - Supervised gatehouse-authenticated self-service lane (route + UI ship HERE) composing the consent gate and the unified `VisitorArrivalHandler` write path with atomic compare-and-consume + bounded idempotent replay, `Visitor@Lane` actor, denied-path security (uniform enumeration-safe ProblemDetails, normalized-document rate partitions, redacted audits), printable badge reusing `AccessCredential`
+- [ ] **Phase 30: Resident Visibility, Notifications & Gatehouse Panel Integration** - Apartment-scoped UNION history with per-branch apartment predicates + masked documents, durable poll-based arrival notifications written in the canonical transaction with per-unit read state, gatehouse panel pending-today pre-regs with sargable document matching + porteiro disambiguation + one-click check-in + badge print trigger
 
 Full details in Phase Details below · requirements: [REQUIREMENTS.md](REQUIREMENTS.md)
 
@@ -102,20 +102,20 @@ Full details: [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md)
 
 </details>
 
-## Next Milestone: v2.4 — Resident Self-Service & Visitor Experience
+## Current Milestone: v2.4 — Resident Self-Service & Visitor Experience
 
-**Started:** 2026-09-23
+**Started:** 2026-10-15 (party-mode gap-fill + Codex adversarial scope review — findings F01–F18 all closed into the decisions woven into the success criteria below; see [notes/v2-4-codex-gap-review.md](notes/v2-4-codex-gap-review.md))
 
-**Goal:** The resident stops being a row in someone else's table. Residents get portal access scoped to their own apartment, pre-register expected visitors (identity, purpose, validity window), watch arrivals in their visit history, and receive in-app arrival notifications. Visitors self check-in through a pre-authorization against the SAME unified write path the gatehouse uses. The porteiro sees pending pre-registrations at the gatehouse panel and prints badges for pre-authorized arrivals. Scope sourced from the v2.1 deferred requirements pool — zero external dependencies.
+**Goal:** The resident becomes a first-class portal user — credential provisioned by the TenantAdmin and isolated to their own apartment, pre-registering expected visitors, watching arrival history, and receiving in-app arrival notifications — while visitors self check-in at a supervised, gatehouse-authenticated self-service lane riding the unified `VisitorArrivalHandler` write path, and the porteiro sees pending pre-registrations, matches arriving visitors by document, and prints badges.
 
-**Scope principle:** Resident authentication is the second-biggest credential-surface addition after door unlock — the constitutional security bar applies throughout (BCrypt ≥ 11, enumeration-safe uniform responses, apartment-scoped isolation integration tests mandatory, all tenant-scoped reads/writes via `ITenantAwareLinqFactory`, `ProblemDetails` RFC 7807 everywhere). Self check-in MUST reuse the unified `VisitorArrivalHandler` write path — no second door into the Visits data model. Portal-only notifications (no push/mobile-native), data matching (no ID-scanner hardware), browser print (no badge-printer hardware).
+**Scope principle:** Resident authentication is the second-biggest credential-surface addition after door unlock — the constitutional security bar applies throughout (BCrypt ≥ 11, enumeration-safe uniform responses, apartment/occupancy-scoped isolation integration tests mandatory, all tenant-scoped reads/writes via `ITenantAwareLinqFactory`, `ProblemDetails` RFC 7807 everywhere). Self check-in MUST reuse the unified `VisitorArrivalHandler` write path — no second door into the Visits data model (single-write-path doctrine extends to notifications). Supervised lane only (no anonymous public API — visitor-phone path deferred), portal-only notifications (no push/mobile-native), data matching (no ID-scanner hardware), browser print (no badge-printer hardware).
 
-**Sequencing note (satisfied 2026-09-26):** `feat/unified-visits-flow-cleanup` (PR #11, `7a5eb35`) and `fix/gatehouse-direction-persistence` (PR #10, `0d8f96a`) have landed on `origin/main` — Phase 29 self check-in builds on the unified write path's post-cleanup contract and does NOT re-scope items fixed on those branches. Milestones v2.2 (Phases 19–22) and v2.3 (Phases 23–26) are planned/executed in parallel — no phase overlap with v2.4 (Phases 27–30).
+**Sequencing note (satisfied 2026-09-26):** `feat/unified-visits-flow-cleanup` (PR #11, `7a5eb35`) and `fix/gatehouse-direction-persistence` (PR #10, `0d8f96a`) have landed on `origin/main` — self check-in builds on the unified write path's post-cleanup contract and does NOT re-scope items fixed on those branches. Phase numbering CONTINUES from v2.3 (ended at Phase 26) — v2.4 is Phases 27–30; no overlap with v2.2 (19–22), v2.3 (23–26), or v2.5 (31–34).
 
-- [ ] **Phase 27: Resident Access Foundation** - TenantAdmin resident-credential provisioning (create/activate, suspend/revoke), new resident role + login with BCrypt ≥ 11 and enumeration-safe uniform responses, apartment-scoped data isolation with cross-apartment integration tests
-- [ ] **Phase 28: Visitor Pre-Registration & Purpose Codes** - Resident pre-registration CRUD (full name, document, optional plate, purpose code, validity window), edit/cancel lifecycle with read-only cancelled/consumed history, per-tenant configurable purpose codes stamped on the resulting visit
-- [ ] **Phase 29: Visitor Self Check-In** - Self check-in via document match or pre-auth code through the unified `VisitorArrivalHandler` write path (same states as gatehouse check-in), denied-path security (uniform enumeration-safe ProblemDetails, per-source rate limits, audit log), printable badge at check-in via browser print
-- [ ] **Phase 30: Resident Visibility, Notifications & Gatehouse Panel Integration** - Apartment-scoped visit history from the honest source, in-app arrival notifications, gatehouse panel pending pre-registrations expected today with CPF/document matching, one-click check-in, and badge print trigger
+- [ ] **Phase 27: Resident Access Foundation** - Deny matrix + negative integration suite land before any resident data surface; TenantAdmin credential provisioning with next-request suspension; resolver-dispatched resident login; apartment-scoped isolation with resident-surface arch test
+- [ ] **Phase 28: Visitor Pre-Registration & Purpose Codes** - Apartment-owned pre-registration CRUD (canonical CPF column, tenant-day window, `max_uses` budget, plate snapshot), derived expiry, purpose-code label snapshot, PII redaction hooks; arrival-handler binding ready for consumers
+- [ ] **Phase 29: Visitor Self Check-In** - Supervised lane (route + UI ship here) composing consent + unified write path with atomic consumption, `Visitor@Lane` actor, denied-path security, printable badge
+- [ ] **Phase 30: Resident Visibility, Notifications & Gatehouse Panel Integration** - Apartment-scoped UNION history with masked documents, durable in-transaction notifications with per-unit read state, gatehouse panel pending-today pre-regs with document matching + porteiro disambiguation + one-click check-in + badge print
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -239,61 +239,64 @@ Plans:
 
 ### Phase 27: Resident Access Foundation
 
-**Goal**: A resident is a first-class authenticated portal user — provisioned by their condominium's administrator, logged in with their own credential, and isolated to their own apartment by integration tests, not by convention.
-**Depends on**: Nothing within v2.4 (new Residents-module surface). External prerequisite SATISFIED (2026-09-26): unified write-path contract — `feat/unified-visits-flow-cleanup` (PR #11, `7a5eb35`) and `fix/gatehouse-direction-persistence` (PR #10, `0d8f96a`) landed on `main`.
-**Requirements**: RES-01, RES-02, RES-03
-**Success Criteria** (what must be TRUE):
+**Goal**: The resident is a first-class authenticated portal user — provisioned by the TenantAdmin, logged in through the resolver-dispatched branch of the existing `LoginHandler`, and isolated to their own apartment by mechanical proof — while the trust precondition lands FIRST: every existing staff endpoint provably refuses a resident JWT before any resident-visible data surface exists.
+**Depends on**: Nothing within v2.4 (new Security/Residents-module surface). External prerequisite SATISFIED (2026-09-26): unified write-path contract — `feat/unified-visits-flow-cleanup` (PR #11, `7a5eb35`) and `fix/gatehouse-direction-persistence` (PR #10, `0d8f96a`) landed on `main`.
+**Requirements**: RES-01, RES-02, RES-03, RES-13
+**Success Criteria** (what must be TRUE — each mechanically testable):
 
-  1. A TenantAdmin can provision resident portal access for a resident of an apartment (credential creation/activation) and suspend or revoke it; after revocation the resident's next request is denied — verified by integration test (RES-01)
-  2. A provisioned resident can log into the portal with their own credential: passwords hashed with BCrypt ≥ 11, failed logins return uniform enumeration-safe responses, and the resident authenticates with the same JWT machinery as staff under a new resident role (RES-02)
-  3. A resident sees ONLY their own apartment's visitors, visits, and pre-registrations; a resident of apartment 101 requesting apartment 302's data is denied — cross-apartment isolation covered by integration tests on every resident-reachable endpoint (RES-03)
-  4. All resident-scoped reads/writes flow through `ITenantAwareLinqFactory` (no cross-tenant access) and every error returns `ProblemDetails` (RFC 7807) — verified by architecture and integration tests (RES-01, RES-02, RES-03)
+  1. **Trust precondition (lands before any resident data surface in this phase)**: the staff-endpoint deny matrix is complete — every existing staff-facing endpoint declares an explicit staff/tenant-admin role policy (no bare `authenticated` authorization remains), and the negative integration suite proves a resident JWT is refused (ProblemDetails status, no tenant-wide data in the response) on each existing endpoint class: tenant-wide visit lists, direct visit/detail reads, visit mutations, reports with caller-supplied `apartmentId` params. An architecture test fails the build on any new endpoint that omits an explicit role policy, and the suite re-runs green as Phases 28–30 add endpoints (RES-13)
+  2. A TenantAdmin can provision resident portal access (credential creation/activation) and suspend or revoke it; the integration sequence "issue live token → suspend → same token's NEXT request → denied → reactivate → next request → allowed" passes — suspension takes effect on the request after the credential change, never at 15-minute-token expiry (RES-01)
+  3. A provisioned resident logs in through a role-dispatched resolver branch inside the existing `LoginHandler` — never a fake `AttendantProfiles` row, never a second login endpoint; `profile_id` semantics for resident tokens and mixed-role (TenantAdmin+Resident) precedence are decided with an explicit test. Passwords hash at BCrypt ≥ 11 and unknown / wrong-password / inactive / revoked / suspended produce uniform constant-cost enumeration-safe responses, indistinguishable by response body and timing (RES-02)
+  4. A resident sees ONLY their current apartment's data: scope is derived server-side per request (no apartment claim baked into the JWT; a stateless JWT must not outlive membership change), cross-apartment access (resident of 101 requesting 302's visitors/visits/pre-registrations) is denied on every resident-reachable endpoint with two-apartment-fixture integration tests, and a resident-surface architecture test enforces the tenant-aware (`ITenantAwareLinqFactory`) + apartment-scoped repository pattern for every new resident endpoint — the pattern re-used by Phases 28–30 (RES-03)
+  5. Resident password recovery is TenantAdmin-reset only: no resident self-service forgot-password exists (a resident hitting the staff forgot-password flow gets a uniform denial with no enumeration signal), and the TenantAdmin reset path covers resident credentials with BCrypt ≥ 11 + `MustChangePassword` re-armed (RES-01, RES-02)
 
 **Plans**: TBD
 **UI hint**: yes
 
 ### Phase 28: Visitor Pre-Registration & Purpose Codes
 
-**Goal**: A resident manages expected visitors for their own apartment — creating pre-registrations with identity, purpose, and a validity window, editing or cancelling pending ones — with per-tenant purpose codes stamped on the resulting visit records.
-**Depends on**: Phase 27 (resident auth and apartment-scoped authorization must exist before residents can create data).
-**Requirements**: RES-04, RES-05, RES-06
-**Success Criteria** (what must be TRUE):
+**Goal**: A resident manages expected visitors for their own apartment — pre-registrations with trusted identity, purpose, validity window, and use budget whose schema decisions are set correctly the first time (canonical document column, tenant-day window helper, derived expiry, per-tenant cap) — and the phase ENDS with the canonical `VisitorArrivalHandler` already carrying pre-registration binding, ready for Phase 29/30 consumers.
+**Depends on**: Phase 27 (resident auth, per-request scope resolver, deny matrix, and resident-surface arch test must exist before residents can create data).
+**Requirements**: RES-04, RES-05, RES-06, RES-14
+**Success Criteria** (what must be TRUE — each mechanically testable):
 
-  1. A resident can create a visitor pre-registration for their OWN apartment with full name, document number, optional vehicle plate, purpose code, and validity window (start/end); creating one for another apartment is denied by integration test (RES-04)
-  2. A resident can edit a pending pre-registration or cancel it; cancelled and consumed pre-registrations become read-only history and reject further edits — verified by integration test (RES-05)
-  3. A TenantAdmin can manage the per-tenant purpose code list (e.g. Visit, Delivery, Service, Maintenance); the code selected at pre-registration is stamped on the resulting visit record (RES-06)
-  4. Pre-registration state transitions (pending → cancelled / consumed) are tenant-scoped via `ITenantAwareLinqFactory` and errors return `ProblemDetails` (RES-05, RES-06)
+  1. A resident creates a pre-registration for their OWN apartment: full name; typed document with CPF check-digit validation stored in a normalized canonical column indexed `(tenant_id, normalized_document, status)` (canonical-equivalence test: differently formatted but equivalent CPFs collapse to one identity; invalid/repeated-digit CPF rejected); optional vehicle plate as a normalized **informational snapshot** (test proves no Vehicle record is created/linked and no vehicle credential minted); purpose code from the tenant list; validity window start-inclusive / end-inclusive through end of the tenant-local day via a boundary helper reusing the Phase 19 `TenantDayBoundary` basis (fake-clock tests at tenant midnight, window start, window end); `max_uses` default 1 with a per-tenant configurable maximum — a pre-reg above the per-tenant cap is rejected (RES-04)
+  2. Expiry is DERIVED at read time (no background sweep): a registration whose window ends at the last instant of the tenant day is pending/"expected today" on that day and expired the next (fake-clock integration test); no derived `Consumed`/`Expired` flag is ever persisted and no sweep job exists (arch/code-grep check) (RES-05)
+  3. Pre-registrations are apartment-owned: any provisioned resident of the apartment can edit or cancel a pending one (co-resident fixture test) with creator/editor recorded for audit only; cancelled, consumed, and expired registrations become read-only history — edit/cancel attempts are rejected. The first new personal-data surface lands the PII hooks: the resident surface shows masked documents and tests prove no raw document values in logs, structured-log enrichment, error payloads, or denial audit rows (normalized value / fingerprint only) (RES-05, RES-14)
+  4. Purpose codes carry **immutable code identity + historical label snapshot**: renaming or deactivating a code after visit creation never rewrites that visit's record (integration test), a pending pre-reg referencing a retired code surfaces the retirement explicitly, and the selected purpose is stamped on the resulting visit; per-tenant purpose-code + cap settings are managed by the TenantAdmin (RES-06)
+  5. **Arrival-handler binding ready for consumers**: the canonical `VisitorArrivalHandler` command signature is extended (in this phase) to carry pre-registration identity + purpose/plate snapshots, so Phase 29/30 consumers code against the transactional contract with no further schema or signature change; pending-registration document matching rides the sargable normalized-document column/index (no `REPLACE()` full scan on the hot path) (RES-04 → RES-07/RES-11 precondition)
 
 **Plans**: TBD
 **UI hint**: yes
 
 ### Phase 29: Visitor Self Check-In
 
-**Goal**: An arriving visitor checks themselves in against a pre-authorization through the SAME unified write path the gatehouse uses — and every denied attempt fails closed: uniform responses, rate-limited, audit-logged.
-**Depends on**: Phase 28 (pre-registrations must exist to be consumed).
+**Goal**: An arriving visitor checks themselves in at the supervised, gatehouse-authenticated self-service lane — the visitor-facing route and UI ship in THIS phase — composing the consent gate and the unified write path with atomic consumption, and every denied attempt fails closed: uniform responses, normalized-document rate limiting, redacted audits.
+**Depends on**: Phase 28 (pre-registrations + the bound `VisitorArrivalHandler` transactional contract must exist and be test-proven before the lane consumes them).
 **Requirements**: RES-07, RES-08, RES-12
-**Success Criteria** (what must be TRUE):
+**Success Criteria** (what must be TRUE — each mechanically testable):
 
-  1. An arriving visitor can self check-in with a pre-authorization (document match or pre-auth code); the resulting Visit is created through the unified `VisitorArrivalHandler` write path and lands in the same states as a gatehouse check-in — integration test proves a single write path with no second door into the Visits data model (RES-07)
-  2. A pre-registration is consumed on use: an expired validity window, a revoked registration, or an exhausted use is rejected and the registration cannot be reused — verified by integration test (RES-07)
-  3. Denied self check-in paths (unknown code, expired window, revoked registration, exhausted use) return uniform enumeration-safe ProblemDetails, are rate-limited per source, and are audit-logged — each denial path verified by integration test (RES-08)
-  4. At check-in (self-service or gatehouse), a printable badge is generated (visitor name, apartment, date, validity, QR credential) via browser print — no printer hardware integration (RES-12)
+  1. **The lane ships in this phase (visitor-facing UI does not wait for Phase 30)**: a gatehouse-authenticated self-service route/page where the visitor presents the pre-auth QR (`OpaqueTokenIssuer` 32-byte verifier-only token — not human-typable, no anonymous public API) or types their own document, and the full journey (enter → check in → printable badge on screen) is covered by browser Playwright E2E — not just API/integration fixtures (RES-07)
+  2. Arrival composes the canonical pipeline with consent parity: the lane handler runs the consent gate exactly as `RecordAccessScanHandler` does (consent-required/override falls back to porteiro confirmation — a policy-parity test suite proves lane consent outcomes match the existing gatehouse QR-scan flow), delegates the arrival mutation to the unified `VisitorArrivalHandler` **bound to the pre-registration identity** (a same-document cross-apartment match is never auto-resolved for the visitor — ambiguous self-service attempts are denied without returning other apartments' data), and records actor kind `Visitor@Lane` (never `Guid.Empty`, never a porteiro id) (RES-07)
+  3. Consumption is atomic: compare-and-consume, Visit advance, and notification insert happen in ONE canonical transaction with bounded idempotent replay — a concurrent test with `max_uses=1` and two simultaneous lane requests yields exactly one admission (no double-admit), and a lost-response retry after a committed check-in replays the same result without double-admitting or falsely denying (RES-07)
+  4. Denied paths fail closed: unknown code, expired window, revoked registration, exhausted use, and consent-denied return uniform enumeration-safe ProblemDetails that never disclose candidate identities or other parties' data; rate limiting partitions on the **normalized document/token** (not raw IP — there is no `UseForwardedHeaders`) with tests proving forged/multiple-source headers do not collapse into one bucket or bypass the limit; denial rows and logs carry normalized values / fingerprints only — no raw document values or token secrets (RES-08)
+  5. At check-in a printable badge (visitor name, apartment, date, validity, QR credential) is generated **reusing the existing `AccessCredential` machinery** (SubjectType=Visitor, SubjectId=Visit.Id, verifier-only QR, validity = pre-reg window ∩ open visit): the raw token is shown once at issuance; reprint is a NEW staff-authorized print (a test proves no raw-token retrieval after issuance); and a stale/checked-out badge scans as refused (RES-12)
 
 **Plans**: TBD
 **UI hint**: yes
 
 ### Phase 30: Resident Visibility, Notifications & Gatehouse Panel Integration
 
-**Goal**: The loop closes — residents watch their apartment's visit history and receive in-app arrival notifications, while the porteiro sees pending pre-registrations expected today, matches arriving visitors by document, and checks them in with one click.
-**Depends on**: Phase 28 (pre-registrations), Phase 29 (self check-in + badge generation).
+**Goal**: The loop closes — residents watch their apartment's honest history and receive durable in-app arrival notifications, while the porteiro sees pending pre-registrations expected today, matches arriving visitors by document with explicit disambiguation across apartments, and checks them in with one click through the same transactional arrival seam.
+**Depends on**: Phase 28 (pre-registrations), Phase 29 (transactional arrival + badge contract whose quality notifications inherit).
 **Requirements**: RES-09, RES-10, RES-11
-**Success Criteria** (what must be TRUE):
+**Success Criteria** (what must be TRUE — each mechanically testable):
 
-  1. A resident can view their apartment's visit history (past and expected visitors) — read-only, honest data from the same source the porteiro and reports use (RES-09)
-  2. When a pre-registered visitor checks in (self or gatehouse), the resident's portal shows an in-app arrival notification — portal-only, no push/mobile-native (RES-10)
-  3. The gatehouse panel shows pending pre-registrations expected today, and a porteiro can check a visitor in against a pre-authorization with one click through the same `VisitorArrivalHandler` path (RES-11)
-  4. When a visitor arrives, CPF/document matching surfaces the pending pre-registration in the gatehouse panel (RES-11)
-  5. From the gatehouse check-in, the porteiro can trigger the badge print for the checked-in visitor (RES-11, RES-12)
+  1. The resident's visit history reads the same UNION ledger the porteiro and reports use, extended with **per-branch `apartment_id` predicates** layered on the existing tenant predicates (single SQL statement — the tenant interceptor never splices a UNION): a resident sees only their own apartment's past + expected visitors with document values **masked** to the last three digits (the porteiro surface shows the full value — masked/unmasked asserted side-by-side in tests), and a resident-supplied `apartmentId` parameter is demoted to staff-only/ignored so scope is always server-derived (RES-09)
+  2. Arrival notifications are **durable rows written inside the canonical arrival transaction** — after a committed check-in the resident's poll returns the notification as unread, and a replayed / no-op arrival does not notify again; the single-write-path architecture doctrine is extended to notifications (no notification writes outside the canonical transaction) (RES-10)
+  3. Read state is scoped per apartment-unit: any co-resident of the unit marking the notification read clears the unread badge for the whole unit (co-resident fixture test), and residents of other apartments never see the notification or its content (RES-10)
+  4. The gatehouse panel shows pending pre-registrations expected **today** (tenant-local day) with one-click check-in against the pre-authorization **through the same `VisitorArrivalHandler` path** (same transactional/idempotent contract as Phase 29 — the porteiro's one-click is not a second write path), and CPF/document matching surfaces the pending registration via the sargable normalized-document query (RES-11)
+  5. Same-document cross-apartment conflicts are **disambiguated by the porteiro**: the panel surfaces BOTH candidate registrations via a distinct staff disambiguation query (apartment names shown) and requires an explicit selection — the system never auto-resolves into another apartment's visit (fixture test proves no automatic resolution in either direction, and the visitor's own lane surface shows nothing about other apartments); from the panel, the porteiro can trigger the badge print for a checked-in visitor (staff-authorized print per Phase 29 rules) (RES-11, RES-12)
 
 **Plans**: TBD
 **UI hint**: yes
