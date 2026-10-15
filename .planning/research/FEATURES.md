@@ -1,169 +1,154 @@
 # Feature Research
 
-**Domain:** Condominium access-control platform — integrated visits flow, reports & history page, password management (milestone v2.1)
-**Researched:** 2026-09-19
-**Confidence:** MEDIUM (external market patterns HIGH-MEDIUM via competitor product pages + OWASP; internal dependency claims HIGH from repo inspection)
+**Domain:** Condominium access-control platform — resident self-service portal & visitor pre-registration/self check-in (milestone v2.4)
+**Researched:** 2026-10-15
+**Confidence:** MEDIUM (Brazilian product/feature claims HIGH-MEDIUM from competitor product pages + official help docs + LGPD guidance; internal dependency claims HIGH from repo inspection + `notes/v2-4-codex-gap-review.md`)
+
+## Superseding the v2.1 Landscape (stale rows to ignore)
+
+The previous FEATURES.md (v2.1, 2026-09-19) is still valid for ledger/reports/password topics but has **three rows now inverted by v2.4 decisions** — do not let them leak into planning:
+
+1. **"Badge printing" was an anti-feature** ("hardware printer integrations, defer until a real condominium demands it"). v2.4 ships a **printable badge**, but the anti-feature's core objection remains valid and is preserved as a boundary: no printer-hardware integration, no driver matrix — badge is a **browser-print page triggered by staff** (gap review F15), riding the existing `AccessCredential` subsystem, not a printer subsystem.
+2. **"Self-registration / visitor self-service portals" was an anti-feature** ("visitors don't self-register; porteiro registers; anonymous data entry multiplies attack surface"). v2.4 ships visitor self check-in, but the anti-feature's security objection drives the design: the lane is a **supervised, gatehouse-authenticated self-service lane — no anonymous public API** (F01/F11). The visitor-phone path is explicitly deferred.
+3. **"Resident-facing visit visibility" and "host notifications" were deferred differentiators** ("trigger: resident feature requests"). v2.4 promotes both to table stakes — data unification (v2.1) removed the main cost blocker.
+
+The v2.1 competitor table covered only workplace VMS (Envoy, Sign In App). This research adds the **Brazilian residential** segment, which behaves differently: authorization-by-app from the resident's phone is the norm, WhatsApp is the dominant invite channel, and CPF-based identification is universal.
 
 ## Feature Landscape
 
 ### Table Stakes (Users Expect These)
 
-Features users assume exist. Missing these = product feels incomplete.
+What every Brazilian condominium app / kiosk VMS ships, and residents/operators assume ControlEasy has.
 
-| Feature | Why Expected | Complexity | Notes |
+| Feature | Why Expected | Complexity | Notes (decisions already settled) |
 |---------|--------------|------------|-------|
-| One chronological visitor ledger (unified stream) | Every visitor-management product (Envoy, Sign In App) markets "replace the paper logbook with one digital record" as its core promise; operators treat the ledger as the source of truth for the shift | MEDIUM | Visits + visitor AccessEvents merged into one chronological stream in `ReportReadRepository` (`.planning/notes/integrated-visits-flow.md`). Each row: subject, destination, state stamp, timestamp, origin (QR / walk-in / pre-registered). Already partially built — extension, not rewrite |
-| Per-row state stamps (Pending / CheckedIn / CheckedOut) | Operators scan a column of stamps, not prose. Envoy and Sign In App both render status as colored/stamped marks per visitor row | LOW | `VisitStatus` state machine already exists (`Pending → CheckedIn → CheckedOut`, `Visit.cs:58-80`). Ledger renders it as a brick/paper stamp per DESIGN.md. Reuses existing tokens |
-| Walk-in registration from the operator panel | Walk-in sign-in with captured fields is the base use case of every VMS; the operator must register a person standing at the desk in <30s | MEDIUM | Route walk-ins through Visits module landing as direct `CheckedIn` (person is physically present — Pending is for pre-registered, not-yet-arrived visitors). Reuse `VisitCreateModalComponent`. `POST /api/v1/entry-log` keeps only ConsentAuditLog duty |
-| QR scan → Visit creation/check-in for visitors | Pre-registration + QR check-in is standard VMS behavior (Sign In App pre-register w/ QR, Envoy QR codes); an unmatched visitor QR creating no ledger row breaks the "one record" promise | MEDIUM | Extend `RecordAccessScanHandler`: visitor-subject scan with no matching Pending visit creates a `CheckedIn` Visit; a match gets `IVisitDirectory.CheckInAsync`. Resident/vehicle scans unchanged (stay AccessEvents-only) |
-| Filtering + search in the ledger/history | Sign In App's portal explicitly ships "complete visitor history with advanced search and filtering"; operators filter by name, date, status, destination | MEDIUM | Server-side filters on the unified stream: date range, status, subject name/document, destination apartment, origin (QR/walk-in/manual). Existing `Linq<TModel>` + tenant factory patterns apply |
-| Date range on reports | Reports without date ranges are unusable for monthly/weekly questions; every SaaS reporting page has preset + custom ranges | LOW | Presets (Today / 7d / 30d / custom) feeding the same query layer; MySQL `date` indexes on Visits timestamps |
-| CSV export from reports | Audit-readiness is the #1 stated reason for VMS reports (Envoy: "exportable reports just a few clicks away"); ControlEasy already shipped CSV export for consent/entry data with millisecond-precision timestamp format | MEDIUM | Reuse the existing Phase-13 CSV export pattern (`yyyy-MM-dd HH:mm:ss.fff`). Same tenant-scoping rules. Feeds syndic/accounting workflows |
-| Per-apartment breakdown | Condominium-specific expectation: administrators think in units ("who visits 302-B?"); reports without unit grouping feel foreign to the domain | MEDIUM | Group-by destination apartment on visit counts; also "residents per apartment" already derivable from Residents module |
-| Forgot-my-password on login screen (admins only) | Self-service recovery is universal in SaaS login screens; administrators locked out with no path = support burden and dead-end UX | MEDIUM | Settled approach (PROJECT.md decision 2026-09-19): temp password emailed via SMTP, admins only. Follow OWASP Forgot Password rules (below). Gatekeeper self-reset explicitly deferred |
-| Admin reset for any user (platform admin) / own gatekeepers (tenant admin) | Standard IdP behavior (ASP.NET Identity, Okta, Entra): scoped admins reset their own users; super admins reset anyone | LOW-MEDIUM | Reuses tenant staff lifecycle patterns already shipped (`55377a0`). Tenant isolation enforced via `ITenantAwareLinqFactory`; platform admin crosses tenants by design |
-| One-time temp password + forced change on next login | Universal expectation: after admin reset, the user MUST change the password at first login (Microsoft Identity, Okta, Entra all do this) | LOW | `MustChangePassword` re-armed (mechanism exists from tenant staff lifecycle temp-password flow); one-time temp passwords |
-| Enumeration-safe forgot-password responses | OWASP Forgot Password Cheat Sheet: consistent message and uniform response time whether or not the account exists | LOW | Same generic response ("If the account exists, an email was sent"), same handler path, per-account rate limiting |
+| Resident pre-registers visitors in advance (`RES-04`) | Porter's access-control write-up lists "autorização prévia: morador libera um convidado com antecedência" as one of the four functions "que não podem faltar" in any serious system; CONDO+ ("cria convites com QR Code e agenda de visitantes"), eCondos, Lello all market it as the core resident feature | MEDIUM | Apartment-owned pre-reg CRUD (any co-resident may edit/cancel pending pre-regs; creator recorded for audit). New `VisitorPreRegistration`-shaped entity in Visits module; consumes existing apartment binding from Residents |
+| Validity window + bounded single/multi use per pre-reg (`max_uses`, `RES-05`) | Every invite system is "unique and temporary": Condfy "QR Code único e temporário", eCondos convite per-visit, Genetec ClearID "visitors can check in up to 1 hour before a visit event" — a pre-reg without an expiry is considered a security hole | LOW-MEDIUM | Settled: window inside `max_uses` (default 1, per-tenant cap in admin settings); "expired" derived at read time, no background sweep; recurrence explicitly NOT modeled beyond max_uses (F04 closure) |
+| Resident sees pending pre-registrations + status (`RES-09`) | Condfy shows "quem está liberado e quem aguardando aprovação"; pending → consumed state visible to the household is assumed | LOW | Read endpoint filtered by apartment; pending/consumed/expired derived stamps, no new state machinery |
+| Resident arrival notification on check-in (`RES-10`) | Acesso Inteligente: "o morador recebe automaticamente uma notificação no seu celular indicando que o convidado chegou"; Condfy "Notificações de Acesso"; MaqPronAPP push notifications — universal in the segment | MEDIUM | Settled: in-app durable notification tied to the committed arrival identity (F10/F14 closures); compare-and-consume + notification insert atomic in the canonical transaction; no cross-apartment leak; push/WhatsApp deferred |
+| Resident visit history scoped to own apartment (`RES-03`) | Condfy/eCondos/Lello all ship "histórico de acessos" filtered to the resident's unit; residents audit who came while they were out | LOW-MEDIUM | Apartment-scoped filter over the existing unified ledger read model; masked display (name + last-3 CPF digits, not full document); destination resolution already exists |
+| QR / one-time code as the visitor pass | Segment standard: Condfy, eCondos (morador shares QR "leitor" image), Acesso Inteligente ("senhas de uso único... o visitante não precisa ter nada instalado") | LOW-MEDIUM | Settled: pre-auth codes reuse `OpaqueTokenIssuer` — 32-byte verifier-only, not visitor-typable (F05 closure); no plaintext persistence anywhere |
+| CPF/document-based identification at the gate (`RES-04` matching) | The Brazilian norm — AABIC LGPD guide: porteiro collects "nome completo, número da identidade"; Serpro: entry "condicionado... fornecimento de dados... CPF, RG"; the porteiro culture is match-by-CPF, not match-by-email | MEDIUM | Typed canonical identity with CPF check-digit validation (F08 closure); rate-limit partition on normalized document; masked display everywhere resident-facing |
+| Provisioned resident portal credentials (`RES-01`) | MaqPronAPP "cadastro por convite (SMS, e-mail ou WhatsApp)" with manager approval; Condomob titular creates household members — residents never self-join | MEDIUM | Settled: TenantAdmin provisions the resident credential; per-request suspended-status checks (stateless JWT covered); TenantAdmin-only recovery; constant-cost uniform denials (F06 closure) |
+| Purpose/type separation of visits (`RES-06`) | Brazilian standard: prestadores vs visitantes vs familiares treated differently (Porter "regras por perfil"); workplace VMS: "custom flows by visitor type" (elia.io) | LOW-MEDIUM | Settled: per-tenant purpose codes, immutable code identity + historical label snapshot (F18 closure); feeds existing reports grouping |
+| Self check-in lane exists for pre-registered guests (`RES-07`) | Kiosk VMS table stakes: Kenai "instant QR check-in... checked in within seconds"; ClearID/Genea both ship pre-registered guest check-in as a first-class kiosk mode | HIGH | Supervised gatehouse lane only (F01/F15 closures); rides `VisitorArrivalHandler` (single write path); consent gates unchanged; actor kind `Visitor@Lane` |
 
 ### Differentiators (Competitive Advantage)
 
-Features that set the product apart. Not required, but valuable.
+Not expected, but valuable — mostly correctness/privacy properties the segment lacks.
 
-| Feature | Value Proposition | Complexity | Notes |
+| Feature | Value Proposition | Complexity | Notes (decisions already settled) |
 |---------|-------------------|------------|-------|
-| Shift handover trail with handover interaction | DESIGN.md's north star: "a resolved row travels from the active ledger into the chronological handover trail" — no surveyed VMS product offers a first-class *handover* surface; it's a porteiro-specific mental model legacy WPF had ("switch accounts without restarting") | MEDIUM | The unified ledger finally feeds this. Ruled rows, tab dividers, mono labels per DESIGN.md Shift Ledger spec. Signature interaction already specified in design system (`handover-transfer` motion token) |
-| Unified stream includes refused scans / security events as ledger context | Envoy/Sign In App separate "visitor log" from "security events"; merging them in one operator stream (with origin stamps: QR / walk-in / manual / refused) is honest-to-the-desk UX the incumbents don't offer | LOW | Already decided: Visits + visitor AccessEvents as one stream. Distinguish stamp classes so security events read as audit, not operations |
-| Pre-registration matching by document (CPF) at walk-in | Incumbents match pre-registrations by QR/email; matching by document number is the Brazilian condominium convention (porteiro asks for CPF). Turns the pre-registered list into an instant lookup | LOW-MEDIUM | `LookupSubjectHandler` already searches Pending visits; extend match key to document/CPF on the Visits row. Fallback to manual lookup already exists |
-| Walk-in purpose codes / visit-type stamps | Purpose classification enables the per-day report breakdown and syndic queries ("delivery people vs guests"); incumbents ship "customizable sign-in flows" per visitor type | LOW | Reuse Visits existing category/destination metadata; add purpose field only if Visits lacks it. Feeds reports grouping |
-| "On-site now" live occupancy count | Sign In App's portal leads with a real-time "Today" view of current occupancy across visitor groups; operators check who is still inside | LOW | Derivable from `CheckedIn` minus `CheckedOut` on today's Visits — already an open-visits stat in dashboard; surface in gatehouse panel header |
-| Reports unified history view (visits + access events + consent in one query) | ControlEasy-specific: the whole value of the v2.1 data unification is that one page can answer "everything that happened at this gate" — incumbent products need 3 modules for this | MEDIUM | Depends on ledger read model (same read repo). Report page consumes OpenAPI-generated report clients (idle clients exist per PROJECT.md) |
-| Resident-facing visit visibility (residents see who checked in for them) | Incumbents notify hosts on check-in (Envoy host notifications); ControlEasy residents currently only appear in records. A read-only "my unit's visits" view is high resident value, low cost once data is unified | LOW-MEDIUM | Requires only a tenant-scoped read endpoint filtered by destination apartment; resident role routing already exists (post-login role routing spec) |
+| Arrival is pre-registration-bound; same-document cross-apartment conflicts **never auto-resolve** — porteiro disambiguates | Brazilian apps auto-match by document or route everything through "call the resident"; wrong-apartment check-ins are an unresolved industry failure mode. Honest disambiguation is trust-building for porteiro + syndic | MEDIUM | Settled (F03 closure): authorization ID, resulting VisitId, destination, purpose explicitly bound; reject ambiguous/conflicting results without disclosing other-apartment data; same-doc cross-apartment tests mandatory |
+| Atomic consumption — exactly one arrival per permitted use | Concurrent kiosk/staff arrivals, lost HTTP responses, and replayed scans silently double-admit or strand visitors in most systems; our compare-and-consume inside the canonical transaction is a correctness differentiator | MEDIUM | Settled (F10 closure): bounded idempotent replay; tested for concurrency + rollback |
+| Printable badge reusing `AccessCredential` (verifier-only, VisitId-bound; reprint = new staff-authorized print) | Brazilian residential products essentially don't have badges (the QR on the guest's phone IS the pass); enterprise kiosks do — carrying it as a credential, not a sticker, means the badge dies with the visit | MEDIUM | Settled (F12 closure): no second credential subsystem; no plaintext token persisted for reprint convenience; badge validity intersects authorization validity; checkout stays staff-only |
+| Purpose-code historical label snapshots in the ledger | Renaming a "Visita" code elsewhere silently rewrites history ("entregador" becomes "visita" retroactively); snapshot preserves audit integrity for syndic queries | LOW | Settled (F18 closure); pending pre-regs referencing retired codes handled |
+| Privacy-by-default masking of visitor documents on resident surfaces | Lello's LGPD cartilha: restrict PII access to "o menor número possível"; most Brazilian apps show full data in resident history; masked-by-default is an LGPD posture a syndic can defend in assembly | LOW | RES-14 cross-cutting: masking + log redaction on all new surfaces; visitor's full document never shown to residents |
+| Staff deny matrix as a provable property (`RES-13`) | New resident role opens existing staff APIs in every naive implementation; a *negative-checked* endpoint inventory ("resident tokens refused, proven by tests") is rare in the segment's web portals | MEDIUM | Settled (F02 closure): every staff endpoint declares an explicit role policy + negative integration suite |
+| Banned/block list (lista de banidos) — defer | Acesso Inteligente markets per-condominium and per-unit forbidden-person lists; valued by síndicos | MEDIUM-HIGH | **Not in v2.4 scope** — surfaced here as the top candidate for v2.5+ because it composes naturally with refused-scan machinery already built |
 
 ### Anti-Features (Commonly Requested, Often Problematic)
 
-Features that seem good but create problems.
+Features competitors market heavily that v2.4 deliberately does NOT build — with the boundary each one keeps.
 
-| Feature | Why Requested | Why Problematic | Alternative |
-|---------|---------------|-----------------|-------------|
-| Over-charted reports dashboard (many chart types, pies, gauges, sparklines per row) | "Reports page should look impressive" | DESIGN.md explicitly rejects "generic analytics dashboard" aesthetics; charts multiply maintenance and testing surface, and operators trust tables/stamps over charts. SIGN In App keeps charts subordinate to tables; Envoy's analytics is a separate paid module | Audit-first layout: filterable table + export + max 1-2 summary aggregates (counts by day, per-apartment table). Charts only if a syndic asks |
-| Real-time websocket chart updates on reports | "Live graphs look modern" | Real-time push on a historical-analysis page adds infrastructure (signal channels) for zero operator value; the live stream belongs to the dashboard/gatehouse panel | Static reports with explicit date ranges; refresh button; keep real-time in Shift ledger only |
-| Badge printing | Enterprise VMS table stakes (Envoy, Sign In App) | Requires printer hardware integrations, driver matrix, label stock; no condominium hardware contract exists (same reason camera hardware was delegated to the condominium in v2.0). High cost, low condominium demand | Visitor QR pass / destination stamp in the ledger; defer badge printing until a real condominium requests it (v2.2+ hardware track) |
-| Password reset via reset-token links (email URL tokens) | The modern default; OWASP calls URL tokens "the simplest and fastest implementation" | ControlEasy settled on SMTP temp passwords for admins (PROJECT.md 2026-09-19): the target audience is admin staff with managed inboxes, token-link roundtrip adds a frontend reset page + token storage + expiry UI for a flow already covered by the existing temp-password + `MustChangePassword` mechanism from staff lifecycle | Temp password email (one-time, forced change re-armed) — matches existing tenant staff lifecycle machinery; revisit token links if gatekeeper self-service is ever added |
-| Self-registration / visitor self-service portals | Trendy in hotel-style VMS | Condominium visitors don't self-register; the porteiro registers. Self-service multiplies attack surface (anonymous data entry into tenant-scoped tables) | Pre-registration by residents/admins via existing `/visits` page |
-| Cross-tenant reporting rollups | Platform admin "sees everything" appeal | Violates tenant isolation spirit; `ITenantAwareLinqFactory` guardrails exist for good reason; a rollup invites accidental cross-tenant leakage into generated DTOs | Platform admin reports stay per-tenant (select the condominium, then scoped data) |
-| Automatic visitor data retention/deletion timers | GDPR-flavored request | Condominiums need audit history (CCTV cross-reference by timestamp is a stated pattern); auto-delete breaks the append-only audit philosophy already established (ConsentAuditLog, AccessEvents) | Explicit admin-triggered archival/export; retention policy decisions belong to tenant admins |
+| Feature | Why Requested | Why Problematic | What to Do Instead |
+|---------|---------------|-----------------|--------------------|
+| Anonymous visitor self check-in **from the visitor's own phone** (public link) | Every enterprise kiosk product (elia, ClearID "check-in from phones, no kiosk hardware", Offision) offers phone-first check-in; visitors expect it | A CPF is a commonly known identifier — document-as-authorization; no evidence of physical presence; anonymous requests have no tenant bootstrap; success responses disclose identity (F01/F11). This is the exact attack surface the review's P0 verdict froze scope over | Supervised lane: gatehouse-authenticated session, tenant-bound, porteiro present. Visitor-phone path deferred until a delivery channel exists |
+| Real-time remote release from the resident's phone at the moment of arrival (videochamada / "liberar acesso") | The Brazilian default — Porter, CondPlus, eCondos all center on it; moradores expect "eu autorizo agora pelo app" | Requires two-way comms (interfonia/push/WhatsApp — out of scope by PROJECT decision); makes the resident the gatekeeper, conflicting with the settled staff-first posture; also F11: phone approval ≠ evidence of arrival at the gate | Pre-registration ahead of time + porteiro-confirmed arrival; the resident's control point is *what is pre-authorized*, not *when the door opens* |
+| Facial biometric self-enrollment in the resident app (photo → face credential) | The headline feature of Porter, Condfy, MaqPronAPP | LGPD sensitive data with the strictest treatment (AABIC guide); liveness/matching/enrollment needs an approved separate specification; existing arch test fails the build on biometric keywords (`FacialBiometricReserved = 99`) — constitutional | Document/CPF + QR per v2.4; biometric remains reserved for a future approved spec (v2.5+ hardware track is separate) |
+| Badge printing as a hardware integration (thermal printers, Brother QL driver matrix, kiosk enclosures) | ClearID/Genea ship printer configs as core setup docs; "hardware badge printing" reads as professional | Driver matrix + label stock + hardware contract the project doesn't have; repeats the exact reason camera hardware was delegated to the condominium in v2.0 | Browser-print of a staff-triggered badge page (F15); any printer the gatehouse prints any web page on will do |
+| Push notifications / WhatsApp / e-mail delivery of arrivals in v2.4 | Segment norm (MaqPronAPP, Porter, CONDO+ "compartilha autorizações via WhatsApp") | WhatsApp Business API: Meta approval + per-tenant numbers (settled PROJECT out-of-scope); push is native-mobile — resident app is web/portal-only (settled out-of-scope: v2.4 = in-app notifications) | In-app durable inbox + polling; revisit when mobile/push exists |
+| Resident self-registration & cadastro autonomy (residents editing household members, vehicles, pets) | Aplicativo Acesso markets "condôminos são responsáveis pelos seus cadastros"; Condomob titular adds moradores | Explodes the resident role's blast radius before the deny matrix (RES-13) exists; move-out/membership semantics are unresolved (F07 — apartment reassignment, shared JWT) | v2.4 resident role stays minimal (read history, pre-reg CRUD, notifications); resident-record edits stay TenantAdmin/staff |
+| Unbounded recurring authorizations ("recurring weekly maid pass" without explicit bounds) | Natural request for frequent service providers | Multi-day windows + "exhausted use" invite recurrence assumptions that change the lifecycle and DB contract (F04) | `max_uses` inside the validity window (default 1); recurrence deferred until modeled explicitly |
+| Over-charted resident dashboard (occupancy graphs, pie charts in the portal) | "Portal should look modern" | Same objection as v2.1 reports: operators and residents trust lists/stamps over charts; multiplies test surface | Simple counts + chronological history; charts only if a syndic asks |
 
 ## Feature Dependencies
 
 ```
-[Unified Shift ledger (Visits + AccessEvents stream)]
-    └──requires──> [One data model: walk-ins → Visits rows]
-                          └──requires──> [Visitor QR scan → Visit creation/check-in]
+[Phase 27: Resident Access Foundation]
+    ├──requires──> [RES role in JWT + apartment-scope derivation (server-side)]
+    │             └──requires──> [RES-13 deny matrix: every staff endpoint declares role policy]
+    │                            (MUST land before ANY resident-facing surface exists — Codex F02)
+    ├──requires──> [TenantAdmin provisioning + MustChangePassword re-arm + suspended-status
+    │               per-request check]              (F06)
+    └──requires──> [Apartment membership rules: single apartment per portal identity in v2.4,
+                    household co-resident scope, move-out = lose portal + cancel pendings] (F07)
 
-[Reports & history page /reports]
-    └──requires──> [One data model (Visits as single operational record)]
-    └──requires──> [Unified ledger read model (ReportReadRepository extension)]
-    └──enhances──> [CSV export (reuse Phase-13 pattern)]
+[Phase 28: Visitor Pre-Registration & Purpose Codes]
+    ├──requires──> [Apartment-owned pre-reg entity + validity window + max_uses + derived expiry] (F04)
+    ├──requires──> [Typed canonical document identity (CPF check-digit) for matching] (F08)
+    ├──requires──> [Purpose codes: immutable identity + label snapshot] (F18)
+    └──enhances──> [Plate as normalized informational snapshot — no vehicle grant] (F17)
 
-[Gatehouse panel consolidation]
-    └──requires──> [Visitor QR scan → Visit]
-    └──requires──> [Walk-in → Visits]
+[Phase 29: Visitor Self Check-In Lane]
+    ├──requires──> [Phase 28 pre-regs + pre-auth codes (OpaqueTokenIssuer verifier-only)] (F05)
+    ├──requires──> [Gatehouse-authenticated session/tenant bootstrap — no anonymous route] (F01)
+    ├──requires──> [Consent/policy gates unchanged; actor kind Visitor@Lane] (F11)
+    ├──requires──> [Atomic compare-and-consume + Visit linkage in canonical transaction] (F10)
+    ├──requires──> [Badge: AccessCredential reuse, browser-print page, staff-authorized reprint] (F12/F15)
+    └──requires──> [Staff fallback: expired/lost-badge/next-day recovery; checkout stays staff-only] (F16)
 
-[Password self-service (admins)]
-    └──requires──> [SMTP delivery (new dependency)]
-    └──requires──> [MustChangePassword mechanism (exists from staff lifecycle)]
-    └──independent of──> [Visits unification + Reports]   (parallel track)
+[Phase 30: Resident Visibility, Notifications & Gatehouse Panel]
+    ├──requires──> [Committed arrival identity from Phase 29 path — notification tied to it, no double-notify on replay] (F14)
+    ├──requires──> [Apartment-scoped history endpoint (existing unified ledger read model)] (RES-03)
+    └──requires──> [Shared clock contract (Phase 19 tenant-day basis) for windows/expected-today/badge validity] (F13)
 
-[Admin reset (platform + tenant scoped)]
-    └──requires──> [MustChangePassword + one-time temp password (exists)]
-    └──requires──> [Audit logging of reset actions]
-
-[Badge printing] ──conflicts──> [Hardware-free v2.x constraint]
-[Purpose codes] ──enhances──> [Reports per-day breakdown]
+[RES-14 PII masking & log redaction] ──cross-cutting──> lands with each surface, not deferred to a final phase
 ```
 
-### Dependency Notes
+**Dependency notes:**
+- **Deny matrix is a trust precondition, not a feature.** Phase 27 must complete RES-13 before any resident JWT exists in production — the negative suite is what makes every later surface safe to add.
+- **The lane (Phase 29) is the highest-risk phase** — six gap-review findings are consumed at once (F01, F05, F08, F10, F11, F12, F16); it should not start before Phase 28's pre-reg identity contract is verifiable via tests.
+- **Notifications are cheap only after atomicity.** Emitting from `VisitorArrivalHandler`'s committed transaction means Phase 30's notification quality is Phase 29's transaction quality.
+- **No external dependencies** — the whole feature set rides existing machinery: unified `VisitorArrivalHandler` (v2.1), unified ledger read model (v2.1), `AccessCredential`/`OpaqueTokenIssuer` (qr-entrance-exit-access), password machinery + SMTP (v2.1), consent gates (v2.0).
 
-- **Unified ledger requires one data model:** the ledger currently reads `Visits + ConsentAuditLog` and misses QR scans entirely (`.planning/notes/integrated-visits-flow.md`); without walk-ins and visitor QRs landing in Visits, the unified stream is a lie. Order: QR→Visit and walk-in→Visit must land before ledger extension is meaningful.
-- **Reports page depends on ledger read model:** `/reports` consumes the same `ReportReadRepository` extension the Shift ledger uses; building reports first would force a second read-model refactor.
-- **Password management is an independent track:** no data dependency on visits; can be phased in parallel or as its own phase without blocking.
-- **MustChangePassword already exists:** tenant staff lifecycle (commit `55377a0`) shipped temp-password creation with the forced-change flag — the password features are mostly re-arm + SMTP + UI, not new auth machinery.
-- **Badge printing conflicts with hardware-free constraint:** v2.0 settled "browser-only, client-side compression; cameras belong to the condominium" — the same logic applies to badge printers.
+## MVP Recommendation
 
-## MVP Definition
+### Launch With (v2.4 — all four phases, ordered)
 
-### Launch With (v1 — this milestone)
+- [ ] RES-13 deny matrix + resident role/provisioning (Phase 27) — unlocks everything safely
+- [ ] Pre-reg CRUD: validity window + `max_uses` + purpose codes + CPF canonical matching (Phase 28)
+- [ ] Supervised self check-in lane: codes, pre-regs, consent, atomic consume, badge print page, staff fallback (Phase 29)
+- [ ] Resident apartment-scoped history + arrival notifications + porteiro panel surfacing of pending pre-regs & document matching (Phase 30)
 
-- [ ] Visitor QR scan → Visit create/check-in — makes the ledger honest; unmatched scans currently invisible
-- [ ] Walk-in registration → Visits (direct `CheckedIn`) — collapses the entry-log silo; ConsentAuditLog reverts to privacy role
-- [ ] Unified Shift ledger read model (Visits + visitor AccessEvents) — the dashboard's honest stream and the reports page's data source
-- [ ] Consolidated gatehouse panel at `/gatehouse` (scan, manual, walk-in, check-in/out) — one operator surface; `/visits` becomes admin management/reporting
-- [ ] `/reports` page with date range, visit counts by day, residents per apartment, unified history table + CSV export — fixes dead `/reports` link (dashboard.page.ts:178)
-- [ ] Forgot-my-password on login (admins only, temp password via SMTP, enumeration-safe, rate-limited)
-- [ ] Admin reset: platform admin → any user; tenant admin → own gatekeepers (one-time temp password, `MustChangePassword` re-armed, audit-logged)
+### Explicitly Defer (with triggers)
 
-### Add After Validation (v1.x)
-
-- [ ] Purpose codes / visit-type stamps — trigger: syndics asking to segment guest vs delivery traffic in reports
-- [ ] Pre-registration matching by document key — trigger: porteiro workflow feedback that CPF lookup beats name lookup
-- [ ] "On-site now" occupancy counter surfaced on gatehouse panel — trigger: operator demand for roll-call during drills
-- [ ] Resident-facing visit history (read-only, own unit) — trigger: resident feature requests once data unified
-
-### Future Consideration (v2+)
-
-- [ ] Badge printing — defer: hardware integrations, no condominium demand signal yet
-- [ ] Reset-token link flow for gatekeeper self-service — trigger: gatekeeper churn creating admin reset burden
-- [ ] Host/resident notifications (email/push) on check-in — trigger: after resident-facing surface exists
-- [ ] Scheduled report email digests — trigger: syndic workflow maturity
-
-## Feature Prioritization Matrix
-
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| Visitor QR → Visit create/check-in | HIGH | MEDIUM | P1 |
-| Walk-in → Visits (direct CheckedIn) | HIGH | LOW-MEDIUM | P1 |
-| Unified Shift ledger stream | HIGH | MEDIUM | P1 |
-| Consolidated gatehouse panel | HIGH | MEDIUM | P1 |
-| Ledger filtering + search | HIGH | MEDIUM | P1 |
-| `/reports` page (date range, counts, history, CSV) | HIGH | MEDIUM | P1 |
-| Forgot-my-password (admins, SMTP) | HIGH | MEDIUM | P1 |
-| Admin reset (platform/tenant scoped) | HIGH | LOW-MEDIUM | P1 |
-| State stamps + handover interaction polish | MEDIUM | LOW | P2 |
-| Purpose codes | MEDIUM | LOW | P2 |
-| Pre-registration document matching | MEDIUM | LOW-MEDIUM | P2 |
-| "On-site now" counter | MEDIUM | LOW | P2 |
-| Resident visit visibility | MEDIUM | LOW-MEDIUM | P3 |
-| Badge printing | LOW | HIGH | P3 |
-| Real-time report charts | LOW | MEDIUM | P3 (anti-feature — avoid) |
-
-**Priority key:**
-- P1: Must have for launch
-- P2: Should have, add when possible
-- P3: Nice to have, future consideration
+- [ ] Visitor-phone self check-in — trigger: a delivery channel decision (WhatsApp is parked; Meta approval)
+- [ ] Remote real-time resident release — trigger: two-way comms scope; conflicts with staff-first gatekeeper posture today
+- [ ] Facial biometric — trigger: approved privacy/enrollment/liveness spec (constitutional)
+- [ ] Lista de banidos — trigger: síndico demand; composes with refused-scan machinery (strong v2.5+ candidate)
+- [ ] Resident cadastro autonomy — trigger: after RES-13 proves out in production and F07 membership semantics are settled
+- [ ] Badge/authorization retention duration — owed a legal/product review (already an open flag in PROJECT.md)
 
 ## Competitor Feature Analysis
 
-| Feature | Envoy (workplace VMS leader) | Sign In App (mid-market VMS) | Our Approach |
-|---------|------------------------------|------------------------------|--------------|
-| Visitor log | Central audit-ready visitor log, exportable reports | Online portal with history, advanced search/filter, CSV export | Unified Shift ledger = Visits + visitor AccessEvents, one chronological stream, per DESIGN.md |
-| Walk-in registration | Kiosk/tablet sign-in with custom fields | Mobile/kiosk sign-in with custom fields | Gatehouse operator panel walk-in → direct `CheckedIn` Visit |
-| Pre-registration | Invites, QR codes, group invites | Branded email invites + QR, bulk CSV import | Existing `VisitCreateModalComponent` pre-registration; QR scan matches/creates |
-| Identity verification | ID scanning, blocklists, watchlists | ID scan & identity match, global block list | Manual lookup by CPF/document/name/apartment (exists); pre-registered visit matching; blocklist out of scope |
-| Badge printing | Yes (photos, timestamps, host names) | Yes (templates, custom designs) | Anti-feature for now — QR pass + ledger stamps instead |
-| State visibility | Visitor log w/ status; occupancy analytics | Real-time "Today" view; activity dashboard | Shift ledger state stamps (Pending/CheckedIn/CheckedOut) + open-visits count |
-| Host notifications | Core feature (email/SMS/Slack/Teams) | Core feature (email/SMS/Teams/Slack) | Deferred — residents see records; notifications are v1.x+ |
-| Handover | Not a concept (single-tenant desk) | Not a concept | Differentiator: chronological handover trail per DESIGN.md — porteiro-native |
-| Reports | Occupancy analytics, scheduled custom reports | Reporting feature, CSV export | Audit-first: date ranges, per-apartment breakdown, counts by day, CSV; 1-2 aggregates max |
-| Password self-service | Enterprise SSO; admin-managed | Portal login with admin reset | SMTP temp password (admins only) + scoped admin resets; OWASP enumeration-safe rules |
+| Feature | Porter / eCondos / Condfy (BR residential apps) | Gallagher Kenai / Genetec ClearID (kiosk VMS) | ControlEasy Reborn v2.4 |
+|---------|------------------------------------------------|----------------------------------------------|--------------------------|
+| Pre-registration | Core: morador creates invite in app, share via WhatsApp/QR | Core: host-invited pre-reg → QR access pass by email | Apartment-owned pre-reg CRUD; share = resident shows the pre-auth code/QR (no messaging integration) |
+| Check-in moment | Visitor arrives → app-based release or porteiro matches pre-registered list | Kiosk: instant QR scan or self-registration, badge auto-prints | Supervised gatehouse lane + porteiro CPF matching; badge printed on-site |
+| Trust model | Resident is the gatekeeper (remote release); gatehouse observes | Kiosk device is site-trusted; self-registration for walk-ins | Staff is the gatekeeper; resident pre-authorizes; lane is gatehouse-authenticated (deliberate deviation from BR norm) |
+| Use limits | "QR Code único e temporário" (per-invite expiry assumed) | ClearID: check-in allowed up to 1h before event window | Explicit `max_uses` (default 1) + validity window + derived expiry — more explicit than segment norm |
+| Resident history | Histórico de acessos with photo/método/hora | Host dashboard, not resident-facing | Apartment-scoped ledger view, masked documents |
+| Arrival notifications | Push notifications, universal | Host email/SMS on arrival | In-app inbox tied to committed arrival identity (no channel dependency) |
+| Badges | Essentially absent (phone QR is the pass) | Table stakes w/ thermal printers | Reuse `AccessCredential`, browser-print — a middle path neither segment offers |
+| Biometrics | Facial enrollment in-app is the headline | Kiosk facial sign-in optional | Constitutionally reserved (`FacialBiometricReserved = 99`) |
+| LGPD posture | LGPD pages exist; visitor-data retention rarely specified | Enterprise compliance modules | Explicit masking, redaction, verifier-only secrets, retention review flagged |
 
 ## Sources
 
-- Envoy Visitors product page — visitor log, audit trail, badge creation, occupancy analytics, customizable sign-in, ID verification, host notifications (https://envoy.com/products/visitors, fetched 2026-09-19)
-- Sign In App features — portal history w/ search + filters + export, pre-registration, visitor photos, badges, custom data fields, reporting, evacuations (https://signinapp.com/features, fetched 2026-09-19)
-- OWASP Forgot Password Cheat Sheet — enumeration-safe flows, URL tokens vs temp passwords, single-use/expiring tokens, rate limiting, no lockout, no auto-login (https://cheatsheetseries.owasp.org/cheatsheets/Forgot_Password_Cheat_Sheet.html, fetched 2026-09-19)
-- Microsoft Learn — ASP.NET Core Identity: lockout, password policy, security-stamp invalidation (`UpdateSecurityStampAsync` = sign-out-everywhere pattern for admin resets) (https://learn.microsoft.com/en-us/aspnet/core/security/authentication/identity-configuration, fetched 2026-09-19)
-- Repo-internal (HIGH confidence): `.planning/notes/integrated-visits-flow.md` (settled v2.1 decisions), `.planning/todos/pending/integrated-visits-flow.md` (task decomposition), `DESIGN.md` Shift Ledger north star + motion tokens, `PROJECT.md` Key Decisions (v2.1 password: SMTP temp password for admins, one-time, MustChangePassword re-armed), Phase-13 CSV export pattern, tenant staff lifecycle commit `55377a0`
+- Porter (porter.com.br) — "Controle de acesso de prestadores e visitantes" (2026-07): four can't-miss functions (autorização prévia, registro rastreável, regras por perfil, triagem contínua); app features incl. convites via WhatsApp (fetched 2026-10-15)
+- eCondos (econdos.com.br) — aplicativo para condomínios: liberação de visitante via app, QR code flow, resident/portaria channel (fetched 2026-10-15)
+- Condfy/OLiport — residential app marketing: QR Code único e temporário, histórico de acessos, notificações de acesso, status "aguardando aprovação" (fetched 2026-10-15)
+- Acesso Inteligente (acessointeligente.com.br) — one-time visitor passwords, morador notified when guest arrives, lista de banidos, totems de auto-atendimento (fetched 2026-10-15)
+- CONDO+ (docs.urbanworks.com.br) — resident module: convites com QR Code, agenda de visitantes, share via WhatsApp (fetched 2026-10-15)
+- Lello apps (Play Store + lellocondominios.com.br) — autorizar entrada de visitantes, correspondence, vehicle/dependent cadastro; LGPD cartilha (2021): visitor-data minimization, privacy notice at gatehouse (fetched 2026-10-15)
+- MaqPronAPP (maqpronapp.com.br) — onboarding via invite, 5 guest access methods, resident cadastro autonomy (fetched 2026-10-15)
+- Gallagher Kenai docs — "The visitor pre-registration flow" + "Check in at the kiosk": pre-reg → access-pass QR → instant kiosk check-in; walk-in self-registration; link tied to one visitor (fetched 2026-10-15)
+- Genetec ClearID docs — self-service kiosk check-in scenarios (ID/QR/email lookup, duplicate-name disambiguation, badge print), 1h pre-event window (fetched 2026-10-15)
+- elia.io — "Visitor Management Kiosks" (2026-08): pre-reg cuts check-in from 2 min to ~10s; phone check-in via QR; badge/kiosk hardware stack (fetched 2026-10-15)
+- LGPD: AABIC "Guia LGPD Condomínios" (2021), Lello cartilha (2021), Serpro article (2020), Seu Condomínio (2026-05), Diário de Justiça (2025-06) — gatehouse visitor data (nome/CPF/RG/imagem) is regulated personal data; biometrics = sensitive; consent notices at gatehouse; retention must be explicit (fetched 2026-10-15)
+- Repo-internal (HIGH): `.planning/PROJECT.md` v2.4 goal + resolved gap-closure decisions; `notes/v2-4-codex-gap-review.md` (F01–F18, all closures cited above); v2.1 FEATURES.md (carried-over dependency claims)
 
 ---
-*Feature research for: condominium access-control — integrated visits, reports, password management*
-*Researched: 2026-09-19*
+*Feature research for: condominium access-control — resident self-service portal, visitor pre-registration & supervised self check-in (milestone v2.4)*
+*Researched: 2026-10-15*

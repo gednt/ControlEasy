@@ -1,184 +1,115 @@
 # Stack Research
 
-**Domain:** Condominium access-control platform — milestone v2.1 additions (SMTP email, rate limiting, secure temp passwords, unified visits ledger, reports page)
-**Researched:** 2026-09-19
-**Confidence:** HIGH (library versions verified against NuGet/npm/MS Learn on 2026-09-19; integration recommendations cross-checked against actual codebase: `Program.cs`, `Directory.Packages.props`, `docker-compose.yml`, `ReportReadRepository.cs`, `TenantFilterInterceptor.cs`, `package.json`)
+**Domain:** Condominium access-control platform — milestone v2.4 additions (resident portal auth, visitor pre-registration, gatehouse self-service lane, apartment-scoped visit history, in-app arrival notifications, printable badges)
+**Researched:** 2026-10-15
+**Confidence:** HIGH (versions verified against NuGet/npm on 2026-10-15; integration recommendations cross-checked against actual codebase: `Directory.Packages.props`, `package.json`, `Program.cs` rate-limiter wiring, `OpaqueTokenIssuer.cs`, `qr-pass-modal.component.ts`, `device-health.service.ts`, `ReportReadRepository.cs` UNION arms, `TenantDayBoundary.cs`)
 
 ## Recommended Stack
 
-The single biggest finding: **this milestone needs almost no new libraries.** One NuGet package (MailKit), one Compose service (Mailpit), and everything else is already inside ASP.NET Core 8 / .NET 8 BCL / the existing Angular 18 app. The unified ledger needs *zero* new technology — the existing DBTools pattern covers it.
+The headline finding mirrors v2.1: **this milestone needs essentially zero new libraries.** Every v2.4 capability rides machinery that already shipped — BCrypt ≥ 11 password hashing, JWT bearer auth, built-in partitioned rate limiting, `OpaqueTokenIssuer` verifier-only tokens, `BrowserQRCodeSvgWriter` for QR rendering, the `window.print()` + `@media print` badge pattern, the DeviceHealthService polling idiom, and the `UNION ALL` with per-branch predicates read-model precedent. **What NOT to add matters more than what to add** (see dedicated section).
 
 ### Core Technologies
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| MailKit | **4.18.0** (NuGet, published 2026-09-13) | SMTP sending for temporary-password emails | Microsoft's own API docs say `System.Net.Mail.SmtpClient` is "not recommended for new development — use MailKit" (dotnet/platform-compat DE0005). MailKit is MIT, .NET Foundation, targets `net8.0` directly, supports STARTTLS/smtps + all SASL auth, fully async & cancellable APIs. Versions ≤ 4.14.1 carry moderate-severity advisories; **pin ≥ 4.15.1, use 4.18.0 (current, advisory-clean)** |
-| Microsoft.AspNetCore.RateLimiting | **built into ASP.NET Core 8** (shared framework, no NuGet install) | Rate-limit `POST /api/v1/forgot-password` and admin-reset endpoints | Already in the `Microsoft.AspNetCore.App` shared framework this app runs on. Named policies attach to minimal-API endpoints with `.RequireRateLimiting("policy")`; `System.Threading.RateLimiting` (fixed/sliding window, token bucket, concurrency) ships alongside. Zero new dependency, framework-supported, configurable via `IConfiguration` like every other option in this codebase |
-| System.Security.Cryptography.RandomNumberGenerator | **.NET 8 built-in** — `GetString()` / `GetItems<T>()` | Secure random temporary-password generation | `RandomNumberGenerator.GetString(ReadOnlySpan<char> choices, int length)` arrived in .NET 8 and uses **rejection sampling internally — no modulo bias**. This is exactly the fix for the bias present in the existing `PlatformAdminBootstrapService.GenerateRandomString` (`GetBytes(length)` + `bytes[i] % chars.Length`). No package, no new code pattern to learn |
-| DBTools 1.4.3 — `SelectAsync` ×2 + in-memory merge | already in repo | Unified Shift ledger (Visits + AccessEvents as one chronological stream) | The established idiom in `ReportReadRepository.GetDashboardStatsAsync` is already "several `SelectAsync` calls merged, sorted, and truncated in C#". Both tables get **automatic `tenant_id` filtering by the `TenantFilterInterceptor`** with zero manual predicates. See "UNION analysis" below — raw `UNION` via `SelectRawAsync` is *not* worth the interceptor risk |
-| Angular 18 (existing) + hand-rolled CSS/SVG bars | no new packages | Reports page: visit-counts-by-day + residents-per-apartment | The Shift Ledger design system is table/ledger-first; the two report endpoints return tiny aggregate arrays. An HTML table + a ~50-line CSS bar row (design-token colors, `aria-label` with the count) covers both datasets, keeps Karma/Jasmine unit-testable, adds no bundle weight, and honors the `ce-*` component contract |
+| BCrypt.Net-Next | **4.2.0** (NuGet, published ~2026-06, current stable; repo pins 4.0.3) | Hash resident portal credentials — BCrypt cost ≥ 11 maintained per key decision | Resident login is a **new, public-facing authentication surface** — the highest-stakes crypto call in v2.4. 4.2.0 is the current stable (targets net10.0 + netstandard2.0/2.1, so net8.0 resolves cleanly via netstandard2.0; `CentralPackageTransitivePinningEnabled=true` handles pinning). 4.0.3 carries **no known NuGet advisories** — the bump is cheap, optional hygiene, not a blocker. API surface used by the repo (`HashPassword`/`Verify`/`GetHashInformation` work-factor checks) is unchanged |
+| Microsoft.AspNetCore.Authentication.JwtBearer | **8.0.10** (already pinned — no change) | Resident portal JWT issuance + validation, extended with per-request suspended-status revocation check | Resident auth reuses the exact Security-module machinery (15-min access tokens, refresh-token revoke-all, `tenant_id`/profile/role claims). The suspended-status check (deny an already-issued JWT on the very next request after suspension — gap-review F06) is configured via the `JwtBearerEvents.OnTokenValidated` callback or the existing tenant middleware, **not** a new package. The v2.4-specific addition is a lightweight DB status check (or cached profile-version claim) invoked per request for resident-role tokens only |
+| Microsoft.AspNetCore.RateLimiting | **built into ASP.NET Core 8** (no PackageReference) | New named policies for the self-service lane + resident portal: partition on **normalized canonical document**, plus IP/endpoint fallbacks | `Program.cs:186–255` already wires `AddRateLimiter`/`UseRateLimiter` with a fixed-window policy from Phase 18 — v2.4 adds policies in the same block (e.g. `"lane-checkin"`, `"resident-login"`), using `RateLimitPartition.GetFixedWindowLimiter` partitioned on the **validated canonical document** (bounded key per the MS DoS guidance the codebase already respects). Zero dependency. Rejection writes ProblemDetails + `Retry-After` (existing pattern) |
+| OpaqueTokenIssuer | **already in repo** (`AccessControl.Infrastructure.Services`, 32-byte token, HMAC-SHA256 verifier, fixed-time compare) | Pre-auth visitor codes (RES-07/08): verifier-only high-entropy codes on the self-service lane; badges reuse the same `AccessCredential` machinery | Gap review F05/F12 closed this explicitly: codes are **opaque 32-byte base64url tokens, not visitor-typable**, verified with `CryptographicOperations.FixedTimeEquals`. Badge issuance reuses `CredentialLifecycleHandlers` (VisitId-bound `SubjectKind.Visitor`, raw token returned only at issuance, no storage of plaintext). **No second token/QR subsystem** |
+| DBTools 1.4.3 — `SelectRawAsync` with explicit `UNION ALL` arms | already in repo | Apartment-scoped visit history read model (Phase 30) | The v2.1-era caution against raw UNION was **superseded by shipped v2.1 code**: `ReportReadRepository.cs:264–433` runs a single `UNION ALL` query where **every arm carries an explicit `tenant_id = @p0` predicate** (interceptor-safe by construction) with X-Total-Count pagination. The Phase 30 apartment-history endpoint extends this idiom and adds **`apartment_id = @pN` predicates per branch**. `TenantDayBoundary` (Reports.Application/Time) already converts tenant-local days → UTC bounds for validity-window and "expected today" semantics (gap-review F13) |
+| Angular 18 + Tailwind v4 design system + `device-health.service.ts` polling idiom | no new packages | Self-service lane pages, resident portal pages, durable in-app notification poller, badge display | Notification delivery (RES-10) is **portal polling**, decided in the gap review (F14: durable unread/read-state rows, no stream transport). The Phase 26 singleton-poll pattern (`BehaviorSubject` diff in the service, transition dedup, back-off after errors, one HTTP cycle regardless of mounted pages) is the proven in-repo template for a notification inbox with unread-badge counts. Handwritten `*ApiService` classes per the v2.3 precedent (OpenAPI regen deferred, flagged) |
 
 ### Supporting Libraries
 
 | Library | Version | Purpose | When to Use |
 |---------|---------|---------|-------------|
-| (none needed) | — | — | Password hashing (BCrypt.Net-Next 4.0.3, cost ≥ 11), validation (FluentValidation 11.9.0), OpenAPI clients (ng-openapi-gen), and DTO generation are all already present and cover the password-management flows. The reports page consumes the **already-generated but idle** OpenAPI report clients — verify with `npm run openapi-check` |
+| @zxing/browser | **0.1.5** (already pinned — do **not** bump mid-milestone) | **Rendering** the badge QR and any lane pre-auth QR via `BrowserQRCodeSvgWriter` (used by `qr-pass-modal.component.ts:284`) | Current npm version is 0.2.1 (published ~3 months ago), but 0.1.5 has no known vulnerabilities and both the scanner page and pass modal depend on its API. A 0.x major-ish bump mid-milestone is breaking-change risk for zero gain — defer to a hygiene milestone |
+| FluentValidation | 11.9.0 (already pinned) | Validate pre-registration payloads, purpose codes, document formats, validity windows, `max_uses` bounds | Existing validation convention for all Application-layer commands |
+| Mapster | 7.4.0 (already pinned) | DTO mapping for new endpoints | Existing convention |
+| Serilog ( sinks Console/File/Seq, 6.0.0/8.0.3/4.0.2 as pinned) | already in repo | PII masking & log redaction across new personal-data surfaces (RES-14) | Existing redaction-arch-tests infra from v2.1; the v2.4 requirement extends the same masking approach to visitor names/documents/plates and verifier tokens |
+| MailKit | **4.16.0** (already pinned — no v2.4 change) | Only if resident credential provisioning/first-password delivery ultimately routes through email | TenantAdmin-only password recovery + in-person credential provisioning (gate review decision) may need zero new email sends; the existing `IEmailSender`/Mailpit dev machinery covers any that arise. Advisory research from v2.1 stands: never pin below 4.15.1 |
 
 ### Development Tools
 
 | Tool | Purpose | Notes |
 |------|---------|-------|
-| **Mailpit** (`axllent/mailpit`) | Dev SMTP catch-all container for Compose | Verified at source (github.com/axllent/mailpit, 10.4k★, MIT): the actively-maintained successor to MailHog (which is dead — no releases/security updates for years). Single static Go binary; multi-arch Docker images (amd64 **and arm64** — relevant to this repo's arm64 CI task); SMTP on 1025, web UI on 8025; "accept any" SMTP-auth mode; REST API usable from Playwright E2E to assert the temp-password email arrived. No EULA required (unlike Seq) |
-| Mailpit REST API | Integration/E2E assertion of email delivery | `GET /api/v1/messages` returns captured mail; lets `tests/` assert "temp password email was sent to X" without a real SMTP server |
+| (none new) | — | Testcontainers.MySql (4.0.0), NetArchTest (1.3.2), xUnit/FluentAssertions/NSubstitute, Playwright 1.49 + axe-core 4.11.3, Mailpit dev mail, ng-openapi-gen + `openapi-check` — all in place. v2.4 adds **negative integration suites** (deny matrix, RES-13) and fake-clock boundary tests using the existing xUnit/Testcontainers setup; Playwright covers the lane journey/badge print E2E (gap-review F15 demands browser E2E, not API fixtures) |
 
 ## Installation
 
 ```bash
-# Central package management — add to src/Directory.Packages.props:
-#   <PackageVersion Include="MailKit" Version="4.18.0" />
-# Then reference <PackageReference Include="MailKit" /> only in
-# src/BuildingBlocks/ControlEasyReborn.Infrastructure (the MailKit adapter
-# lives there, mirroring the S3StorageProvider pattern).
-
-# No npm installs. No new dev dependencies.
-```
-
-**Compose addition** (`docker/docker-compose.yml`, mirroring the `adminer`/`seq` dev-service pattern):
-
-```yaml
-  mailpit:
-    image: axllent/mailpit:latest
-    environment:
-      MP_SMTP_AUTH_ACCEPT_ANY: "1"   # accept any SMTP credentials in dev
-      MP_MAX_MESSAGES: "500"
-    ports:
-      - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"   # web UI (loopback only, like other dev ports)
-    # SMTP is on container port 1025, reachable from api as hostname "mailpit"
-```
-
-Wire the API to it with environment variables (same pattern as `Db__*`):
-
-```yaml
-  api:
-    environment:
-      Smtp__Host: mailpit
-      Smtp__Port: "1025"
-      Smtp__From: "noreply@controleasy.local"
-      # Production: real host/creds via env vars or Docker secrets (never App.config — policy)
+# Central package management — src/Directory.Packages.props:
+#   Optional hygiene bump (the ONLY .NET change this milestone):
+#     <PackageVersion Include="BCrypt.Net-Next" Version="4.2.0" />
+#   (4.0.3 also acceptable — no known advisories; bump is low-cost, low-risk)
+#
+# Everything else v2.4 needs is already pinned or in the shared framework.
+# No npm installs. No new Compose services. No new dev dependencies.
 ```
 
 ## Alternatives Considered
 
 | Recommended | Alternative | When to Use Alternative |
 |-------------|-------------|-------------------------|
-| MailKit 4.18.0 | `System.Net.Mail.SmtpClient` | Never for new code — Microsoft explicitly discourages it (DE0005: no modern protocol support, sync-heavy design, not recommended) |
-| MailKit direct behind `IEmailSender` | FluentEmail / other mail-abstraction packages | Only if the project later needs many interchangeable senders with templating; an extra dependency tree for one email type (temp passwords) is not justified |
-| Mailpit | MailHog | Never — MailHog upstream is unmaintained (no security updates); Mailpit is its documented successor |
-| Built-in `AddRateLimiter` | AspNetCoreRateLimit (community NuGet) | Only if you later need per-tenant/IP allow-list persistence in DB or complex IP-range rules; built-in partitioned limiters cover forgot-password needs |
-| Two `SelectAsync` + C# merge for ledger | Raw `UNION ALL` via `SelectRawAsync` | Only if a single tenant's `AccessEvents` grows to tens of thousands of rows and per-table paged queries measurably lag — and even then do per-table `ORDER BY ... LIMIT` raw queries with **explicit** `tenant_id` predicates (as `ReportReadRepository.cs:99` already does), not one big UNION |
-| No chart library (table + CSS bars) | ng2-charts 10.0.0 + chart.js 4.5.1 | If stakeholders later demand canvas charts: ng2-charts is the maintained Angular wrapper (current 10.0.0, 332k weekly downloads, standalone `provideCharts()` API, peer `chart.js ^4` — current 4.5.1). ApexCharts rejected: heavier, SVG-difficult to theme against the Tailwind v4 token contract |
+| Hand-rolled canonical document value object (CPF check-digit in ~30 lines of tested domain code) | CPF validation NuGet packages (e.g. `CpfCnpjValidation`-style helpers), or a normalization library | Only if requirements expand to many country-specific document types with per-territory check-digit rules. The gap review (F08) scoped v2.4 to **typed canonical identity + CPF check-digit** — a small, fully testable pure function; a package adds a transitive dependency for math one can test exhaustively |
+| Per-request DB status check for suspended residents (via `JwtBearerEvents.OnTokenValidated` or role-scoped middleware) | Shorter-lived tokens (e.g. 1-min) to approximate revocation, or session-version claims alone | Session-version claims are the right *complement* (cheap on hot path), but the authoritative check for "already-issued JWT denied on next request" must hit the DB (the resident credential is the write surface). Gap review F06 made this an acceptance criterion in Phase 27 |
+| Angular HTTP polling (existing singleton idiom) for arrival notifications | SignalR/WebSocket streams, Server-Sent Events | Only if multi-replica scale-out or sub-second delivery becomes a real product need. v2.4 explicitly chose durable unread/read-state + polling (F14); SSE through Traefik adds proxy buffering/compression config per browser for marginal value |
+| Browser print (`window.print()` + `@media print` print-only card, extending `qr-pass-modal`'s proven CSS) | jsPDF/pdfmake or server-side headless-Chromium/wkhtmltopdf PDF service in Compose | Only if a condominium demands archived PDF badges. That is a whole new Compose service + headless browser runtime for zero product value in v2.4 |
+| Reuse `AccessCredential` + `CredentialLifecycleHandlers` for badges | Second credential subsystem / decorative VisitId-only QR | Never — decided (F12): VisitId-bound, verifier-only, reprint = new staff-authorized print, no plaintext persisted |
+| `max_uses` + validity window consumed at read time; `uses_used` counter checked-and-incremented inside the canonical transaction | Background hosted-service sweep flagging "expired" rows | Never — decided: "expired" is **derived at read time** (window closed), no background sweep; matches the v2.3 heartbeat-derived-status decision class |
 
 ## What NOT to Use
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| `System.Net.Mail.SmtpClient` | Deprecated for new development per Microsoft (DE0005); lacks modern auth/TLS extensions | MailKit `SmtpClient` (`MailKit.Net.Smtp`) |
-| **Raw `UNION` SQL for the ledger** | The `TenantFilterInterceptor` appends `tenant_id = @ctx_tenant` by string-splicing onto the *last* `WHERE` (or end of statement). On a two-arm UNION the injected predicate binds to the **second SELECT arm only** — the first arm would silently lose tenant filtering. Multi-tenant isolation breach risk | Two `SelectAsync` calls (one per table) through `ITenantAwareLinqFactory.Create(_ctx)` — both arms automatically interceptor-filtered, then merge-sort in the handler |
-| MediatR / hosted background queue for email | Policy: no MediatR; handlers registered as scoped services directly | `IEmailSender.SendAsync` awaited inside the handler, wrapped in try/catch → Serilog warning. Enumeration-safe design means SMTP failure must **never** change the HTTP response anyway |
-| Distributed rate limiting (Redis, etc.) | Modular monolith runs as one `api` container; in-memory partitioned limiters are correct at this scale | Built-in `PartitionedRateLimiter` |
-| MailHog, Papercut.SMTP (stale) | Dead or low-activity upstreams | Mailpit |
-| Chart.js / ng2-charts / ApexCharts in v2.1 | Two aggregate endpoints and a ledger-first design system; a canvas lib adds bundle weight, a11y surface (the repo runs `tests/a11y` axe audits), and Karma testing friction for zero product value | Semantic `<table>` + CSS bar rows built from design tokens; revisit only with a concrete chart requirement |
+| SignalR / SSE / any WebSocket infrastructure | F14 decided portal polling; single `api` container makes streams pure complexity: hub auth across resident/staff role policies, WS upgrade buffering config in Traefik, reconnect state machines — all for a delivery SLA polling satisfies (durable rows + seconds-level SLA) | Durable `Notification` rows inserted in the canonical transaction + resident-portal poll on the `device-health.service.ts` idiom |
+| Push services (OneSignal, FCM, native app) | Explicitly Out of Scope ("resident-facing mobile app / push notifications — v2.4 delivers in-app portal notifications only") | In-app unread inbox |
+| Redis / distributed cache or distributed rate limiting | Modular monolith runs as one `api` container; in-memory partitioned limiters and `IMemoryCache` are correct at this scale (documented single-instance tradeoff, consistent with v2.1) | Built-in `PartitionedRateLimiter` + in-process cache |
+| MediatR / hosted background queues | Repo policy: no MediatR; handlers registered as scoped services directly; no second write path | Direct scoped-handler invocation inside the canonical transaction |
+| EF Core / `MySql.Data` (or any non-DBTools data access) | Constitutional/AGENTS.md prohibition | `IAsyncSqlClient` / `Linq<T>` with per-branch tenant predicates |
+| A public/anonymous visitor-phone check-in API | Gap review F01/PROJECT.md decision: self check-in ships as a **supervised, gatehouse-Authenticated self-service lane**; the visitor-phone path is deferred (gated on a parked delivery channel); anonymous endpoints also lack tenant context (`TenantMiddleware` skips anonymous users) | Gatehouse-authenticated lane page where the visitor enters document / verifier code |
+| Server-side QR generation (QRCoder NuGet, `qrcode` npm, badge images rendered by the API) | `@zxing/browser`'s `BrowserQRCodeSvgWriter` already renders QRs client-side in this app (established at qr-pass-modal); a second QR library doubles bundle weight and splits rendering logic | Same `BrowserQRCodeSvgWriter` component |
+| jsPDF / pdfmake / wkhtmltopdf / headless Chromium in Compose | Badge printing is browser print reusing the existing `ce-qr-pass-modal` print pattern — no PDF pipeline needed; a headless-browser Compose service is large new infrastructure | `#printable-badge` + `@media print { body * { visibility: hidden } ... }` + `window.print()` (precedent at `qr-pass-modal.component.ts:225–304`) |
+| Background sweep for expired/consumed pre-registrations | Decided: expired is derived at read time; a sweep adds a timer component with tenant-day clock hazards and no product value | Window-vs-now comparison in the endpoint, using `TenantDayBoundary` for tenant-local day boundaries |
+| `@zxing/browser` 0.2.x upgrade | v0.x library with breaking-change risk across the live scanner page and qr-pass modal; current pinned version has no known vulnerabilities | Defer to post-v2.4 hygiene task |
+| New chart/calendar libraries for the resident history view | Design system is table/ledger-first (same reasoning as v2.1 reports page) | Semantic tables + design-token styling |
+| Identity-scanner hardware, biometric packages | Out of scope (explicit); arch tests fail the build on biometric keywords | Entered document matched against pending authorization |
 
 ## Stack Patterns by Variant
 
-**Email sending architecture (mirror the Storage pattern — it's the proven precedent in this repo):**
+**If the resident portal hits the existing staff endpoint surface (RES-13 deny matrix):**
+- Add explicit role policies (`Policy("TenantStaff")` = TenantAdmin/Porteiro) over *every* existing staff endpoint; resident JWTs get `RequireAuthorization` → forbidden.
+- The deny matrix is a **authorization-policy + negative-integration-test deliverable**, not a library: extend the Security module's policy registration from v2.1 (`role` claim checks) — no new authentication technology.
+- Constant-cost uniform denials: run the BCrypt verify against a decoy hash when the profile is unknown (the `ForgotPasswordHandler`/`LoginHandler` precedent already established the pattern in this codebase — extend, don't reinvent).
 
-- `IEmailSender` interface in `src/BuildingBlocks/ControlEasyReborn.SharedKernel/` (like `IStorageProvider`).
-- `MailKitSmtpEmailSender` in `src/BuildingBlocks/ControlEasyReborn.Infrastructure/Email/` + `SmtpOptions` bound from `Smtp:*` config (like `S3StorageProvider` + `StorageOptions`).
-- Module DI: `AddControlEasyEmail(builder.Configuration)` registered next to `AddControlEasyStorage` in `Program.cs`.
-- `SendAsync` per message: `using var client = new SmtpClient(); await client.ConnectAsync(host, port, SecureSocketOptions.StartTlsWhenAvailable, ct); await client.AuthenticateAsync(...); await client.SendAsync(mime, ct);` — MailKit connections are **not** thread-safe pooled objects; one client per send (temp-password volume is tiny; connection reuse is a non-goal).
-- `NullEmailSender` (logs only) registered in unit/integration test hosts; Playwright E2E can assert via Mailpit's REST API.
-- **Do not** add SMTP to the `/health` healthcheck — an SMTP outage must not take the stack's readiness down; log + uniform-200 instead.
+**If the lane needs rate limiting that survives multi-source abuse (F05 budgets):**
+- Partition on the **normalized canonical document** (bounded, validated key) at the handler level *and* attach a fixed-window named policy at the endpoint; do **not** trust unconfigured `X-Forwarded-For` — the codebase still has **no `UseForwardedHeaders()`** (grep-verified 2026-10-15), so IP buckets would throttle the whole gatehouse LAN as one. If an IP dimension is wanted behind Traefik, add `UseForwardedHeaders` with explicit `KnownProxies` in the same change — that is a *decision this milestone may need once*, still zero packages.
+- Bounded backoff on the verifier (attempt budget per code), and audit-volume caps on refused-attempt logging — all app-level, no packages.
 
-**Rate limiting scheme for forgot-password (concrete):**
+**If atomic consumption must be proven (F10):**
+- Compare-and-consume (`UPDATE ... SET UsesUsed = UsesUsed + 1 WHERE ... AND UsesUsed < MaxUses` rowcount check) + Visit advance + notification insert in **one `IAsyncSqlClient` transaction** through the canonical `VisitorArrivalHandler`; bounded idempotent replay keyed on (preRegistrationId, visitorRequest) — reuses the scan-attempt idempotency precedent (`RecordAccessScanHandler:99–119`). No outbox needed: notification rows are durable *in* the transaction, not asynchronously delivered.
 
-```csharp
-builder.Services.AddRateLimiter(options =>
-{
-    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-    options.OnRejected = /* write ProblemDetails + Retry-After (RFC 7807 policy) */;
-    options.AddPolicy("password-reset", httpContext =>
-    {
-        // Bounded key: validated email, not raw user input (per-MS-docs DoS warning
-        // about unbounded partition keys), plus IP bucket via forwarded headers.
-        var email = /* normalized form body email */;
-        return RateLimitPartition.GetFixedWindowLimiter(
-            $"{email}", _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 3, Window = TimeSpan.FromMinutes(15), QueueLimit = 0
-            });
-    });
-});
-// Program.cs: app.UseRateLimiter(); placed with the middleware chain (endpoint-
-// specific policies must come after UseRouting — minimal APIs route implicitly,
-// so simply place it alongside UseAuthentication/UseAuthorization).
-// Endpoint: .RequireRateLimiting("password-reset")
-```
-
-- **Critical integration fact:** the codebase has **no `UseForwardedHeaders()` anywhere** (grep-verified). Behind Traefik, `Connection.RemoteIpAddress` is the Traefik container IP — IP-partitioned limits would throttle *all* users as one bucket. Add `app.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = XForwardedHeaders.XForwardedFor, KnownProxies = /* traefik network */ })` early in the pipeline, **or** partition primarily on the normalized email (bounded) and let the DB-side one-time-ticket state machine be the real per-account limiter.
-- Application-level backstop (in-handler, not middleware): cap temp-password issues per account per rolling 24h (e.g., 3); on exceed, still return the same 200 body and skip re-emailing.
-
-**Temp-password generation (drop-in, no modulo bias):**
-
-```csharp
-public static class TemporaryPassword
-{
-    // Unambiguous set (no 0/O/o, 1/l/I) — readable when read aloud over the
-    // phone at a gatehouse. 54 symbols → 12 chars ≈ 68 bits, ample for a
-    // one-time password that is force-changed on first login.
-    private static readonly SearchValues<char> Choices =
-        SearchValues.Create("abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789");
-
-    public static string Generate(int length = 12) =>
-        RandomNumberGenerator.GetString(Choices.AsSpan(), length);
-}
-```
-
-- Ensure the generated string satisfies the app's own password policy (check the existing FluentValidation rules — if a symbol class is required, extend `Choices` accordingly) so the forced `MustChangePassword` flow can't reject its own temp password.
-- Existing `RandomNumberGenerator.GetBytes` + modulo sites (`PlatformAdminBootstrapService`, `OpaqueTokenIssuer`, `JwtTokenService`) are out of scope for v2.1, but new code must use `GetString`/`GetItems` (rejection sampling).
-- One-time + re-arm semantics live in the existing Security module (`PasswordHasher` BCrypt cost ≥ 11, `MustChangePassword` flag) — no new library.
-
-**Unified ledger read model (DBTools analysis — question d):**
-
-- DBTools 1.4.3 offers no typed UNION builder; `SelectAsync(fields, table, where, params)` is single-table. The repo's own answer to cross-table views already exists at `ReportReadRepository.GetDashboardStatsAsync` (Visits + ConsentAuditLog merged in C#): **two `SelectAsync` calls, project each `DataRow` to a common `LedgerEntryDto(Timestamp, Kind, Subject, Status, DestinationLabel)`, concatenate, `OrderByDescending(t => t.Timestamp)`, `Take(N)`**.
-- This is *more* correct than a UNION here, not just easier: each query is automatically tenant-filtered by `TenantFilterInterceptor` (it appends `tenant_id = @ctx_tenant` to single-table SELECTs safely), whereas a UNION's trailing injected predicate would bind to only one arm (see What NOT to Use).
-- Extend `GET /api/v1/dashboard/stats`'s read path (`ReportReadRepository`) rather than inventing a new endpoint — the design note's open question resolves the same way: the repository already joins multiple tables; adding the `AccessEvents` arm is a third `SelectAsync` + merge.
-- Volume reality: a shift ledger is bounded by one tenant's daily gate activity (dozens–hundreds of rows) — in-memory merge is the right cost model. Revisit raw per-table paging only on measured evidence.
-
-**Reports page (question e):**
-
-- Consume the existing generated clients (`ng-openapi-gen` output is already present but idle) — `visit-counts-by-day` + `residents-per-apartment` — and fix `dashboard.page.ts:178` routing to `/reports`. No new npm dependency.
-- Chart rendering: `<table>` of `{Date, Count}` with a CSS `width: calc(count / max * 100%)` bar cell, colored from `docs/penpot/tokens.json` tokens. Accessible by construction (data is the table; the bar is decoration with `aria-hidden`). If a sparkline is wanted later, inline SVG polyline from the same data — still zero dependencies.
+**If OpenAPI client generation is applied to v2.4 endpoints:**
+- Follow the v2.3 handwritten-`DevicesApiService` precedent for speed, but note the standing `⚠️ Revisit`: the `openapi-check` gate requires regen before `git diff --exit-code` passes. Either (a) regenerate generated clients for the resident-portal endpoints (they are the stable, long-lived surface) while hand-writing only lane endpoints, or (b) run `npm run openapi-gen` and commit the new generated files — both satisfy the gate; pick in Phase 27 planning, no new tooling either way.
 
 ## Version Compatibility
 
 | Package | Compatible With | Notes |
 |---------|-----------------|-------|
-| MailKit 4.18.0 | .NET 8 ✓ (targets net8.0 + netstandard2.0) | Transitive: MimeKit 4.18.0 + System.Formats.Asn1 10.0.0. Mixing a 10.x BCL package on net8.0 has precedent in this repo (`Microsoft.Extensions.*` 10.0.1 already in `Directory.Packages.props`); `CentralPackageTransitivePinningEnabled=true` handles pinning |
-| MailKit ≤ 4.14.1 | — | Flagged with moderate-severity advisories on NuGet — do not pin below 4.15.1 |
-| Microsoft.AspNetCore.RateLimiting | ASP.NET Core 8 shared framework ✓ | Included in `Microsoft.AspNetCore.App` — no PackageReference needed. (If a *non-web* project ever needs the limiter types directly, add `System.Threading.RateLimiting` 8.0.x explicitly — hedged, MEDIUM confidence on that edge case only) |
-| ng2-charts 10.0.0 (deferred) | chart.js ^4 (peer; current 4.5.1) | Only if charts are adopted later; standalone `provideCharts(withDefaultRegisterables())` registration |
+| BCrypt.Net-Next 4.2.0 | net8.0 ✓ (targets net10.0 + netstandard2.0/2.1); net8.0 resolves via netstandard2.0 | No dependencies. 4.1.0/4.2.0 are the first two releases (4.1.0 ~May 2026, 4.2.0 ~June 2026) after the repo's 4.0.3; API surface used in this repo unchanged. Project is preparing V5 upstream — do not preempt a pre-release |
+| @zxing/browser 0.1.5 (pinned) | @zxing/library 0.21.3 (peer pair, both pinned) | npm current is 0.2.1 (~2026-07/10); stay on 0.1.5 for v2.4 — v0.x, breaking changes between 0.1.x→0.2.x, zero security exposure, used by two live features |
+| Microsoft.AspNetCore.* 8.0.10 (pinned) | .NET 8 runtime | ⚠️ .NET 8 LTS support ends **2026-11-10** — inside v2.4's window but the TFM must NOT change mid-milestone. Log as a post-v2.4 platform task (v2.5 planning should include a .NET 8→10 TFM decision alongside the Angular upgrade question) |
+| MailKit 4.16.0 (pinned) | .NET 8 ✓ | Advisory-clean per v2.1 research (≥ 4.15.1); no v2.4 trigger to bump — do it opportunistically, not as v2.4 scope |
+| MySqlConnector 2.3.7 / DBTools 1.4.3 | .NET 8 ✓ | No new types needed for v2.4; transactions via existing `IAsyncSqlClient` seams |
 
 ## Sources
 
-- NuGet — MailKit 4.18.0 package page (version, dates, target frameworks, advisory flags, SMTP feature list) — fetched 2026-09-19 — **HIGH**
-- Microsoft Learn — `System.Net.Mail.SmtpClient` API reference, Remarks (SmtpClient not recommended; MailKit named; DE0005 reference) — fetched 2026-09-19 — **HIGH**
-- Microsoft Learn — Rate limiting middleware in ASP.NET Core (aspnetcore-8.0 moniker: `AddRateLimiter`, named policies, `RequireRateLimiting`, `PartitionedRateLimiter.Create`, OnRejected, partition-key DoS warning) — fetched 2026-09-19 — **HIGH**
-- Microsoft Learn — `RandomNumberGenerator.GetString(ReadOnlySpan<char>, int)` API reference (net-8.0; rejection-sampling semantics per GetItems docs) — fetched 2026-09-19 — **HIGH**
-- GitHub — `axllent/mailpit` README (maintained successor to MailHog, multi-arch Docker, ports 1025/8025, accept-any auth, REST API) — fetched 2026-09-19 — **HIGH** (verified at source)
-- npm — `ng2-charts` 10.0.0 (current, published ~2026-03, 332k weekly downloads, standalone API, Angular compat table); `chart.js` 4.5.1 (latest) — fetched 2026-09-19 — **HIGH**
-- Codebase (HIGH, read directly): `src/Directory.Packages.props` (CPM, no MailKit/rate-limit packages present), `src/Host/ControlEasyReborn.Api/Program.cs` (middleware chain, no `UseRateLimiter`/`UseForwardedHeaders`), `docker/docker-compose.yml` (service pattern, no SMTP service), `src/Modules/Reports/.../ReportReadRepository.cs` (multi-query merge idiom + `SelectRawAsync` JOIN precedent), `src/BuildingBlocks/.../TenantFilterInterceptor.cs` (predicate injection mechanics → UNION hazard), `src/Host/.../PlatformAdminBootstrapService.cs` (modulo-bias generator precedent), `src/Web/ControlEasyReborn.Web/package.json` (no chart lib, ng-openapi-gen present)
+- NuGet — BCrypt.Net-Next 4.2.0 (current stable, ~2026-06, 62M downloads, netstandard2.0/2.1 + net10.0 targets, no advisories flagged) and 4.1.0 release existence — fetched 2026-10-15 — **HIGH**
+- npm — `@zxing/browser` 0.2.1 current (published ~3 months ago; 0.1.5 in version list; MIT; contains the `BrowserQRCodeSvgWriter` writer API); `@zxing/library` 0.23.0 current vs repo 0.21.3 — fetched 2026-10-15 — **HIGH**
+- Codebase (HIGH, read directly 2026-10-15): `src/Directory.Packages.props` (CPM; BCrypt.Net-Next 4.0.3, MailKit 4.16.0, JwtBearer 8.0.10, no rate-limit packages); `src/Web/ControlEasyReborn.Web/package.json` (@zxing/browser 0.1.5, @zxing/library 0.21.3, no chart/QR/pdf/push/SignalR packages); `src/Host/ControlEasyReborn.Api/Program.cs:186–255` (AddRateLimiter fixed-window precedent, no `UseForwardedHeaders`); `src/Modules/AccessControl/.../OpaqueTokenIssuer.cs` (32-byte base64url token, HMAC verifier, `FixedTimeEquals`); `src/Web/.../qr-pass-modal.component.ts` (BrowserQRCodeSvgWriter QR rendering + `@media print` + `window.print()` badge precedent); `src/Web/.../device-health.service.ts` (singleton polling + transition dedup + back-off idiom); `src/Modules/Reports/.../ReportReadRepository.cs` (shipped `UNION ALL` arms with explicit per-branch tenant predicates, lines 264/295/314/348/404/424/433); `src/Modules/Reports/.../TenantDayBoundary.cs` (tenant-local day↔UTC bounds utility)
+- `.planning/research/STACK.md` (v2.1 research — MailKit advisory floor ≥ 4.15.1, Mailpit dev tooling, rate-limiter DoS-bounded-key guidance, no chart library rationale — all still in force) — **HIGH**
+- `.planning/PROJECT.md` v2.4 section + `.planning/notes/v2-4-codex-gap-review.md` findings F01–F18 (decisions baked into recommendations above: supervised lane, max_uses, apartment-owned, derived expiry, verifier-only codes, atomic compare-and-consume, AccessCredential badge reuse, polling notifications) — **HIGH**
 
 ---
-*Stack research for: milestone v2.1 — integrated visits, reports page, password management*
-*Researched: 2026-09-19*
+*Stack research for: milestone v2.4 — Resident Self-Service & Visitor Experience (STACK decision inputs)*
+*Researched: 2026-10-15*

@@ -1,643 +1,324 @@
-# Architecture Research — v2.1 Integrated Visits & Account Operations
+# Architecture Research — v2.4 Integration into Existing Architecture
 
-**Domain:** Brownfield integration — visits unification, unified ledger, password management (ControlEasy Reborn, ASP.NET Core 8 modular monolith + Angular 18 SPA)
-**Researched:** 2026-09-19
-**Confidence:** HIGH (all claims verified against source in worktree `feat-qr-entrance-frontend-routing`; recommendation confidence noted per section)
+**Domain:** Resident self-service & visitor experience added to a multi-tenant condominium access-control modular monolith
+**Researched:** 2026-10-15
+**Confidence:** HIGH — every claim below is verified by direct reads of the cited source files (code is the top tier of the source hierarchy; no web research needed). Where a placement is a *recommendation* rather than an existing pattern, it is explicitly flagged as such.
 
-> Scope note: this research covers **only how the new v2.1 features integrate with the existing
-> architecture**. It builds on the settled decisions in `.planning/notes/integrated-visits-flow.md`
-> (one data model, visitors-only QR→Visit, entry-log folds into Visits, one gatehouse panel,
-> unified ledger) and turns them into concrete component-level guidance.
+**Question answered:** How do the v2.4 features (Phases 27–30) integrate with the existing architecture? Where do new components live, and which existing seams do they ride?
 
 ---
 
-## Standard Architecture (target state)
-
-### System Overview
+## System Overview (v2.4 features mapped onto the existing monolith)
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ Angular 18 SPA (src/Web/ControlEasyReborn.Web)                               │
-│                                                                              │
-│  /gatehouse (NEW panel page, composed of existing pieces)                    │
-│    ├─ QR scan tab        → POST /api/v1/access-events/scans        (existing)│
-│    ├─ Manual lookup tab  → POST /api/v1/access-events/manual        (existing)│
-│    ├─ Walk-in register   → POST /api/v1/visits (status=CheckedIn)   (NEW use) │
-│    └─ Open visits tab    → GET/POST /api/v1/visits .../checkin|checkout       │
-│  /visits      → management/reporting for admins (modal stays for pre-reg)    │
-│  /reports     → GET /api/v1/reports/*  +  GET /api/v1/reports/history (NEW)  │
-│  /login       → POST /api/v1/security/auth/forgot-password          (NEW)    │
-│  admin pages  → POST /api/v1/security/users|attendant-profiles/…/reset (NEW) │
-└──────────────────────────────────────────────────────────────────────────────┘
-                     │ HTTPS (JWT bearer, tenant_id claim)
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ ASP.NET Core 8 API host (minimal API endpoint classes, DI in Program.cs)     │
-├──────────────────────────────────────────────────────────────────────────────┤
-│ MODULE BOUNDARIES (communication = interface abstractions, one direction)    │
-│                                                                              │
-│  AccessControl.Application                                                   │
-│    RecordAccessScanHandler ──┐                                               │
-│    RecordManualAccessHandler─┤ consume IVisitDirectory (EXTENDED, see (a))    │
-│    AccessEventDestinationResolver ┘                                          │
-│         │  writes                    ▲ writes AccessEvents (unchanged)       │
-│         ▼                            │                                       │
-│  Visits.Application / Domain         │                                       │
-│    Visit entity (+ walk-in factory, see (a))                                 │
-│    IVisitDirectory ← IVisitDirectoryRepository (Visits.Infrastructure)        │
-│    IVisitRepository  ← VisitRepository                                       │
-│                                                                              │
-│  Photos module: ConsentAuditLog stays privacy-consent audit ONLY             │
-│    CreateEntryLogHandler kept for photo/consent capture paths (unchanged)    │
-│                                                                              │
-│  Reports module (CQRS-lite read side, already reads foreign tables directly) │
-│    ReportReadRepository: Visits ∪ AccessEvents ∪ legacy ConsentAuditLog      │
-│    NEW: GetActivityHistoryHandler + GET /api/v1/reports/history              │
-│                                                                              │
-│  Security module (auth ops)                                                  │
-│    ForgotPasswordHandler / ResetPasswordHandler (NEW)                        │
-│    IEmailSender (NEW abstraction) → MailKit infra (NEW)                      │
-│    PasswordResetAttemptRepository (NEW, direct IAsyncSqlClient)              │
-│                                                                              │
-│  Tenants module: staff lifecycle unchanged; platform-admin reset calls       │
-│    Security-side reset handler via endpoint (no new cross-module writer)     │
-├──────────────────────────────────────────────────────────────────────────────┤
-│ MySQL 8 (shared schema, tenant_id columns + TenantFilterInterceptor)         │
-│  Visits | AccessEvents | ConsentAuditLog (append-only triggers)              │
-│  Users | RefreshTokens | PasswordResetAttempts (NEW)                         │
-└──────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────── Angular 18 SPA ─────────────────────────────────────┐
+│  features/portal/*            features/gatehouse/gatehouse-panel.page.ts              │
+│  (NEW resident shell,         (MODIFIED: + pending pre-regs tab, doc-match,           │
+│   residentGuard NEW)           one-click check-in, badge print trigger                 │
+│  features/lane/* (NEW         + features/visits/* (resident pre-reg CRUD NEW pages)   │
+│   self-service lane page)                                                              │
+└──────────────┬────────────────────────────────────────────────────────────────────────┘
+               │ Generated/handwritten API services
+┌──────────────▼───────────── Host (Program.cs) MODIFIED ────────────────────────────────┐
+│ JwtBearer → TenantResolutionMiddleware (EXISTING, untouched)                           │
+│ Authorization: + Resident role policies (MODIFIED policy inventory)                    │
+│ RateLimiter: + lane/resident partitioned policies (MODIFIED)                           │
+│ DI: + residents-portal / preregistration registration (MODIFIED)                       │
+└──────────────┬─────────────────────────────────────────────────────────────────────────┘
+               │
+┌──────────────▼── Modules (Clean Architecture each: Domain/Application/Infrastructure/Api)
+│ Security  (MODIFIED: resident login branch, roles)                                     │
+│ Residents (MODIFIED: portal auth surface + scoped directory)   ← Phase 27 core          │
+│ Visits    (MODIFIED handler + NEW PreRegistration/PurposeCode aggregate) ← Ph 28/29/30  │
+│ AccessControl (REUSED: OpaqueTokenIssuer, AccessCredential badges; no module fork)      │
+│ Reports   (MODIFIED: apartment-predicated history branch)      ← Phase 30               │
+└──────────────┬─────────────────────────────────────────────────────────────────────────┘
+               │ ITenantAwareLinqFactory (TenantFilterInterceptor) + TenantContext
+┌──────────────▼── MySQL 8 shared schema (docker/mysql/migrations, next: 23-/0023-) ──────┐
+│ NEW tables: visitor_pre_registrations, purpose_codes, resident_notifications            │
+│ NEW columns: users/roles "Resident"; visits.pre_registration_id (+ purpose snapshot)    │
+│ REUSED tables: users, residents, access_credentials, visits, access_events,             │
+│                refused_scan_attempts, credential_lifecycle_actions                      │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Component Responsibilities — New vs Modified
-
-| Component | Status | Responsibility | File(s) |
-|-----------|--------|----------------|---------|
-| `IVisitDirectory` | **MODIFY** (extend) | Add visitor check-in-or-create operation (see decision (a)) | `src/Modules/Visits/.../Application/Abstractions/IVisitDirectory.cs` |
-| `VisitDirectoryRepository` | **MODIFY** | Implement the new directory method(s) | `src/Modules/Visits/.../Infrastructure/Persistence/VisitDirectoryRepository.cs` |
-| `Visit` entity | **MODIFY** | Walk-in factory landing directly `CheckedIn` (state machine today only enters CheckedIn from Pending) | `src/Modules/Visits/.../Domain/Entities/Visit.cs` |
-| `RecordAccessScanHandler` | **MODIFY** | On visitor + Entrance: create-or-check-in Visit (today only checks in pre-existing Pending) | `src/Modules/AccessControl/.../Handlers/RecordAccessScanHandler.cs:196-199` |
-| `RecordManualAccessHandler` | **MODIFY** | Same visitor fold-in for the manual-lookup entrance path | `src/Modules/AccessControl/.../Handlers/RecordManualAccessHandler.cs:124-127` |
-| `CreateVisitHandler` / `VisitEndpoints` | **MODIFY** (small) | Accept a gatehouse walk-in creation flavor that lands `CheckedIn` (see (b)) | `src/Modules/Visits/.../Handlers/CreateVisitHandler.cs`, `VisitEndpoints.cs` |
-| `POST /api/v1/entry-log` | **MODIFY** (re-scope, not delete) | Stops being the walk-in write path from the gatehouse panel; stays as the consent/photo audit recorder (privacy role). Kept for the Audit page + CSV export | `src/Modules/Photos/.../Api/Endpoints/EntryLogEndpoints.cs` |
-| `ReportReadRepository` | **MODIFY** | Ledger merge: Visits + visitor AccessEvents (+ legacy ConsentAuditLog segment) into one chronological stream; drop the fragile try/catch ConsentAuditLog merge in `GetDashboardStatsAsync` | `src/Modules/Reports/.../Infrastructure/Persistence/ReportReadRepository.cs:65-179` |
-| `ReportEndpoints` | **MODIFY** | New `GET /api/v1/reports/history` (paged unified stream); `GET /api/v1/dashboard/stats` DTO updated | `src/Modules/Reports/.../Api/Endpoints/ReportEndpoints.cs` |
-| `ReportDtos` | **MODIFY** | New `ActivityHistoryItem` / paged response records | `src/Modules/Reports/.../Application/Contracts/ReportDtos.cs` |
-| `ForgotPasswordHandler`, `ResetPasswordHandler`, admin-reset handlers | **NEW** | Password flows (see (d)) | `src/Modules/Security/.../Application/Handlers/` |
-| `IEmailSender` + MailKit implementation | **NEW** | SMTP delivery, no-op in demo mode | `Security.Application/Abstractions/`, `Security.Infrastructure/Services/` |
-| `PasswordResetAttemptRepository` | **NEW** | Rate-limit state, per-email + per-IP windows | `Security.Infrastructure/Persistence/` |
-| `User` entity | **MODIFY** | Add `ResetPassword(hash)` that sets hash **and** arms `MustChangePassword` (existing `SetPasswordHash` does **not** — verified) | `src/Modules/Security/.../Domain/Entities/User.cs:45-49` |
-| `IRefreshTokenRepository` | **MODIFY** | Add `RevokeAllForUserAsync(userId)` so a reset invalidates live sessions | `Security.Application/Abstractions/IRefreshTokenRepository.cs`, `RefreshTokenRepository.cs` |
-| `SecurityEndpoints` | **MODIFY** | `POST /auth/forgot-password` (AllowAnonymous), reset endpoints | `src/Modules/Security/.../Api/Endpoints/SecurityEndpoints.cs` |
-| `SecurityModuleServiceCollectionExtensions` | **MODIFY** | Register new handlers, `IEmailSender`, validators | `Security.Infrastructure/DI/` |
-| MySQL migrations | **NEW** | `PasswordResetAttempts` table; ledger index on `Visits(CreatedAtUtc)` (missing today — verified `06-visits-schema.sql`); cutoff marker for legacy ledger segment | `docker/mysql/migrations/00xx-*.sql` + `init/` mirror |
-| `GatehousePage` (Angular) | **NEW** (thin page) | Operator panel composing existing components; replaces `EntryWorkflowPage` | `src/Web/.../features/gatehouse/gatehouse.page.ts` |
-| `CeEntryWorkflowComponent` | **MODIFY** or **RETIRE** | Walk-in submit repointed from `POST /api/v1/entry-log` to `POST /api/v1/visits` (CheckedIn), or superseded by panel's walk-in tab | `src/Web/.../design-system/components/entry-workflow/entry-workflow.component.ts:809` |
-| `reports.page` + `reports-api.service` | **NEW** | `/reports` route (counts by day, residents per apartment, unified history); fixes dead `dashboard.page.ts:178` link | `src/Web/.../features/reports/` |
-| `app.routes.ts` | **MODIFY** | Add `reports` route; keep `/gatehouse/*` routes; keep `**`→login | `src/Web/.../app.routes.ts` |
-| OpenAPI client | **REGENERATE** | `npm run openapi-check` must pass; `dashboard-api.service.ts` types updated | `src/Web/.../app/api/`, `features/dashboard/dashboard-api.service.ts` |
+Key structural fact: **no new module is created.** v2.4 is a per-module extension of the existing five modules (Security, Residents, Visits, AccessControl, Reports) plus two new tables in the Visits aggregate and one in the notification slice. This mirrors how v2.3 extended Devices without forking anything from the ledger.
 
 ---
 
-## The Five Integration Decisions
+## Component Responsibilities
 
-### (a) Visitor QR scan → Visit rows: creation logic lives in **Visits**, consumed by AccessControl via the existing abstraction
-
-**Verdict: extend `IVisitDirectory` — do NOT put Visit-creation logic in AccessControl.**
-
-The established pattern is unambiguous and already used by three handlers:
-
-- `RecordAccessScanHandler`, `RecordManualAccessHandler`, `LookupSubjectHandler`, and
-  `AccessEventDestinationResolver` all consume
-  `ControlEasyReborn.Modules.Visits.Application.Abstractions.IVisitDirectory`, whose
-  implementation (`VisitDirectoryRepository`) lives in Visits.Infrastructure and is registered in
-  `AddVisitsModule()`. AccessControl never touches the Visits table directly.
-- This mirrors how AccessControl consumes `IResidentDirectory`, `IVehicleDirectory`,
-  `IApartmentDirectory` — consumer-side interface, producer-side implementation. The interface
-  lives in the *producing* module's Application layer.
-
-Why creation must be in Visits, not AccessControl:
-
-1. **The Visit state machine is Visits domain knowledge.** `Visit.CheckIn` enforces
-   `Pending → CheckedIn`; `Visit`'s constructor validates destination snapshots
-   (`ApartmentId != Guid.Empty`, non-empty `DestinationBlock/Unit` — `Visit.cs:34-36`). A walk-in
-   that lands directly `CheckedIn` (recommended below) is not expressible through any current
-   method: `CheckIn` throws on non-Pending. Visits must own a new domain method/factory, e.g.
-   `Visit.RegisterWalkIn(...)` (lands `CheckedIn`, stamps `CheckedInAtUtc`, attendant, gatehouse)
-   — AccessControl has no business encoding these rules.
-2. **"Visits is the single operational record"** (settled decision) means Visits owns write
-   semantics; AccessControl should only *request* them.
-3. The required data is already at the call site: after `_resolver.ResolveAsync(...)` the handler
-   holds `DestinationResolution` (ApartmentId, Block, Unit) and the credential carries
-   `SubjectType=Visitor`, `SubjectId`. That is exactly what a Visit row needs.
-
-**Concrete change:**
-
-```csharp
-// Visits.Application/Abstractions/IVisitDirectory.cs — extend, don't rename
-public interface IVisitDirectory
-{
-    // existing members unchanged...
-    Task<bool> CheckInAsync(Guid tenantId, Guid visitId, Guid attendantProfileId, Guid? gatehouseId, CancellationToken ct);
-
-    // NEW: single entry point for "visitor physically present now".
-    // If a Pending visit exists for the subject (visitor credential subjectId == visitId),
-    // check it in; otherwise create a CheckedIn visit with the resolved destination.
-    Task<Guid> CheckInOrCreateAsync(
-        Guid tenantId,
-        Guid visitIdOrSubjectId,
-        string visitorName,
-        string visitorDocument,
-        Guid? apartmentId, string destinationBlock, string destinationUnit,
-        Guid attendantProfileId, Guid? gatehouseId,
-        CancellationToken ct);
-}
-```
-
-`RecordAccessScanHandler.cs:196-199` and `RecordManualAccessHandler.cs:124-127` then call
-`CheckInOrCreateAsync` instead of the bare `CheckInAsync`. Name/document for the create branch:
-the credential issuance flow already carries visitor identity (name/document captured at lookup /
-credential issue); the handler passes what it has. Unmatched visitors whose name is unknown still
-create a Visit with the lookup-provided label rather than silently vanishing from the ledger —
-this is the actual bug being fixed.
-
-**Keep the optional-dependency pattern** (`IVisitDirectory? visits = null` in handlers with
-`NullLogger`-style defaults): unit tests construct handlers without it. Making the new call path
-null-guarded preserves those tests; but *do* tighten DI so the real implementation is always
-registered (it already is: `VisitsModuleServiceCollectionExtensions.cs:23`).
-
-### (b) Entry-log fold-in: re-scope the endpoint to consent-audit only; **no dual-write**; time-cutoff for the legacy ledger segment
-
-**Verdict: keep `POST /api/v1/entry-log` alive but demoted; the gatehouse write path moves to
-Visits; no data backfill migration.**
-
-Facts that constrain this decision (all verified):
-
-- `POST /api/v1/entry-log` is owned by the **Photos** module (`EntryLogEndpoints.cs`,
-  `CreateEntryLogHandler`) and writes `ConsentAuditLog` — which is **append-only by DB triggers**
-  (`09b-consent-schema.sql:28-40`: UPDATE and DELETE both `SIGNAL SQLSTATE '45000'`). The row
-  cannot be marked "migrated" in place, and rows cannot be deleted or rewritten.
-- `CreateEntryLogHandler` enforces consent semantics: `entered_with_consent` requires a
-  `PhotoId`; `entered_override` is dweller/visitor-only with a required reason; `gatehouse_only`
-  is service-provider-only. Photo + consent policy is a *privacy* concern that must keep working
-  (the consent gatehouse spec and audit page `/audit` + CSV export consume it).
-- The Angular `CeEntryWorkflowComponent` posts to `/api/v1/entry-log` via `EntryLogService`, and
-  five design-system components (`audit-filters`, `audit-row`, `entry-state-badge`,
-  `override-reason`) plus the `/audit` page depend on that service's types.
-
-**Therefore:**
-
-1. **Walk-in registration becomes a Visits write.** The gatehouse panel's walk-in tab posts to
-   `POST /api/v1/visits` with a walk-in flavor that lands directly `CheckedIn` (the person is
-   physically present — matches the lean in the notes). Implementation: extend
-   `CreateVisitRequest` with an optional `CheckInNow` flag (or add `POST /api/v1/visits/walk-in`
-   gatehouse-scoped endpoint that wraps the same handler with `CheckIn` applied) — flag-on-POST is
-   less surface, new endpoint is more explicit. Recommendation: **`POST /api/v1/visits` with
-   `CheckInNow: true`**, validated to gatehouse-capable roles, so pre-registration
-   (`CheckInNow: false`/absent) is byte-identical to today and the endpoint count doesn't grow.
-2. **When a photo/consent state is part of the interaction** (override, consent-refused,
-   service-provider gatehouse-only), the panel *additionally* calls `POST /api/v1/entry-log` —
-   `ConsentAuditLog` reverts to its privacy-consent audit role. This is **not dual-write of the
-   same fact**: the Visit row is the operational record, the ConsentAuditLog row is the privacy
-   evidence. They answer different questions and the append-only triggers make ConsentAuditLog
-   permanently safe to keep.
-3. **No dual-write transition, no redirect shim.** `POST /api/v1/entry-log` keeps its current
-   contract (it still accepts the same body) so the audit/CSV/consent flows are untouched; only
-   the *gatehouse panel stops calling it as the primary record*. Deprecation notice in OpenAPI
-   tags/doc is enough; deletion is a later cleanup once `/audit` migrates to the unified history.
-4. **Legacy ledger segment, no backfill.** Historical walk-in rows live only in
-   `ConsentAuditLog` and cannot be mutated. The unified ledger handles them as a **legacy
-   read-only segment**: rows with `RecordedAt < <cutover-constant>` are included as
-   `kind: 'legacy-entry-log'` rows; rows at/after cutoff are excluded (they would be duplicated by
-   the corresponding Visit rows created post-cutover). The cutoff is a build constant in
-   `ReportReadRepository` (e.g., deployment date constant) — no schema change, no destructive
-   migration, append-only log untouched. *Optional later backfill* (inserting Visit rows for
-   visitor-category legacy entries with `Purpose = 'Walk-in (migrated)'`) is possible precisely
-   because the cutoff makes the two segments disjoint, but is not needed for correctness of the
-   ledger view.
-
-### (c) Unified ledger read model: **single raw UNION query in `ReportReadRepository`** (Reports module), paged server-side
-
-**Verdict: SQL-side UNION via `SelectRawAsync`, not handler-side merge of two queries.**
-
-Why not handler-side merge:
-
-- The current codebase *does* merge in C# (`GetDashboardStatsAsync` concatenates Visits + mapped
-  ConsentAuditLog rows and sorts in memory, `ReportReadRepository.cs:191-194`), but it does so by
-  loading **entire tables** (`whereClause: "1=1"`) — workable for a dashboard top-10, unacceptable
-  for a paged history page.
-- Correct pagination across two sources cannot be done with two independent `LIMIT/OFFSET`
-  queries merged in C# (page boundaries shift as rows interleave).
-
-Why a raw UNION is safe and idiomatic here:
-
-- The Reports module is explicitly **CQRS-lite read-only** and *already* reads other modules'
-  tables directly (`Visits`, `Residents`, `Vehicles`, `Apartments`, `ConsentAuditLog`) via
-  `ITenantAwareLinqFactory` — that is the module's sanctioned role; no new abstraction or
-  cross-module interface is warranted (would contradict the existing design and the
-  "abstraction only at real seams" decision pattern, cf. `IDeviceHandler` rationale in
-  PROJECT.md).
-- `SelectRawAsync` precedent exists in this very repository (occupied-apartments query,
-  `ReportReadRepository.cs:99-102`), with explicit `tenant_id` predicates.
-- Both tables carry `tenant_id` and time columns; both have indexes on tenant+time
-  (`ix_access_events_tenant_time`, `IX_Visits_CheckedInAtUtc`). One missing index:
-  **`Visits` has no index on `CreatedAtUtc`** (`06-visits-schema.sql`) — add it in the migration
-  since the union sorts/pages on occurred-time.
-
-**Shape:**
-
-```
-GET /api/v1/reports/history?from=&to=&kind=&skip=&take=
-→ SELECT * FROM (
-     SELECT Id, 'visit' AS Kind, VisitorName AS Title, Purpose AS Detail,
-            Status AS StateCode, DestinationBlock, DestinationUnit,
-            CreatedAtUtc AS OccurredAtUtc, tenant_id
-     FROM Visits        WHERE tenant_id = @p0 AND CreatedAtUtc BETWEEN @p1 AND @p2
-     UNION ALL
-     SELECT Id, 'access_event', <subject-derived title>, <method/direction detail>,
-            PolicyOutcome, DestinationBlock, DestinationUnit,
-            OccurredAtUtc, tenant_id
-     FROM AccessEvents  WHERE tenant_id = @p0 AND OccurredAtUtc BETWEEN @p1 AND @p2
-        AND SubjectType = <visitor>            -- visitor-only per settled decision
-     UNION ALL
-     SELECT Id, 'legacy_entry_log', SubjectName, EntryState/OverrideReason,
-            EntryState, 'Gatehouse'/NULL, NULL,
-            RecordedAt, tenant_id
-     FROM ConsentAuditLog WHERE tenant_id = @p0 AND RecordedAt < @cutoff
-   ) ledger
-   ORDER BY OccurredAtUtc DESC
-   LIMIT @take OFFSET @skip
-```
-
-- Visitor-only AccessEvents per the settled decision (resident/vehicle scans remain pure
-  security audit; they stay visible in `/audit`-style surfaces and the existing
-  `GET /api/v1/access-events` list, not the visit ledger). If product later wants all access
-  activity, the union is trivially widened — the read model is the right place for that policy.
-- **Counts in `GetDashboardStatsAsync` simplify**: today's visits / open visits now come from
-  Visits alone (walk-ins land there); delete the ConsentAuditLog try/catch block
-  (`ReportReadRepository.cs:152-189`) and the `existingVisitIds` de-dup set — the merge it was
-  working around disappears. Keep the `recentVisits` list shape (`RecentVisitDto`) but source it
-  from the same union (top 10) so the dashboard "arrival record" and the reports history are
-  fed by one code path.
-- Pagination: `LIMIT/OFFSET` on the derived table is fine at condominium scale (hundreds–
-  thousands of events/day/tenant). Keyset pagination (`WHERE (OccurredAtUtc, Id) < (@last, @id)`)
-  is the documented upgrade path if a tenant ever outgrows it — not needed for v2.1.
-- Tenant scoping: explicit `tenant_id = @p0` in every branch (mirrors the existing raw query),
-  since raw SQL bypasses the `TenantFilterInterceptor`.
-
-### (d) Password management: Security module owns flows; **temp-password-via-SMTP (settled), DB-backed rate limiting, global SMTP config**
-
-**Verdict: new handlers in Security; endpoints under `/api/v1/security`; no token table; rate
-limit state in a new DB table; global SMTP config.**
-
-Where endpoints live — Security, not Tenants:
-
-- Security already owns the auth surface: `/auth/login`, `/auth/refresh`,
-  `/auth/change-password` (all anonymous-or-authenticated as appropriate), and
-  `POST /users` (PlatformAdmin-gated) already live in `SecurityEndpoints.cs`.
-- Tenants module owns *staff lifecycle* (create/suspend porteiros) but its handlers hash
-  caller-supplied passwords at creation time (`CreatePorteiroHandler.cs:46`). A *reset* is an
-  account-credential operation with session-invalidation and `MustChangePassword` semantics —
-  Security domain. Cross-module precedent: `RefreshHandler` (Security) already consumes
-  `ITenantAdminRepository` from Tenants, so Security calling Tenants' user-repo abstractions is
-  an accepted direction; the reverse (Tenants minting temp passwords) is not.
-
-Endpoint layout:
-
-| Endpoint | Auth | Handler |
-|---|---|---|
-| `POST /api/v1/security/auth/forgot-password` | AllowAnonymous | `ForgotPasswordHandler` (admins only — resolved by role after email lookup) |
-| `POST /api/v1/security/users/{id}/reset-password` | PlatformAdmin (existing policy) | `AdminResetPasswordHandler` |
-| `POST /api/v1/security/attendant-profiles/{id}/reset-password` | RequireAuthorization + tenant match check in handler | same handler, tenant-scoped branch |
-
-Token vs temp-password: **temp password** (already settled in milestone scoping — PROJECT.md
-"Key Decisions"). Consequences, all cheap given existing machinery:
-
-- `User.ResetPassword(passwordHash)` — **new method required**: `SetPasswordHash` exists but does
-  *not* arm `MustChangePassword` (verified `User.cs:45-49`); `ChangePassword` clears it. The reset
-  method sets hash + `MustChangePassword = true`; the existing login flow already surfaces
-  `MustChangePassword` in `LoginResponse` and the SPA's `changePasswordGuard` forces the change
-  page — so one-time temp passwords and forced rotation come free.
-- One-time semantics: since the temp password is *delivered*, not stored, "one-time" is enforced
-  by `MustChangePassword` (login succeeds once → guard → forced change clears the flag).
-  No token table, no expiry column.
-- Session invalidation: add `RevokeAllForUserAsync(Guid userId)` to `IRefreshTokenRepository`
-  (currently only `RevokeAsync(entry)` exists) so a reset kills live refresh sessions.
-
-Anonymous-flow wrinkle (important, easily missed): `forgot-password` has **no JWT**, so
-`HttpTenantContext.TenantId` is null and the tenant-aware factory cannot scope the user lookup.
-Precedent: `RefreshTokenRepository` takes plain `IAsyncSqlClient` (not `ITenantAwareLinqFactory`)
-— Security already has non-tenant-scoped persistence for pre-auth operations. Build
-`PasswordResetAttemptRepository` and the email→user lookup the same way, with **explicit,
-parameterized tenant handling** in SQL. Enumeration safety: the lookup returns the same response
-(204 or generic 200) whether or not the email exists; the email is only sent when the user
-exists *and* is Active *and* is an admin role (`PlatformAdmin` or `TenantAdmin`) — gatekeepers
-(porteiros) are excluded per the settled scope.
-
-Rate-limit state: new `PasswordResetAttempts` table (mirroring `RefreshTokens` placement in
-`05-security-schema.sql` — no `tenant_id` needed since it is keyed by email hash + IP):
-
-```
-Id CHAR(36) PK, EmailHash VARBINARY(32) NOT NULL, RequestIp VARCHAR(45) NULL,
-RequestedAtUtc DATETIME(6) NOT NULL, INDEX ix_pra_email_time (EmailHash, RequestedAtUtc)
-```
-
-Counting recent rows per email-hash (e.g., max 3/hour) and per IP (looser cap) at request time;
-purge rows older than the window on write. DB-backed (not in-memory) because the API container
-scales horizontally behind Traefik and restarts would otherwise reset the window. This is the
-same shape as `RefreshTokens` — no new persistence pattern introduced.
-
-Per-tenant vs global SMTP: **global config** for v2.1 (`appsettings.json` `"Smtp": { Host, Port,
-From, User, Password-from-Docker-secret, EnableSsl }`). Rationale: the platform operator runs one
-SMTP relay; per-tenant SMTP adds secret storage per tenant, per-tenant verification UX, and a
-config surface nobody asked for. The `IEmailSender` abstraction (Security.Application) keeps the
-door open; `Demo.DisableOutboundEmail` (exists today) maps to a no-op/log sender so demo mode
-never emails anyone. MailKit is the standard, maintained SMTP client for .NET 8
-(`System.Net.Mail.SmtpClient` is documented by Microsoft as not recommended for new
-development). No mail dependency exists today (verified — no Smtp/MailKit references in the
-solution), so this is a genuinely new infra leaf, isolated in Security.Infrastructure.
-
-### (e) Angular: **new `/gatehouse` panel page composing existing pieces** — do not stretch `CeEntryWorkflowComponent` further
-
-**Verdict: new thin `GatehousePage` at `/gatehouse` that composes existing feature components;
-repoint the entry-workflow's write target; retire its modal-frame role.**
-
-Current state (verified):
-
-- `/gatehouse` = `EntryWorkflowPage`, which pins `CeEntryWorkflowComponent` full-screen and adds
-  shortcut links to `/gatehouse/qr` and `/gatehouse/manual` (`entry-workflow.page.ts`).
-- `CeEntryWorkflowComponent` is a 800+-line design-system component: category radio group, photo
-  capture, consent states, and the `POST /api/v1/entry-log` submit
-  (`entry-workflow.component.ts:809`). It is also hosted by the dashboard ("Record access"
-  button, `dashboard.page.ts:44-49`).
-- The dashboard separately hosts `VisitCreateModalComponent` ("Add visit"), and `/visits` hosts
-  the same modal for pre-registration.
-
-Why compose rather than extend:
-
-- `CeEntryWorkflowComponent` is a *modal-shaped consent workflow*, not a panel. The unified
-  gatehouse surface needs tabs/sections (scan, lookup, walk-in, open visits) — bolting that onto
-  a modal component means growing an already-large component with the wrong shape, and the
-  dashboard's modal usage would inherit the churn.
-- Every ingredient already exists as a route or component: `qr-scan.page`, `manual-lookup.page`,
-  `VisitCreateModalComponent`, the visits list/check-in-out calls, `DashboardApiService` ledger
-  feed. A new page that *routes within itself* (tabs rendering the existing pages/components)
-  is low-risk and preserves deep links.
-
-Concrete shape:
-
-- `features/gatehouse/gatehouse.page.ts` — standalone, OnPush, tab strip
-  (`Scan QR | Manual lookup | Walk-in | Open visits`), each tab either embedding the existing
-  component or routerLink-ing to `/gatehouse/qr` style child routes for deep-link parity. Keep
-  the existing child routes alive (bookmarks/tests) and render them as tabs.
-- Walk-in tab uses `VisitCreateModalComponent`-derived form posting `CheckInNow: true`
-  (see (b)) — the notes' decision "Dashboard 'Add visit' reuses the gatehouse modal" keeps
-  `VisitCreateModalComponent` as the shared form.
-- `CeEntryWorkflowComponent`: repoint its submit from `EntryLogService.create` to the Visits
-  endpoint **when photo/consent is involved it additionally calls entry-log** — or, if the panel
-  fully replaces it, keep the component for the dashboard "Record access" quick action but with
-  the same repointed writes. Its consent-audit behavior is retained per the todo note ("keep
-  consent-audit behavior").
-- Dashboard: "Add visit" continues to open `VisitCreateModalComponent`; "Record access" becomes
-  a `routerLink="/gatehouse"` (or keeps opening the workflow component with new writes). The
-  dead `routerLink="/reports"` (`dashboard.page.ts:178`) is fixed by actually adding the
-  `/reports` route + `reports.page.ts` in the same milestone.
-- `/visits` loses gatehouse duties: management/reporting list + pre-registration modal
-  (per todo).
-- Generated OpenAPI client: after backend changes, `ng-openapi-gen` regenerates
-  (`prebuild`/`openapi-check` gates it); new `reports-api.service.ts` should consume generated
-  functions (aligning with the documented tech-debt direction of preferring the generated
-  client).
+| Component | Location (canonical path) | Responsibility | v2.4 relationship |
+|-----------|---------------------------|----------------|-------------------|
+| `TenantResolutionMiddleware` | `src/BuildingBlocks/ControlEasyReborn.Infrastructure/MultiTenancy/TenantResolutionMiddleware.cs` | Derives `TenantId/ProfileId/Roles/Permissions` from JWT claims; skips anonymous callers (lines 23–28) | **Unmodified seam.** The lane is gatehouse-authenticated (gap review F01 resolution), so lane requests ride the same authenticated tenant bootstrap — no anonymous tenant bootstrap is built |
+| `TenantAwareLinqFactory` + `TenantFilterInterceptor` | `src/BuildingBlocks/ControlEasyReborn.Infrastructure/MultiTenancy/TenantAwareLinqFactory.cs`, `TenantFilterInterceptor.cs` | Splices `tenant_id` into every module query | **Mandatory ride** for all new repositories; apartment scoping is layered ON TOP of, not instead of, tenant predication (see Pattern 2) |
+| `JwtTokenService` | `src/Modules/Security/.../Persistence/JwtTokenService.cs` | Issues access (15-min default) + refresh tokens; claims: `sub, jti, tenant_id, profile_id, roles, permissions` | **Modified**: resident login flows through it unchanged; no apartment claim is added — apartment scope is resolved per-request server-side (see Pattern 1 and `JwtTokenService.cs:35-47`) |
+| `LoginHandler` + `AttendantProfileLoginSupport` | `src/Modules/Security/.../Handlers/LoginHandler.cs`, `AttendantProfileLoginSupport.cs` | Email→user verify → **active attendant profile resolution** → token. Currently *requires* an attendant/admin profile (`LoginHandler.cs:60-65`) | **Modified**: must resolve the resident profile kind too, else no resident JWT can ever carry `profile_id`; uniform constant-cost denials (unknown/wrong/inactive/revoked same response) |
+| `User.Roles` (comma string) | `src/Modules/Security/.../Domain/Entities/User.cs:18-41` | Coarse role list on user | **Extended**: new `"Resident"` role value; permissions come from the resolved profile, exactly like staff |
+| `VisitorArrivalHandler` | `src/Modules/Visits/.../Handlers/VisitorArrivalHandler.cs` | THE single write path into Visits (dedupe + status transitions, D-01/D-02) | **The spine of Phases 29–30.** Every lane, panel one-click, and badge-bound arrival must pass through `HandleAsync`. Modified to accept an optional pre-registration identity + purpose snapshot |
+| `VisitDirectoryRepository` | `src/Modules/Visits/.../Persistence/VisitDirectoryRepository.cs` | Document lookup (`FindLatestByDocumentAsync` lines 38–55: raw OR normalized match, latest by `CreatedAtUtc`) | **Modified/extended**: new authorization-bound and apartment-bound lookup methods; current method cannot discriminate apartment 101-vs-302 (gap review F03) |
+| `Visit` entity | `src/Modules/Visits/.../Domain/Entities/Visit.cs` | Status machine Pending→CheckedIn→CheckedOut / Cancelled; `CheckIn/CheckOut/Cancel` guards | **Modified**: add `PreRegistrationId` link + purpose-label snapshot (+ optional plate snapshot per F17 resolution). State machine itself unchanged — checkout stays staff-only |
+| `OpaqueTokenIssuer` | `src/Modules/AccessControl/.../Services/OpaqueTokenIssuer.cs` | 32-byte random token → HMAC verifier + fingerprint, `FixedTimeEquals` verify | **Reused as-is** for both pre-auth codes (verifier-only persistence) and badge QRs — *no second token subsystem* (Key Decision, F05/F12) |
+| `RecordAccessScanHandler` | `src/Modules/AccessControl/.../Handlers/RecordAccessScanHandler.cs` | QR scan pipeline: idempotency by scan-attempt (99–119) → credential resolve → destination resolve → **consent policy gate** (156–187) → canonical arrival (190–217) → Event+audit | **Pattern donor, not modified core.** The lane handler *mirrors* its consent-gate + arrival-delegation structure. Devices module already rides it — precedent for a third caller |
+| `AccessCredential` + lifecycle handlers | `src/Modules/AccessControl/.../Entities/AccessCredential.cs`, `Handlers/CredentialLifecycleHandlers.cs` | Verifier-only secrets, validity window (`IsUsableAt`), Issue/Replace/Revoke, lifecycle audit | **Reused as-is** for badges: `SubjectType=Visitor`, `SubjectId=Visit.Id` (established at `RecordAccessScanHandler.cs:197-202`). Reprint = new staff-authorized issue |
+| `ReportEndpoints` / `GetHistoryHandler` | `src/Modules/Reports/.../Endpoints/ReportEndpoints.cs:29-52` | Unified UNION ledger, optional caller-supplied `apartmentId` | **Modified (gate)**: resident tokens forced to their own apartment predicate; optional apartmentId becomes staff-only. This is the RES-09 "honest, same source" delivery |
+| `VisitEndpoints` | `src/Modules/Visits/.../Endpoints/VisitEndpoints.cs:15-17` | `RequireAuthorization()` only — **any authenticated tenant JWT passes** (gap review F02) | **Modified (deny matrix)**: explicit role policy per operation; negative integration suite proves resident tokens get 403. Same treatment for Reports, Residents, Apartments, AccessControl, Devices, Administration staff groups |
+| Rate limiter (`forgot-password` policy) | `src/Host/ControlEasyReborn.Api/Program.cs:186-214` | Process-local fixed-window, partition-keyed | **Cloned** for lane denials, partitioned on a server-normalized document/code value — proxy-header trust decision owed (ForwardedHeaders: F05, currently absent at line 224-259 region) |
+| Gatehouse panel page | `src/Web/ControlEasyReborn.Web/src/app/features/gatehouse/gatehouse-panel.page.ts` | Consolidated tabs (QR, manual, walk-in, open visits); `DeviceHealthService` singleton-poll precedent | **Modified** (Phase 30): + "Pending today" pre-registrations tab, document-match binding, badge print trigger |
+| Angular guards | `src/Web/.../app/core/guards/*.ts` | `porteiroGuard`, `tenantAdminGuard`, `syndicGuard`, `platformAdminGuard` | **Extended**: new `residentGuard`; shell routes get role-tightening because shell `authGuard` alone would let resident JWTs browse staff pages (F02 front-end half — backend deny matrix is the real fix) |
+| Migrations | `docker/mysql/migrations/` (root `00…22-*` + module-migrations `0009…0022-*`) | Numbered schema files | **Extended with 23-/0023-** series in phase order (see build order) |
 
 ---
 
-## Data Flow
+## Recommended Placement of New Components (v2.4)
 
-### Flow 1 — Visitor QR scan (entrance) after the change
+Per-module folders follow the established 4-layer pattern (`Api/Endpoints`, `Application/{Handlers,Contracts,Abstractions,Validators}`, `Domain/{Entities,ValueObjects}`, `Infrastructure/Persistence`).
 
-```
-QR payload → POST /api/v1/access-events/scans
-    → RecordAccessScanHandler (AccessControl)
-        idempotency check (ScanAttemptId) → credential resolve →
-        AccessEventDestinationResolver.ResolveAsync (visitor → IVisitDirectory.FindByIdAsync,
-            or fallback apartment for standalone credential)
-        → consent policy evaluate
-        → AccessEvent.Record + AddAsync            (security audit trail — unchanged)
-        → IVisitDirectory.CheckInOrCreateAsync      (NEW — Visits module creates
-            Pending→CheckedIn or direct CheckedIn Visit row with resolved destination)
-    → ScanResponse (unchanged wire shape)
-```
+### Phase 27 — Resident Access Foundation
 
-### Flow 2 — Gatehouse walk-in after the change
+| Item | Where | New / Modified |
+|------|-------|----------------|
+| Resident profile (apartment-bound, carries permissions) | `src/Modules/Residents/.../Domain/Entities/ResidentPortalProfile.cs` + Infrastructure repo | **New** |
+| `Resident` role string + resolution | `Security` module: `LoginHandler`/`AttendantProfileLoginSupport` + new `IResidentPortalProfileRepository` application abstraction | **Modified** (Security depends on the pattern, Residents owns the data — same cross-module pattern as `RecordAccessScanHandler` consuming `IResidentDirectory`) |
+| Resident scope resolver (server-side apartment derivation + per-request suspend check) | `Residents.Application/Abstractions/IScopedResidentContext.cs` + implementation that reads `profile_id` claim → resident profile → `ApartmentId`, rejecting suspend/stale membership per request | **New** — this is the load-bearing component of the whole milestone; do NOT bake `ApartmentId` into the JWT (stale-token failure mode F07) |
+| Resident-reachable API group | `Residents.Api/Endpoints/ResidentPortalEndpoints.cs` (`/api/v1/portal/*`) | **New** — never extend the existing staff `/api/v1/residents` group |
+| Staff deny matrix (RES-13) | One policy pass over every existing `RequireAuthorization()` group: `VisitEndpoints`, `ReportEndpoints`, Residents/Apartments/AccessControl/Devices/Administration endpoint files | **Modified** + **new negative integration test suite** in `tests/ControlEasyReborn.IntegrationTests` |
+| Program.cs authorization + login rate-limit partitions | `src/Host/ControlEasyReborn.Api/Program.cs` | **Modified** |
+| TenantAdmin provisioning UI + resident login page | `features/administration/*` (modified) + resident shell `features/portal/*`, `resident.guard.ts` | New pages + Modified routes |
 
-```
-Gatehouse panel walk-in tab → POST /api/v1/visits { CheckInNow: true, ... }
-    → CreateVisitHandler: validate → apartment resolve →
-       Visit (Pending) → .CheckIn(...) [CheckedIn, CheckedInAtUtc=now]
-    → ConsentAuditLog row written *only* when a photo/consent state was captured
-       (override / entered_with_consent / gatehouse_only) via CreateEntryLogHandler
-    → dashboard/gatehouse ledger refreshes from unified read model
-```
+**Login architecture recommendation** (flagged: recommendation, settles gap-review F06/F07): mirror the staff structure exactly — a resident portal profile row owned by the Residents module with `ApartmentId` + permission set, resolved by an `AttendantProfileLoginSupport`-style helper in Security. Suspension enforcement = per-request lookup in `IScopedResidentContext` (authoritative DB check each request, 15-min JWT live-expiry covered) + refresh-token revocation on suspend (existing `RefreshTokenRepository` machinery from Phase 18).
 
-### Flow 3 — Forgot password (admin)
+### Phase 28 — Pre-Registration & Purpose Codes
 
-```
-Login page → POST /auth/forgot-password {email}            (AllowAnonymous)
-    → ForgotPasswordHandler:
-        rate-limit check (PasswordResetAttempts by emailHash + IP) → 204-style generic response
-        user lookup (cross-tenant, active, admin role only)
-        temp password generate (cryptographic random) → User.ResetPassword(hash)
-            (MustChangePassword armed, refresh tokens revoked)
-        IEmailSender.SendAsync(temp password)          (no-op when Demo.DisableOutboundEmail)
-    → user logs in with temp password → changePasswordGuard → forced change → flag cleared
-```
+| Item | Where | New / Modified |
+|------|-------|----------------|
+| `VisitorPreRegistration` aggregate (name, canonical document, optional plate snapshot, purpose code ref, window start/end, `max_uses`, `uses_consumed`, status Pending/Cancelled/Consumed, creator/editor audit fields) | `Visits.Domain/Entities/VisitorPreRegistration.cs` + value objects | **New** — Visits module owns it; `AccessControl` and `Reports` reach it only through application abstractions |
+| `VisitorPreRegistrationRepository` | `Visits.Infrastructure/Persistence/` via `ITenantAwareLinqFactory`, tenant + apartment predicated | **New** |
+| `PurposeCode` aggregate + repository + TenantAdmin endpoints | Visits module (table + `/api/v1/purpose-codes` endpoints); immutable code identity, deactivate-not-delete | **New** (place in Visits so the FK lives in-module; the administration UI merely consumes it) |
+| Pre-registration CRUD handlers + resident endpoints | `Visits.Application/Handlers/PreRegistrationHandlers.cs` (4 CRUD), endpoints under `/api/v1/portal/*` (resident) and `/api/v1/pre-registrations` (staff view) | **New** |
+| `VisitorArrivalHandler` | Accept optional `PreRegistrationId`/authorization context on `VisitorArrivalCommand`; bind authorization → resulting VisitId; never auto-resolve same-document cross-apartment conflicts (gate review F03: porteiro disambiguates) | **Modified** — the only Phase-28 touch to the canonical path |
+| `Visit` entity + visit tables | `pre_registration_id`, purpose-code identity + label snapshot columns (F18); plate as informational snapshot (F17) | **Modified** |
+| Migration | `docker/mysql/migrations/23-visits-preregistration.sql` + `0023-…` module file | **New** |
+| Angular | Resident pre-reg CRUD pages (`features/portal/*`), TenantAdmin purpose-code management (`features/administration/*`) | **New pages** |
 
-### Flow 4 — Unified ledger read
+### Phase 29 — Self-Service Lane & Badge
 
-```
-/reports page | /gatehouse panel | dashboard
-    → GET /api/v1/reports/history (paged)  /  GET /api/v1/dashboard/stats
-        → GetActivityHistoryHandler / GetDashboardStatsHandler
-            → ReportReadRepository (Reports module, read-only)
-                single UNION query over Visits + visitor AccessEvents
-                + ConsentAuditLog(RecordedAt < cutoff)
-                explicit tenant_id = @p0 per branch
-```
+| Item | Where | New / Modified |
+|------|-------|----------------|
+| `LaneSelfCheckInHandler` | `Visits.Application/Handlers/` | **New** — orchestrator that (1) resolves the pre-auth code via `IOpaqueTokenIssuer`/verifier lookup **or** document via new apartment/authorization-discriminated directory method, (2) validates window/cancelled/uses with compare-and-consume, (3) evaluates consent via the *existing* `IConsentPolicyEvaluator` seam (mirroring `RecordAccessScanHandler.cs:156-187`), (4) delegates arrival to `VisitorArrivalHandler`, all in one canonical transaction with bounded idempotent replay (F10/F11 resolutions) |
+| Lane endpoints | `Visits.Api/Endpoints/LaneEndpoints.cs` (`/api/v1/lane/*`) — gatehouse-/lane-authenticated, actor recorded as kind `Visitor@Lane` in a dedicated field; never impersonate a porteiro via `AttendantProfileId` (F11) | **New** |
+| Badge issuance | **Reuse** `IssueCredentialHandler` (AccessControl): `SubjectType.Visitor`, `SubjectId=Visit.Id`, `IssuedByProfileId` = authorizing lane/porteiro actor, validity intersected with the authorization window (F12/F13) | **Reused** — zero new AccessControl code expected |
+| Rate limiting | New fixed-window policy in `Program.cs`, partitioned by server-normalized document/code hash (never trust client headers without configured proxy hops); denied attempts land in existing `RefusedScanAttempt`-style audit | **Modified** (Program.cs) + reuse audit writer seam |
+| Lane route + badge print | `features/lane/*` page under `porteiroGuard`-adjacent guard, browser `window.print()` of badge composed with `ce-*` components | **New** |
+| E2E journey | Playwright spec covering the resident-share → lane check-in → staff print journey (F15: a page/route must exist in Phase 29, not deferred) | **New** |
 
----
+### Phase 30 — Visibility, Notifications, Panel Integration
 
-## Suggested Build Order (dependency-driven)
-
-Ordering rationale: Visits domain/abstraction changes are the root dependency of both the scan
-path and the walk-in path; the ledger read model is only *correct* after the write paths land;
-the Angular panel consumes whatever the API shape settles on; password management is independent
-and can run in parallel with any of it.
-
-| # | Slice | Depends on | Notes |
-|---|-------|-----------|-------|
-| 1 | **Visits module**: `Visit.ResetPassword`-analog — i.e., `Visit` walk-in factory (direct `CheckedIn`), `IVisitDirectory.CheckInOrCreateAsync` + repository impl, `CheckInNow` support in `CreateVisitRequest`/`CreateVisitHandler` | — | Pure Visits-domain work; existing unit tests keep passing (additive) |
-| 2 | **AccessControl handlers**: scan + manual paths call `CheckInOrCreateAsync` | 1 | Small diffs at `RecordAccessScanHandler.cs:196-199`, `RecordManualAccessHandler.cs:124-127`; integration tests for scan→Visit and manual→Visit |
-| 3 | **Entry-log re-scope + ledger cutoff**: gatehouse panel stops posting walk-ins to entry-log; `ReportReadRepository` cutoff constant | 1 | ConsentAuditLog/audit/CSV untouched |
-| 4 | **Unified ledger**: UNION history endpoint (`GET /api/v1/reports/history`), `GetDashboardStatsAsync` simplification, DTO updates, `Visits(CreatedAtUtc)` index migration | 3 | `openapi-check` gate |
-| 5 | **Angular gatehouse panel** (`GatehousePage` + tabs, walk-in modal, visits page demotion, dashboard button repoint) | 2, 4 | Largest frontend slice; a11y/i18n contract per entry-workflow precedent |
-| 6 | **Reports page** (`/reports` route, page, nav placement, generated clients for visit-counts-by-day, residents-per-apartment, history) | 4 | Also fixes dead `dashboard.page.ts:178` link |
-| 7 | **Password management backend** (handlers, `IEmailSender` + MailKit, `PasswordResetAttempts`, `User.ResetPassword`, refresh-token revoke-all, endpoints) | none | Independent — can be built in parallel with 2–5; demo no-op sender |
-| 8 | **Password management frontend** (login forgot-link, forced-change flow already exists, admin reset buttons on administration/porteiros pages) | 7 | Smallest slice |
-
-Suggested phase grouping for the roadmap: **Phase A** = slices 1–3 (backend visits unification);
-**Phase B** = slices 4–6 (ledger + reports + panel + reports page — frontend-heavy, depends on A);
-**Phase C** = slices 7–8 (password, parallel-friendly).
+| Item | Where | New / Modified |
+|------|-------|----------------|
+| Apartment-scoped history | **Modify** `Reports` handlers (`GetHistoryHandler`/`ReportReadRepository`) to accept a forced apartment predicate from `IScopedResidentContext`; the UNION keeps `tenant_id = @p0` per branch AND gains `ApartmentId = @pN` predication | **Modified** — delivers "same honest source" for RES-09 without a second query model |
+| `ResidentNotification` aggregate + repo + resident endpoints | Visits module (`Domain/Entities/ResidentNotification.cs`, Infrastructure repo, `/api/v1/portal/notifications`) | **New** |
+| Notification emission | **Inside** the canonical `VisitorArrivalHandler` commit boundary (notification insert atomic with the Visit mutation; per-recipient rows to current household residents of the destination apartment; no emission on no-op replay) | **Modified** (handler) as part of Phase 30 |
+| Gatehouse panel pending pre-regs | `gatehouse-panel.page.ts` + new tab component; document-match uses new directory method; one-click check-in calls the same lane/staff arrival seam; badge print triggers `IssueCredentialHandler` from the porteiro context | **Modified** |
+| Angular poller | New `ResidentNotificationService` following the proven `DeviceHealthService` Phase-26 pattern: singleton, one poll cycle, transition diff in the service, not the page | **New** |
 
 ---
 
-## Anti-Patterns (specific to this integration)
+## Architectural Patterns (each rides an existing precedent)
 
-### Anti-Pattern 1: Put Visit-creation rules in AccessControl
+### Pattern 1: Server-side scope derivation over claim-baked scope
 
-**What people do:** have `RecordAccessScanHandler` construct `Visit` rows itself "to save an
-interface method".
-**Why it's wrong:** duplicates the Visit state machine and destination-snapshot invariants in the
-wrong module; AccessControl already deliberately depends only on `IVisitDirectory`; arch tests
-and the module-boundary discipline (Clean Architecture per module) erode.
-**Do instead:** extend `IVisitDirectory` (decision (a)).
+**What:** Resident apartment scope is resolved per request from the `profile_id` claim → resident portal profile → apartment; never trusted from a query/body parameter, never baked sole-authority into the JWT.
+**When to use:** Every Phase 27–30 resident endpoint.
+**Why:** `JwtTokenService` issues 15-min tokens with no apartment claim, and suspension/move-out must deny **the next request** (RES-01). Per-request resolution handles suspension (profile row check) and stale membership (apartment reassignment between token issue and use) in one place (F06/F07).
+**Ride:** `TenantResolutionMiddleware` unchanged (it already publishes roles/permissions/profileId to `ITenantContext`); the new `IScopedResidentContext` is a thin `HttpContext`-adjacent resolver registered per module.
 
-### Anti-Pattern 2: Backfill-mutating or dual-writing the append-only ConsentAuditLog
+### Pattern 2: Apartment predicate layered on tenant predication
 
-**What people do:** try to UPDATE/mark legacy rows, or run dual-write "during transition"
-(walking both `POST /api/v1/entry-log` and `POST /api/v1/visits` for every walk-in).
-**Why it's wrong:** DB triggers hard-fail any UPDATE/DELETE; dual-write double-counts entries in
-every count/ledger unless a de-dup set survives forever (the exact fragility being deleted from
-`GetDashboardStatsAsync`).
-**Do instead:** re-scope the endpoint, one Visits write, optional disjoint legacy segment in the
-ledger with a cutoff constant (decision (b)).
+**What:** New reads/writes go through `ITenantAwareLinqFactory` (tenant splice) *and* add an explicit apartment predicate after it. Tenant isolation ≠ apartment isolation; both needed, and both integration-tested.
+**Why:** `VisitDirectoryRepository.FindLatestByDocumentAsync` is today tenant-wide-with-document-key — sufficient for staff, dangerous for lane/resident flows (F03). Never weaken the first predicate; strengthen with the second.
 
-### Anti-Pattern 3: Handler-side merge + in-memory pagination for the history page
+### Pattern 3: Handler-mirroring instead of handler-forking (the RecordAccessScan precedent)
 
-**What people do:** page Visits (50) and AccessEvents (50) separately, merge and sort in C#.
-**Why it's wrong:** page boundaries are wrong under interleaving; full-table scans
-(`whereClause: "1=1"` pattern in the current dashboard code) get slower with every month of
-history.
-**Do instead:** single UNION with `LIMIT/OFFSET` (or keyset later) in `ReportReadRepository`
-(decision (c)).
+**What:** The lane does not get a new write path into Visits. `LaneSelfCheckInHandler` performs *authorization/policy front-matter* itself (consent gate, denial semantics, rate limits) and then delegates the *arrival mutation* to `VisitorArrivalHandler` — exactly how `RecordAccessScanHandler` already composes with it at lines 190–217, and how Devices rides it.
+**When to use:** Any new caller into the Visits aggregate. **Trade-off:** handler stays the change point for arrival semantics (intended); callers must resist embedding their own `Visit` mutation — v2.3's architecture tests (grep for `new Visit(`/`INSERT INTO Visits` outside canonical handlers) already enforce this spirit and should gain a lane/pre-reg variant.
 
-### Anti-Pattern 4: Token-store password reset when a temp password is already settled
+### Pattern 4: Verifier-only secrets for every visitor-facing credential
 
-**What people do:** build reset-token tables, hashed single-use tokens, expiry columns, token
-email links — a second credential subsystem.
-**Why it's wrong:** the milestone decision is temp-password-via-SMTP; `MustChangePassword` +
-`changePasswordGuard` already implement forced one-time use end-to-end; a token system doubles
-the attack surface and test matrix for no product gain.
-**Do instead:** `User.ResetPassword` + refresh-token revocation + rate-limit table (decision (d)).
+**What:** Pre-auth codes and badge QRs ride `OpaqueTokenIssuer` + `AccessCredential`: raw token shown/printed once, only the HMAC verifier persisted, `FixedTimeEquals` verification, fingerprint for lookup, one-way so lost prints cannot be "re-read" (F12).
+**Why:** Already proven for resident/vehicle/visitor QR credentials; zero new crypto story.
 
-### Anti-Pattern 5: Extending `CeEntryWorkflowComponent` into the gatehouse panel
+### Pattern 5: Derived state, no background sweeps
 
-**What people do:** keep growing the 800+-line modal component with tabs, open-visit list, and
-check-in/out.
-**Why it's wrong:** wrong shape (modal vs page), dashboard inherits every change, and its
-entry-log write path would need surgery anyway.
-**Do instead:** new thin `GatehousePage` composing existing components; repoint or retire the
-modal's write path (decision (e)).
-
-### Anti-Pattern 6: Cross-tenant data access for forgot-password via the tenant-aware factory
-
-**What people do:** force `HttpTenantContext` to resolve a tenant for the anonymous reset flow,
-or hack a header.
-**Why it's wrong:** there is no tenant at that point in the flow; fighting the abstraction
-invites scoping bugs in a security-sensitive path.
-**Do instead:** dedicated non-tenant-scoped repository (plain `IAsyncSqlClient`) like the
-existing `RefreshTokenRepository`, with explicit parameterized queries.
+**What:** `Consumed`, `Expired`, `Expected today`, notification unread counts are computed at read time from durable state columns — the same doctrine proven with `device_heartbeats` status derivation (v2.3 Key Decision).
+**Why:** The settled v2.4 decision says "expired is derived at read time, no background sweep."
 
 ---
 
-## Scaling Considerations
+## Data Flow (changed and new flows)
 
-| Scale | Architecture Adjustments |
-|-------|--------------------------|
-| Current (dozens of condos, ≤1k events/day/tenant) | Nothing to change — single MySQL, UNION query with tenant+time indexes is fine |
-| 10× history growth | Keyset pagination on `(OccurredAtUtc, Id)`; consider `PARTITION BY RANGE` on `AccessEvents.OccurredAtUtc` (MySQL 8) — deferred |
-| Many concurrent gatehouse panels | Ledger read path is stateless; add 30–60s client polling or SSE later — v2.1 keeps the existing manual refresh pattern |
+### Flow A — Lane self check-in (NEW, Phase 29; rides everything above)
 
-**First bottleneck:** the full-table scans in `GetDashboardStatsAsync` (today) — solved as part of
-slice 4, not deferred.
+```
+Visitor at supervised lane kiosk
+    ↓
+Lane page (features/lane, authenticated lane session)
+    → enters pre-auth code OR document
+    ↓
+POST /api/v1/lane/check-in  (bearer lane/porteiro credential; rate limiter partitions by normalized input)
+    ↓
+TenantResolutionMiddleware → TenantContext (EXISTING)
+    ↓
+LaneSelfCheckInHandler:
+    1. resolve pre-registration (verifier match or tenant+apartment-bound doc search)   [New repo]
+    2. validate window (tenant-day basis), status Pending, uses < max_uses → compare-and-consume
+    3. consent policy evaluation — same policy evaluator, refused/action-required → uniform denial [REUSED]
+    4. map destination (prereg apartment) — conflict w/ same-document open visit to
+       another unit → no auto-resolve, staff disambiguation response [F03 decision]
+    5. delegate: VisitorArrivalHandler (Pending→CheckIn, else new CheckedIn Visit)     [REUSED spine]
+       — atomic: consumption + Visit mutation + notification insert in one transaction
+    ↓
+Response: Visit + badge token (issued via IssueCredentialHandler; visitor AccessCredential)
+    → lane page renders printable badge (browser print)
+    ↓ audit: action kind Visitor@Lane; denials → refused-attempt audit row
+```
+
+### Flow B — Arrival notification (MODIFIED canonical path, Phase 30)
+
+`VisitorArrivalHandler` (self, staff, or panel path) commits the Visit → in the same transaction, inserts `ResidentNotification` rows for the destination apartment's active residents → resident portal poller (`ResidentNotificationService`) surfaces them; badge counts and history derive from the same committed rows. No-op idempotent replays emit nothing.
+
+### Flow C — Resident tenant + apartment double-predicated read (NEW, Phases 27/30)
+
+Resident JWT → `TenantContext` (tenant, roles=Resident) → `IScopedResidentContext` verifies active portal profile per request and yields `ApartmentId` → repository applies tenant splice + apartment predicate → same underlying tables (`Visits` UNION ledger, `VisitorPreRegistrations`) the porteiro and `/reports` read. Reports module receives the predicate as a forced parameter; caller-supplied `apartmentId` collapses for resident tokens.
 
 ---
 
 ## Integration Points
 
-### Internal Boundaries
+### Internal Boundaries (module ↔ module)
 
 | Boundary | Communication | Notes |
 |----------|---------------|-------|
-| AccessControl → Visits | `IVisitDirectory` (extended) | Only cross-module write seam; producer-side interface — established pattern |
-| AccessControl → Photos | `IConsentPolicyEvaluator` (existing) | Untouched by v2.1 |
-| Reports → Visits/AccessControl/Photos tables | direct read-only SQL (`SelectAsync`/`SelectRawAsync`) with explicit `tenant_id` | CQRS-lite sanctioned; no new abstraction |
-| Security → Tenants | `ITenantAdminRepository` abstraction (existing precedent in `RefreshHandler`) | Reset handlers live in Security, reuse Tenants' user repos |
-| Photos (entry-log) | stays self-contained | Re-scoped to consent role; consumed by `/audit` |
-| Angular → API | generated OpenAPI client (`ng-openapi-gen`) | `openapi-check` is the drift gate; `dashboard-api.service.ts` types must follow the stats DTO change |
+| Security ↔ Residents | `Security` resolves resident login via a new application abstraction over Residents' resident-profile repo | Mirrors existing `AttendantProfileLoginSupport`; Security cannot query Residents tables directly |
+| Visits ↔ AccessControl (lane ↔ badge) | AccessControl's `IssueCredentialHandler` called with `SubjectType.Visitor/SubjectId=Visit.Id` from the Visits-owned lane handler | AccessControl stays credential-sovereign; Visits owns arrival truth |
+| Visits ↔ Reports | `GetHistoryHandler` consumes the same `visits`/`access_events` tables; apartment predicate forced from scope context | Keep per-branch explicit `tenant_id` predication (v2.1 Key Decision: interceptor never splices into a UNION) |
+| Anything ↔ Notifications | Emission only from inside the canonical arrival transaction (Visits) | No third party may `INSERT INTO ResidentNotifications` — extend the v2.3 single-write-path arch-test grep to it |
+| Host ↔ all modules | `Program.cs` DI (`Add…Module()`) + endpoint mapping + shared policies | New DI registrations, policies, rate-limit partitions; middleware order unchanged |
 
-### External Services
+### External / Infrastructure surfaces
 
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| SMTP relay | New `IEmailSender` (MailKit) in Security.Infrastructure; config from appsettings + Docker secret | No-op when `Demo.DisableOutboundEmail=true`; global, not per-tenant (v2.1) |
-
----
-
-## Open Questions (flag for phase planning)
-
-1. **Visitor identity for unmatched QR scans** — for a standalone visitor credential whose
-   `SubjectId` is not a Visit id, `AccessEventDestinationResolver` already falls back to the
-   first active apartment; `CheckInOrCreateAsync` then needs a visitor name/document. Verify
-   during planning what `IssueCredentialHandler` stores for visitor subjects (name captured at
-   issue time?) — if nothing usable exists, the create path needs a label convention
-   ("Visitante") and this should be an explicit spec decision.
-2. **Walk-in landing status** — notes lean direct `CheckedIn`; confirm in spec (this research
-   assumes direct `CheckedIn` for the walk-in path *and* for unmatched-scan creation; the
-   matched-scan path keeps `Pending → CheckedIn` via `CheckIn`).
-3. **Ledger cutoff constant vs config** — a build constant is simplest; if demo seeding needs to
-   create legacy-looking rows, make the cutoff a config value instead.
-4. **`GET /api/v1/dashboard/stats` DTO shape** — removing the ConsentAuditLog merge changes
-   counts' semantics slightly (open visits/today are now purely Visits); confirm the dashboard
-   copy ("entries today") still reads correctly, and whether `recentVisits` keeps
-   `RecentVisitDto` or gains a `kind` discriminator (recommended: add `kind`).
-5. **Tenant-admin permission for reset** — which permission string gates
-   `attendant-profiles/{id}/reset-password` (existing `Permission_*` scheme in
-   `RequirePermissionRequirement`); platform-admin reset reuses `PlatformAdminRequirement`.
+| Surface | Integration | Gotcha |
+|---------|-------------|--------|
+| JWT bearer (`Program.cs:81-95`) | Resident login validates unchanged | Signature/lifetime only — no DB status callback; that's why per-request profile checks are mandatory |
+| Fixed-window rate limiter (`Program.cs:186-214`) | Clone the partition-key pattern for lane + login | Headers-forge risk: no `UseForwardedHeaders` today; Traefik hop trust decision owed (open flag, F05) |
+| DBTools + `ITenantAwareLinqFactory` | All new repos | No EF Core, no MediatR, minimal APIs only, `ProblemDetails` mapping through existing `GlobalExceptionHandler` |
+| `docker/mysql/migrations` | Next numbers: `23-…` root + `0023-…` module series | Append-only ledger tables get triggers only when tamper-evidence is required (ConsentAuditLog precedent); plain ledger tables enforce via repository surface |
+| Test harness | Testcontainers.MySql integration + NetArchTest arch + Angular specs | Negative tests (resident→staff endpoints, apt 101→302, tenant A→B) are phase deliverables, not extras; fixtures synthetic per `AGENTS.POLICY.md` |
 
 ---
 
-## Sources
+## New vs Modified — consolidated for the roadmap
 
-- `src/Modules/AccessControl/.../Handlers/RecordAccessScanHandler.cs` (scan flow, idempotency,
-  visit check-in hook at 196–199)
-- `src/Modules/AccessControl/.../Handlers/RecordManualAccessHandler.cs` (manual entrance path,
-  visit check-in hook at 124–127)
-- `src/Modules/AccessControl/.../Handlers/AccessEventDestinationResolver.cs` (visitor fallback
-  destination, `IVisitDirectory` consumption)
-- `src/Modules/Visits/.../Abstractions/IVisitDirectory.cs`, `IVisitRepository.cs`,
-  `VisitDirectoryRepository.cs`, `Entities/Visit.cs` (state machine), `CreateVisitHandler.cs`,
-  `VisitEndpoints.cs`, `VisitsModuleServiceCollectionExtensions.cs`
-- `src/Modules/Photos/.../EntryLogHandlers.cs`, `Entities/ConsentAuditLog.cs`,
-  `Api/Endpoints/EntryLogEndpoints.cs` (entry-log ownership, append-only semantics)
-- `docker/mysql/init/09b-consent-schema.sql` (append-only triggers), `06-visits-schema.sql`
-  (missing `CreatedAtUtc` index), `05-security-schema.sql` (`RefreshTokens` shape),
-  `12-access-control-schema.sql` (`AccessEvents` indexes)
-- `src/Modules/Reports/.../ReportReadRepository.cs` (dashboard merge, raw-SQL precedent),
-  `IReportReadRepository.cs`, `ReportEndpoints.cs`, `ReportDtos.cs`
-- `src/Modules/Security/.../Handlers/ChangePasswordHandler.cs`, `RefreshHandler.cs`,
-  `LoginHandler.cs`, `Entities/User.cs` (`SetPasswordHash` vs `ChangePassword`),
-  `Abstractions/IRefreshTokenRepository.cs`, `Infrastructure/Persistence/RefreshTokenRepository.cs`
-  (non-tenant-scoped repo precedent), `Api/Endpoints/SecurityEndpoints.cs`
-- `src/Modules/Tenants/.../Handlers/CreatePorteiroHandler.cs`,
-  `TenantAdminLifecycleHandlers.cs`, `Api/Endpoints/TenantEndpoints.cs`
-- `src/Host/ControlEasyReborn.Api/Program.cs` (module registration order),
-  `appsettings.json` (no SMTP config today; `Demo.DisableOutboundEmail`)
-- Angular: `app.routes.ts` (no `/reports`; gatehouse routes),
-  `features/entry-workflow/entry-workflow.page.ts`,
-  `design-system/components/entry-workflow/entry-workflow.component.ts` (entry-log submit at 809),
-  `features/dashboard/dashboard.page.ts` (dual modals at 33–55, dead `/reports` link at 178),
-  `features/entry-log/entry-log.service.ts` (+ design-system dependents)
-- Planning: `.planning/PROJECT.md`, `.planning/notes/integrated-visits-flow.md`,
-  `.planning/todos/pending/integrated-visits-flow.md`
+**Explicitly NEW (nothing exists today):**
+1. `IScopedResidentContext` scope resolver (Residents/App + shared usage) — Phase 27
+2. `ResidentPortalProfile` entity + repo — Phase 27
+3. `ResidentPortalEndpoints` (`/api/v1/portal/*`) — Phase 27 (+28, +30 additive)
+4. `residentGuard` + resident portal shell/pages (`features/portal/*`) — Phase 27
+5. `VisitorPreRegistration` aggregate + repo + CRUD handlers — Phase 28
+6. `PurposeCode` aggregate + repo + admin endpoints — Phase 28
+7. `LaneSelfCheckInHandler` + `LaneEndpoints` (`/api/v1/lane/*`) — Phase 29
+8. Lane page + badge print flow + E2E journey — Phase 29
+9. `ResidentNotification` aggregate + repo + endpoints + `ResidentNotificationService` poller — Phase 30
+10. Deny-matrix negative integration test suite — Phase 27 (grows every phase)
+11. Migrations `23-/0023+` series (pre-registrations, purpose codes, resident notifications, resident portal profile binding)
+
+**Explicitly MODIFIED (existing code, surgical changes):**
+1. `VisitorArrivalHandler` — pre-registration identity binding + purpose snapshot + in-transaction notification emission (Phases 28–30 touchpoints on ONE handler)
+2. `VisitDirectoryRepository` (+ its Application abstraction) — apartment/authorization-discriminated lookups
+3. `Visit` entity + visits schema columns (`pre_registration_id`, purpose snapshot, optional plate snapshot)
+4. `LoginHandler`/`AttendantProfileLoginSupport` — resident profile resolution branch; uniform denial hardening
+5. `JwtTokenService` — only if resident claims need an extra marker (recommendation: keep claim set as-is; scope from DB)
+6. Every staff `MapGroup(...).RequireAuthorization()` group — explicit role/policy statements (deny matrix); front-end counterpart: shell route `canActivate` tightening
+7. `Program.cs` — authorization policies, rate-limit partitions, module DI additions
+8. `ReportEndpoints`/`GetHistoryHandler` — forced apartment predication; `apartmentId` param demoted to staff-only
+9. `gatehouse-panel.page.ts` — pending-today tab, document match, badge print trigger
+10. `app.routes.ts` — portal and lane routes, guard tightening
+
+**Unchanged / deliberately untouched:**
+`TenantResolutionMiddleware`, `TenantAwareLinqFactory`/interceptor mechanics, `OpaqueTokenIssuer`, `AccessCredential` + lifecycle handlers, `record scan` consent machinery, the Visits status machine semantics (checkout stays staff-only), the UNION-ledger approach, all other module internals.
 
 ---
-*Architecture research for: ControlEasy Reborn v2.1 — Integrated Visits & Account Operations*
-*Researched: 2026-09-19 (source-verified in worktree feat-qr-entrance-frontend-routing)*
+
+## Suggested Build Order & Dependency Graph (maps 1:1 to Phases 27–30)
+
+```
+P27 [27-01 schema/profile] → [27-02 login+scope] → [27-03 deny matrix + negative tests]
+        │ (resident identity + scoped context must exist before anyone touches data)
+        ▼
+P28 [28-01 pre-reg aggregate+schema] → [28-02 CRUD+resident endpoints] → [28-03 purpose codes] → [28-04 arrival-handler binding]
+        │ (consumable authorizations must exist; consumption binding must be wired before any consumer)
+        ▼
+P29 [29-01 lane resolution+consumption handler] → [29-02 denial security+tests] → [29-03 badge issuance] → [29-04 lane page + print E2E]
+        │ (F15: the visitor-facing route ships here, not later)
+        ▼
+P30 [30-01 scoped history] → [30-02 notifications + emission] → [30-03 panel pre-regs + match + print trigger]
+        (history is read-only, safe to land first; emission depends on arrival commit boundary from 28-04; panel consumes everything)
+```
+
+Rationale: the deny matrix (P27) is deliberately *before* pre-reg CRUD (P28) — adding resident-portal read endpoints while staff APIs still admit resident JWTs would widen the exact hole gap review F02 flags. Atomic consumption binding (28-04) is the last Phase-28 item so `VisitorArrivalHandler` is wired once, before any of its Phase-29/30 consumers depend on the transactional contract.
+
+---
+
+## Anti-Patterns (project-specific, backed by gap review)
+
+### 1. Second write path into Visits for "convenience"
+**Mistake:** Lane/panel/badge flows creating `Visit` rows directly (like Devices was tempted to). **Wrong because:** forks the state machine and re-opens the double-counting bug class v2.1 folded away (Key Decision: Murat's one-door condition). **Instead:** delegate through `VisitorArrivalHandler`; extend the arch-test grep to the new modules.
+
+### 2. Baking apartment scope into the JWT
+**Mistake:** `JwtTokenService` gains `apartment_id` and endpoints trust it. **Wrong because:** move-out/reassignment/suspend then require token expiry to take effect — violates RES-01's "next request" semantics (F07). **Instead:** per-request resolution via resident profile (`IScopedResidentContext`).
+
+### 3. Tenant-wide document resolution in resident/lane flows
+**Mistake:** Reusing `FindLatestByDocumentAsync` as-is for pre-registration matching. **Wrong because:** same-document cross-apartment Pending/CheckedIn conflict silently serves the wrong household (F03). **Instead:** authorization-bound lookups; conflict → staff disambiguation response with no other-apartment identifiers.
+
+### 4. Extending staff endpoint groups with resident scopes
+**Mistake:** Adding resident role checks *inside* `VisitEndpoints` as an afterthought or reusing `/api/v1/residents`. **Wrong because:** authenticated-only groups admit resident JWTs to tenant-wide data (F02). **Instead:** separate `/api/v1/portal/*` groups + explicit deny matrix with negative tests on the staff groups.
+
+### 5. Fake actor identity on self-service writes
+**Mistake:** Putting a real `AttendantProfileId` (or `Guid.Empty`, as `Visit.CheckIn` currently accepts at `VisitorArrivalHandler.cs:62`) behind lane arrivals. **Wrong because:** destroys audit attribution (F11). **Instead:** actor-kind field `Visitor@Lane` + trusted lane location; `Guid.Empty`-in-pending stays a documented staff-only fallback.
+
+### 6. Persisting raw pre-auth codes / badge tokens
+**Mistake:** Storing the printable token "so reprints work." **Wrong because:** violates the established verifier-only QR contract (`.specs/qr-entrance-exit-access/contracts/access-api.md`; F09/F12). **Instead:** verifier-only storage; reprint = new staff-authorized credential.
+
+---
+
+## Scaling Considerations (pragmatic)
+
+| Concern | Today (single replica) | If multi-replica later | Note |
+|---------|------------------------|------------------------|------|
+| Rate limiting | Process-local fixed-window (`Program.cs:186-214`) | Distributed limiter or per-partition tables | Existing pattern already carries this documented tradeoff (v2.1 Key Decision ⚠ for forgot-password); lane limiter inherits it — decide explicitly, don't inherit silently |
+| Notification delivery | Portal polling on page open | Polling + backoff fine up to thousands of residents | No push infra by decision; `DeviceHealthService` poller pattern already proven |
+| Pre-registration expiry | Derived at read; no sweep | Same — indexed status+window makes pending-today queries cheap | Add window-end + status composite index in the migration |
+| Idempotency | Per-process IMemoryCache + durable scan-attempt 4-tuple | Durable tables carry it | Follow `RecordAccessScanHandler`'s durable-key pattern (durable > cache idempotency) |
+
+---
+
+## Sources (code-verified, HIGH confidence)
+
+- `src/Modules/Visits/.../Handlers/VisitorArrivalHandler.cs` (read in full)
+- `src/Modules/Visits/.../Persistence/VisitDirectoryRepository.cs` (read in full)
+- `src/Modules/Visits/.../Domain/Entities/Visit.cs` (read in full)
+- `src/Modules/Visits/.../Api/Endpoints/VisitEndpoints.cs` (read in full)
+- `src/Modules/AccessControl/.../Handlers/RecordAccessScanHandler.cs` (read in full)
+- `src/Modules/AccessControl/.../Handlers/CredentialLifecycleHandlers.cs` (read in full)
+- `src/Modules/AccessControl/.../Entities/AccessCredential.cs`, `Services/OpaqueTokenIssuer.cs` (read in full)
+- `src/Modules/Reports/.../Endpoints/ReportEndpoints.cs` (read in full)
+- `src/Modules/Security/.../Handlers/LoginHandler.cs`, `Persistence/JwtTokenService.cs`, `Domain/Entities/User.cs`, handlers listing (read)
+- `src/Modules/Residents/.../Domain/Entities/Resident.cs` (read in full)
+- `src/BuildingBlocks/.../MultiTenancy/TenantResolutionMiddleware.cs`, `TenantFilterInterceptor.cs`, `TenantAwareLinqFactory.cs` (read)
+- `src/Host/ControlEasyReborn.Api/Program.cs` (auth, limiter, DI, CORS — read)
+- `src/Web/ControlEasyReborn.Web/src/app/app.routes.ts`, `core/guards/*`, `features/` layout, `features/gatehouse/` (read/listed)
+- `docker/mysql/migrations/` inventory (listed — next series 23-/0023)
+- `.planning/PROJECT.md`, `.planning/REQUIREMENTS.md`, `.planning/ROADMAP.md` (Phases 27–30 definitions)
+- `.planning/notes/v2-4-codex-gap-review.md` (F01–F18 findings; resolutions cited as decisions from this document)
+
+*Research mode: integration (codebase) — no external web providers used; findings are code-cited at commit state of the current working tree (2026-10-15).*
