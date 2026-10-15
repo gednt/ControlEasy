@@ -175,7 +175,7 @@ Accent reserved for (explicit list, nothing else): primary CTA buttons in the Po
 | Modal title | "Portal access" (state-qualified: "Portal access — Maria Silva") |
 | Provision helper line | "The resident will be asked to change this password at first sign-in." |
 | Write-once heading | "Initial password — shown only once" |
-| Write-once body | "Copy it now. It will not be displayed again." |
+| Write-once body | "This password is shown only once. Copy it now — it will not be displayed again." (§ 5 combined warning — BINDING. This single string replaces the earlier split heading/body variants and is the string Plan 05 pins in its must_haves; the heading row above remains the panel's title.) |
 | Empty state | "Portal access hasn't been created for this resident yet. Create portal access to give them a portal sign-in." |
 | Error state (provisioning/action failure) | Use server ProblemDetails message via `getApiErrorMessage(err, 'Failed to save portal access')` — banner inside the modal, retry by re-submitting |
 | Error state (resident login — enumeration-safe) | "Invalid email or password." — the backend's EXISTING uniform `UnauthorizedException` body (reused per the locked uniform-response decision), rendered on /login for both the staff and the resident branch: the SAME string for unknown email / wrong password / inactive / revoked / suspended (RES-02 uniformity; never reveal which factor failed). Reconciled here to match the backend literal pinned in Plan 03 — the UI never substitutes its own copy. |
