@@ -47,7 +47,7 @@ Token sources of truth (executor must consume these, never hard-code values):
 
 ## Component Inventory
 
-Enumerated by `Select-String -Path src/Web/ControlEasyReborn.Web/src/app/design-system/index.ts -Pattern '^export \{ Ce'` — 28 export statements (28 ce-* component/directive exports + `ToastService`) — first-party in-repo design system (no npm package version; versioned with the app) — 2026-10-15.
+Enumerated by `Select-String -Path src/Web/ControlEasyReborn.Web/src/app/design-system/index.ts -Pattern '^export \{ Ce'` — 28 export statements (28 ce-* component/directive exports + `ToastService`) — first-party in-repo design system (no npm package version; versioned with the app — versionable anchor: `design-system/index.ts` @ commit `28bf331ed4a1ee8d0459b83b55cbb5f92e8379e9`, the tree it was enumerated against) — 2026-10-15.
 
 This inventory is **non-exhaustive** — checking for a component outside the table is the expected path, not an exception.
 
@@ -71,6 +71,8 @@ This inventory is **non-exhaustive** — checking for a component outside the ta
 
 New standalone component: `PortalAccessModalComponent` (mirror of Phase 24 `DeviceFormModalComponent`: standalone, standalone handwritten `ResidentsPortalApiService` is acceptable, opens from the residents table row action menu — and from the edit-resident modal's new "Portal access" section if the executor prefers inline — **either placement, not both, is fine; the modal itself is the contract**).
 
+> **CONTEXT alignment:** the inline "Portal access" section on the resident create/edit flow (locked decision in 27-CONTEXT.md: *"a 'Portal Access' section on the resident create/edit flow with create/activate, suspend, revoke actions"*) matches this contract — the modal/section pair is the same surface; the table row-action entry point is the executor-equivalent way to reach it.
+
 ### State machine (one credential per resident — zero/one, never a list)
 
 | Credential state | Badge | Badge tone | Primary action | Secondary actions |
@@ -87,7 +89,7 @@ New standalone component: `PortalAccessModalComponent` (mirror of Phase 24 `Devi
 1. Field: **Initial password** — `ce-input type="password"` with show/hide toggle button (`aria-pressed`, eye icon), client-side minimum-length validation matching backend rule.
 2. Field: **Confirm password** — mismatch error: "Passwords don't match" (field-level, `--color-danger`).
 3. Helper line (muted, 12px): "The resident will be asked to change this password at first sign-in."
-4. Footer: `Cancel` (ghost) + `Create portal access` (primary, verb + noun, `[loading]` while submitting).
+4. Footer: `Discard changes` (ghost) + `Create portal access` (primary, verb + noun, `[loading]` while submitting). The dismissive button is never generic "Cancel" — every interactive label is a specific verb + noun.
 5. **Success step — write-once secret (Phase 24/25 raw-token pattern):** the modal swaps to a confirmation panel showing the initial password in monospace (`DM Mono`), a Copy button (clipboard API), and the warning: **"This password is shown only once. Copy it now — it will not be displayed again."** No re-fetch, no stored plaintext render. Close button: "Done".
 
 ### Suspend (reversible, no destructive styling)
@@ -104,7 +106,7 @@ New standalone component: `PortalAccessModalComponent` (mirror of Phase 24 `Devi
 
 - Opens a small `ce-modal size="sm"` confirmation, Phase 24 remove-device pattern.
 - Confirmation copy (body): "Revoke portal access for {resident name}? This permanently removes their portal credential — they can no longer sign in, and a new credential would need to be provisioned with a new password. This cannot be undone."
-- Footer: `Cancel` (ghost) + `Revoke access` (danger). Button is `[loading]` while submitting. On success: modal state flips to `Revoked` + toast "Portal access revoked."
+- Footer: `Keep access` (ghost) + `Revoke access` (danger). Button is `[loading]` while submitting. On success: modal state flips to `Revoked` + toast "Portal access revoked."
 
 ### Reset password (Phase 17/18 machinery extension — no new pattern)
 
@@ -120,17 +122,18 @@ New standalone component: `PortalAccessModalComponent` (mirror of Phase 24 `Devi
 
 ## Spacing Scale
 
-Declared values (reuse the project's existing tokens — all multiples of 4):
+Declared values (consume the project's existing tokens — every value used in this phase belongs to the standard set: 4, 8, 16, 24, 32, 48, 64):
 
 | Token | Value | Usage in this phase |
 |-------|-------|---------------------|
 | `--space-1` | 4px | Icon-to-label gaps |
-| `--space-2` | 8px | Inline gaps, badge/label baseline |
-| `--space-3` | 12px | Form field vertical rhythm inside modal |
-| `--space-4` | 16px | Default element spacing, modal body padding |
+| `--space-2` | 8px | Inline gaps, badge/label baseline; vertical gap between a field and its helper line / related sibling fields |
+| `--space-4` | 16px | Default element spacing, modal body padding, vertical gap between field groups (e.g. between the password pair and the confirm field) |
 | `--space-6` | 24px | Section spacing inside modal |
 | `--space-8` | 32px | Modal state-panel padding (write-once password panel) |
 | `--space-12` | 48px | (existing) page loading-state padding — untouched |
+
+Form field vertical rhythm uses the standard tokens: **8px (`--space-2`) between a field and its helper line or closely related field, 16px (`--space-4`) between field groups** — no 12px value is consumed in this phase. (The repo's `design-system/tokens/spacing.css` also defines `--space-3: 12px`; Phase 27 simply does not use it.)
 
 Exceptions: none. (Existing `ce-toggle` track is 44px wide by design; the toggle is not used for credential state in this phase — buttons are, so no new touch-target exceptions arise.)
 
@@ -181,7 +184,7 @@ Accent reserved for (explicit list, nothing else): primary CTA buttons in the Po
 | Revoke confirmation | "Revoke portal access for {name}? This permanently removes their portal credential — they can no longer sign in. A new credential with a new password would be required to restore access. This cannot be undone." |
 | Reset-password feedback | "Password reset — the resident must change it at next sign-in." (toast) |
 
-Destructive actions in this phase: exactly **one** — `Revoke access` (credential removal). Confirmation approach: `ce-modal size="sm"` with explicit resident name in the body, ghost Cancel + danger confirm. `Suspend` is intentionally NOT styled destructive (reversible). `Deactivate resident` (existing, unrelated to the credential) keeps its existing confirmation.
+Destructive actions in this phase: exactly **one** — `Revoke access` (credential removal). Confirmation approach: `ce-modal size="sm"` with explicit resident name in the body, ghost `Keep access` + danger `Revoke access` (no generic "Cancel" in any footer of this phase). `Suspend` is intentionally NOT styled destructive (reversible). `Deactivate resident` (existing, unrelated to the credential) keeps its existing confirmation.
 
 ---
 
