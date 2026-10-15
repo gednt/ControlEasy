@@ -14,10 +14,10 @@ ControlEasy Reborn enforces a **Docker-first development policy**. All compilati
 ### Setting Up Your Environment
 1. Clone the repository:
    ```bash
-   git clone http://192.168.15.5:3030/reisfelipe18/ControlEasy.git
+   git clone https://github.com/gednt/ControlEasy.git
    cd ControlEasy
    ```
-   <!-- VERIFY: clone URL is the current Git origin (LAN-hosted Git server at http://192.168.15.5:3030/reisfelipe18/ControlEasy, per `git remote -v`); not reachable outside this network. Update if a public remote is published. -->
+   <!-- VERIFY: clone URL is the `origin-git` remote (https://github.com/gednt/ControlEasy.git, per `git remote -v`). The default `origin` remote points to the LAN Git server at http://192.168.15.5:3030/reisfelipe18/ControlEasy and is only reachable inside that network. -->
 2. Initialize local configuration:
    ```bash
    cp docker/.env.example docker/.env
@@ -238,7 +238,9 @@ dotnet/npx commands inside Docker containers** (`mcr.microsoft.com/dotnet/sdk:8.
   5. Angular Docker production build
   6. OpenAPI client drift check (swagger generation + `ng-openapi-gen`)
 - **Fast gate** (per-turn): `./scripts/verify-ci-local.sh --fast` — format check, Release build, and
-  unit/architecture tests with zero Docker downloads and zero containers.
+  unit/architecture tests (stages 1–3), executed inside an SDK container via `docker run`. Zero
+  *additional* Docker image downloads after the first run (the `mcr.microsoft.com/dotnet/sdk:8.0`
+  image is cached thereafter).
 - Partial skips are available via `--skip-integration`, `--skip-docker`, and `--skip-openapi`.
 
 A passing full gate stamps `ci-local-passed.stamp` in the Git directory so already-verified states
@@ -253,7 +255,7 @@ do not re-run the slow Docker stages unnecessarily.
 - **Namespaces:** File-scoped namespaces (`namespace ControlEasyReborn.Modules.Visits.Domain;`).
 - **Class Design:** Classes are `sealed` by default unless explicitly designed for inheritance.
 - **Compiler Flags:** Nullable reference types enabled (`<Nullable>enable</Nullable>`) and warnings treated as errors (`<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`).
-- **Data Access:** Exclusively [DBTools](https://www.nuget.org/packages/DBTools) (`Linq<TModel>` and `IAsyncSqlClient`). **No EF Core** (ADR 0002).
+- **Data Access:** Exclusively [DBTools](https://www.nuget.org/packages/DBTools) (`Linq<TModel>` and `IAsyncSqlClient`). **No EF Core**. <!-- VERIFY: doc previously cited "ADR 0002" (docs/architecture/decisions/0002-dbtools-sql-as-only-data-access.md), but no ADR 0002 file exists anywhere in the repo. The prohibition itself is verified: no EntityFramework PackageReference in any csproj; DBTools is the sole data access layer. -->
 - **Service Registration:** No MediatR. Register use-case handlers as scoped services in each module's `DI` extension class.
 - **Route Definitions:** Minimal API endpoints using `app.MapGroup("/api/v1/<resource>")` with kebab-case, plural nouns.
 

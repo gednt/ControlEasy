@@ -50,7 +50,7 @@ Following the conclusion of the course, custody and ownership of the code remain
 
 A central objective of this rebirth was to showcase what **genuine enterprise-grade software engineering** looks like when built from first principles — deliberately moving beyond corporate bureaucracy and default framework templates in favor of uncompromised architectural rigor:
 
-- **Modular Monolith over Premature Microservices:** Avoids the network latency, distributed transaction failures, and eventual-consistency nightmares of premature microservices by structuring the platform into 11 cleanly decoupled bounded contexts within a unified, high-performance runtime.
+- **Modular Monolith over Premature Microservices:** Avoids the network latency, distributed transaction failures, and eventual-consistency nightmares of premature microservices by structuring the platform into 12 cleanly decoupled bounded contexts within a unified, high-performance runtime.
 - **Architectural Fitness Automated via Tests (`NetArchTest`):** Rather than treating Clean Architecture as aspirational documentation, layer boundaries and module independence are programmatically enforced via automated architecture tests — any illicit cross-module or cross-layer dependency immediately fails the build.
 - **Root-Level Multi-Tenant Isolation (`ITenantAwareLinqFactory`):** Multi-tenancy is not an afterthought left to developer diligence or error-prone manual `WHERE` clauses. Tenant filters are injected at the query factory level, rendering cross-tenant data leakage architecturally impossible.
 - **Predictable Data Access over Heavyweight ORMs (DBTools):** While commodity enterprise shops default to Entity Framework Core, ControlEasy deliberately leverages DBTools (`Linq<TModel>`, `IAsyncSqlClient`). This eliminates change-tracker memory bloat, Cartesian explosions, and opaque query generation in favor of predictable, high-throughput LINQ-to-SQL execution.
@@ -80,7 +80,7 @@ Rather than unconstrained, prompt-and-pray code generation, the modernization fr
 
 The agent frameworks facilitating this AI-augmented development include:
 
-- **[GSD-core](.planning/) (Get Stuff Done):** Orchestrates the macro-level migration roadmap across 18 development phases spanning multiple milestones (v1.0–v2.2 shipped milestones; Phases 14-15 reserved for v2.2), tracking live project state, decision logs, codebase maps, and milestone verifications.
+- **[GSD-core](.planning/) (Get Stuff Done):** Orchestrates the macro-level migration roadmap across 34 development phases spanning multiple milestones (v1.0–v2.3 shipped; Phases 19-22 for v2.2 in progress), tracking live project state, decision logs, codebase maps, and milestone verifications.
 - **[spec-kit](.specify/) (Specification-Driven Development):** Enforces a specification-first engineering methodology anchored by the project constitution. Every non-trivial feature or refactoring undergoes rigorous requirement clarification, architecture planning (`spec.md`, `plan.md`), and ordered task execution (`tasks.md`).
 - **[BMAD Method](_bmad/) & WDS (Multi-Agent Role Collaboration):** Deploys collaborative agent personas (System Architect Winston, Senior Developer Amelia, Test Architect Murat, Business Analyst Mary, and UX Designers) for adversarial code reviews, edge-case hunting, and automated quality audits.
 - **[agents-template](AGENTS.md) & [Impeccable](.impeccable/):** Defines the binding runtime contract and governance invariants for all AI coding assistants (strict Docker-only development, Git worktree isolation, pre-commit adversarial review gates) alongside design system and frontend excellence standards.
@@ -150,6 +150,7 @@ ControlEasy/
 │       ├── AccessControl/                      # Access events, QR credentials, gatehouse access & visit destinations
 │       ├── Administration/                     # Condominium & system administration
 │       ├── Apartments/                         # Units, blocks, occupancy
+│       ├── Devices/                            # Access-control devices, heartbeats, events, remote door unlock
 │       ├── Photos/                             # Photo capture, storage, and consent policies
 │       ├── Reports/                            # Operational reports & dashboard analytics
 │       ├── Residents/                          # Resident profiles, contacts, units

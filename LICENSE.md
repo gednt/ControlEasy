@@ -41,7 +41,7 @@ To request authorization to modify the source code, submit upstream contribution
 
 ## 6. Open-Source Dependencies & DBTools
 
-This software incorporates and relies upon **[DBTools](https://www.nuget.org/packages/DBTools)** (`Linq<TModel>`, `IAsyncSqlClient`), a high-performance lightweight ORM and data-access library also authored and created by Felipe Coelho R. Silva.
+This software incorporates and relies upon **[DBTools](https://www.nuget.org/packages/DBTools)** (`Linq<TModel>`, `IAsyncSqlClient`), a high-performance lightweight ORM and data-access library whose package metadata credits **DMF Software** <!-- VERIFY: DBTools authorship: package metadata credits DMF Software; verify whether this is a trade name of the repo owner (github.com/gednt) -->.
 
 Unlike the ControlEasy application (which is governed by this Source-Available License), **DBTools is open-source software** distributed independently via NuGet. Nothing in this License restricts, limits, or supersedes any rights granted under the open-source license governing DBTools.
 

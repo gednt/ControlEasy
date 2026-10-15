@@ -30,7 +30,7 @@ Run from the repo root:
 scripts/worktree-up.ps1 -Branch feat/<slug>
 ```
 
-The wrapper performs the pre-flight check (branch absent, worktree path free), creates the worktree under `.worktrees/`, and writes the per-worktree Compose override.
+The wrapper does **not** create the worktree itself — the worktree must already exist, created via `git worktree add` (the wrapper dies with "Worktree for branch '<branch>' not found in 'git worktree list'" otherwise). Its pre-flight guard is an idempotency check ("already up" → exit 0) plus template/base-Compose existence checks; it then writes the per-worktree Compose override and brings up the Compose stack.
 
 **POSIX host:** equivalent is `git worktree add ".worktrees/$(echo $BRANCH | tr / -)" -b "$BRANCH"` — reference only; do not invoke from a Windows host shell (see `AGENTS.POLICY.md` §Platform-aware command execution).
 
@@ -45,4 +45,4 @@ The wrapper performs the pre-flight check (branch absent, worktree path free), c
 | Host port      | `18080 + (worktree-index × 10)`                    | `18090`                              |
 | DB volume      | `ce-<branch>-mysql-data`                           | `ce-feat-dashboard-live-stats-mysql-data`|
 
-Scripts: `scripts/worktree-up.ps1` / `.sh` (create), `scripts/worktree-down.ps1` / `.sh` (tear down). The PowerShell wrappers perform the pre-flight check; the shell forms are reference only.
+Scripts: `scripts/worktree-up.ps1` / `.sh` (create), `scripts/worktree-down.ps1` / `.sh` (tear down). Both the PowerShell wrappers and the shell scripts are full standalone editions: each performs the same pre-flight checks (idempotency, worktree-existence) and its respective up/teardown work — pick the form matching your host (`AGENTS.POLICY.md` §Platform-aware command execution governs when scripts may run).

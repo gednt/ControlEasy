@@ -14,8 +14,10 @@ in place risks being silently overwritten by the next installer run.
 
 This document records the deliberate choices that keep the **per-turn
 input-token cost** of an opencode/Claude Code/Cursor/Codex session
-against this repository as low as possible without violating
-[AGENTS-SPEC.md](../AGENTS-SPEC.md) §Distribution.
+against this repository as low as possible without violating the
+[AGENTS-TEMPLATE.md](../AGENTS-TEMPLATE.md) reader contract (the
+`AGENTS-SPEC.md` §Distribution spec it previously referenced has since
+been removed from the repository).
 
 ---
 
@@ -23,38 +25,43 @@ against this repository as low as possible without violating
 
 ### Slim `AGENTS.md` kernel — `feat/agent-frontmatter`
 
-- **Before:** 183 lines / ~7 344 bytes / ~1 800 tokens. Heavy Policy,
+- **Before:** 183 lines / ~15 727 bytes / ~3 900 tokens. Heavy Policy,
   Git worktree rule, naming convention, language conventions, and
   stack conventions all lived in the kernel.
-- **After:** 130 lines / ~6 766 bytes / ~1 700 tokens (including the
-  new YAML frontmatter, the spec-kit workflow block, and the new
-  `playwright-validate` skill-overlay pointer). Heavy content
+- **After:** ~66 lines / ~3 900 bytes / ~1 000 tokens (working tree,
+  re-measured after later kernel cleanup; includes the new YAML
+  frontmatter and the skill-overlay pointers — the Playwright-Validation
+  pointer now references the `webapp-testing` skill). Heavy content
   extracted to three sibling files that the agent reads only when the
   task touches the corresponding domain:
   - [`AGENTS.POLICY.md`](../AGENTS.POLICY.md) — hard policy (CI gate,
-    platform-aware exec, prohibitions, workflow ownership). ~66 lines.
+    platform-aware exec, prohibitions, workflow ownership). ~142 lines.
   - [`AGENTS.WORKTREES.md`](../AGENTS.WORKTREES.md) — mandatory Git
-    worktree rule + naming convention. ~67 lines.
+    worktree rule + naming convention. ~48 lines.
   - [`AGENTS.STACK.md`](../AGENTS.STACK.md) — stack, C# / Angular
-    conventions, agent concurrency budget. ~52 lines.
+    conventions, agent concurrency budget. ~43 lines.
 - **Why frontmatter:** added `description`, `allowed-tools`, and
   `mode` so the opencode TUI can do tool-level filtering on the kernel
   itself, separate from the schema header
-  (`<!-- agents-template-schema 1 -->`) which `AGENTS-SPEC.md` requires.
+  (`<!-- agents-template-schema 1 -->`) declared in
+  [`AGENTS-TEMPLATE.md`](../AGENTS-TEMPLATE.md) — the current kernel
+  does not carry the marker (it was dropped in a later kernel cleanup;
+  the file that previously required it, `AGENTS-SPEC.md`, has been
+  removed from the repository).
 
 ### Extract heavy `speckit.*` command bodies into skills — `feat/agent-frontmatter`
 
-- **Before:** 10 `.opencode/commands/speckit.*.md` files, each 6–20 KB
-  / 100–345 lines. The worst (`speckit.specify.md`) was 17.6 KB /
-  345 lines and was **always** injected into the system prompt on
+- **Before:** 10 `.opencode/commands/speckit.*.md` files, each 6.6–20.2 KiB
+  / 102–365 lines. The worst (`speckit.checklist.md`) was 20.2 KiB /
+  365 lines and was **always** injected into the system prompt on
   every opencode session, even when the user wasn't invoking a speckit
-  command. Net cost: ~100 KB / ~20 000 tokens always loaded.
-- **After:** each `speckit.*` command is now a 5–8-line stub with
+  command. Net cost: ~122 KB / ~31 000 tokens always loaded.
+- **After:** each `speckit.*` command is now a 5–14-line stub with
   `description` + (where applicable) `handoffs:` blocks. The original
   body lives at `.opencode/skills/speckit-<name>/SKILL.md` (with
   `name:` + `description:` + `handoffs:` frontmatter, BOM-free) and
-  loads **only** when the command is invoked. Net cost: ~50 lines /
-  ~400 tokens always loaded.
+  loads **only** when the command is invoked. Net cost: ~83 lines /
+  ~760 tokens always loaded.
 - **Pattern mirrors** what `bmad-*` commands already do: thin
   dispatcher in `commands/`, full body in `skills/`.
 - **Note on path references:** the speckit-constitution skill body
@@ -76,10 +83,10 @@ against this repository as low as possible without violating
   reads when smoke-testing a route.
 - **`.opencode/commands/playwright-validate.md`** — 8-line command stub
   with `argument-hint` and `agent: build` (no `subtask: true`, so the
-  plugin's prompt injection reaches the active agent). Skill bodies
-  emit a final reminder to run `scripts/verify-ci-local.sh --fast`
-  manually — verify-ci is a script, not an agent, so there is no
-  handoff.
+  plugin's prompt injection reaches the active agent). No skill body
+  references verify-ci; the thin `.opencode/commands/verify-ci.md`
+  stub is what dispatches `scripts/verify-ci-local.sh` — verify-ci is
+  a script, not an agent, so there is no handoff.
 - The former `.opencode/plugins/playwright-validate.ts` auto-invoke
   plugin was retired. `AGENTS.md` now makes real-browser validation an
   explicit contributor responsibility after Angular SPA edits.
@@ -91,14 +98,14 @@ Approximate, using the cl100k_base heuristic (~4 chars/token).
 | Layer | Before | After |
 |---|---|---|
 | `AGENTS.md` kernel | ~1 800 | ~1 500 |
-| Heavy `speckit.*` command bodies (10 × ~8 KB) | ~20 000 | ~400 (stubs only) |
+| Heavy `speckit.*` command bodies (10 × ~12.5 KB) | ~31 000 | ~400 (stubs only) |
 | Always-on skill catalog (12 entries) | ~1 200 | ~1 300 (incl. playwright-validate) |
-| Playwright plugin source | — | ~850 (loaded as plugin context) |
+| Playwright plugin source | — | 0 (plugin retired; no longer loaded) |
 | **Subtotal (authored, this repo)** | **~23 000** | **~4 050** |
 
 **~18 950 tokens saved per turn on the opencode harness, from this
 repo's contribution alone.** The remaining input budget is dominated
-by the user-level `~/.agents/skills/` catalog (~103 skills × 2
+by the user-level `~/.agents/skills/` catalog (~104 skills × 2
 duplicate locations) and the opencode harness itself; see the next
 section.
 
@@ -108,8 +115,9 @@ section.
 
 The following subdirectories contain **vendor-spec-compliant wrappers**
 around canonical skills that live in `~/.agents/skills/` (user-level)
-or `~/.config/opencode/skills/` (opencode user-level). Per
-[AGENTS-SPEC.md](../AGENTS-SPEC.md) §Distribution:
+or `~/.config/opencode/skills/` (opencode user-level). Per the former `AGENTS-SPEC.md` §Distribution (that file has since
+been removed from the repository; the rule text is quoted below for
+reference):
 
 > Wrappers MUST be a copy of the canonical skill (for
 > directory-with-`SKILL.md` shapes) or a thin dispatcher (for
@@ -130,10 +138,10 @@ to dedupe is the **installer**, not the wrappers.
 | `.gemini/` | 51 | ~2 MB | Gemini CLI wrapper around `impeccable`. |
 | `.kiro/` | 52 | ~2 MB | Kiro wrapper around `impeccable`. |
 | `.codex/` | 1 | <1 KB | Just `hooks.json`; PostToolUse + Stop hooks for the existing impeccable detector. (The `impeccable` runtime cache lives separately at `.impeccable/`.) |
-| `.amazonq/` | 0 | — | Empty placeholder; Amazon Q auto-discovers AGENTS.md. |
-| `.devin/` | 0 | — | Empty placeholder; Devin auto-discovers AGENTS.md. |
+| `.amazonq/` | 1 | <1 KB | `rules/spec-driven-development.md`; Amazon Q auto-discovers AGENTS.md. |
+| `.devin/` | 1 | <1 KB | `rules/spec-driven-development.md`; Devin auto-discovers AGENTS.md. |
 | `.clinerules/` | 1 | <1 KB | Cline reads `spec-driven-development.md`. Already minimal. |
-| `.impeccable/` | 3 | ~17 KB | impeccable-local runtime cache. Not agent-facing. |
+| `.impeccable/` | 4 | ~17 KB | impeccable-local runtime cache. Not agent-facing. |
 
 ### The actual duplication problem
 
@@ -143,11 +151,11 @@ sources:
 
 | Where | What | Bytes | ~Tokens |
 |---|---|--:|--:|
-| `~/.agents/skills/` | 103 skills × frontmatter | ~17 600 | ~4 400 |
-| `~/.config/opencode/skills/` | 71 gsd-* × frontmatter (duplicate) | ~13 200 | ~3 300 |
-| `~/.config/opencode/agents/` | 34 gsd-* sub-agent frontmatter | ~8 400 | ~2 100 |
-| `~/.config/opencode/commands/` | 71 gsd-* slash commands × frontmatter | ~19 400 | ~4 850 |
-| `~/.config/opencode/plugins/gsd-core.js` | plugin source | 32 000 | ~8 000 |
+| `~/.agents/skills/` | 104 skills × frontmatter | ~17 600 | ~4 400 |
+| `~/.config/opencode/skills/` | 72 gsd-* × frontmatter (duplicate) | ~13 200 | ~3 300 |
+| `~/.config/opencode/agents/` | 64 gsd-* agent definitions × frontmatter | ~16 100 | ~4 000 |
+| `~/.config/opencode/commands/` | 72 gsd-* slash commands × frontmatter | ~19 400 | ~4 850 |
+| `~/.config/opencode/plugins/gsd-core.js` | plugin source | — | — (plugin no longer present; `plugins/` dir removed) |
 
 That catalog — all loaded by opencode on turn 1 of any session —
 explains the 31.4 KB / 6% number observed in the opencode TUI on
@@ -161,23 +169,25 @@ The user-level cleanup is straightforward and lives entirely in
 
 1. **Switch GSD profile from `full` to `core`.** Run
    `/skill:gsd-surface profile core`. The `core` profile keeps only:
-   `next`, `new-project`, `onboard`, `discuss-phase`, `plan-phase`,
-   `execute-phase`, `help`, `update`. Saving: ~3 000–4 000 tokens.
+   `new-project`, `discuss-phase`, `plan-phase`, `execute-phase`,
+   `phase`, `help`, `update`, `surface`. Saving: ~3 000–4 000 tokens.
 2. **Move BMAD PM/PRD/brainstorm skills to a disabled directory.** The
    project uses spec-kit, not PRDs, and is past the planning phase.
    Move `bmad-prd`, `bmad-prfaq`, `bmad-product-brief`,
-   `bmad-create-epics-and-stories`, `bmad-create-architecture`,
+   `bmad-create-epics-and-stories`, `bmad-architecture`,
    `bmad-sprint-planning`, `bmad-brainstorming`, `bmad-forge-idea`,
    `bmad-deep-recon`, `bmad-advanced-elicitation`, `bmad-party-mode`,
    `bmad-ux` to `~/.agents/skills-disabled/`. Saving: ~600–800
    tokens.
 3. **Dedupe gsd-* skills between `~/.agents/skills/` and
-   `~/.config/opencode/skills/`.** Delete one or the other; the opencode
-   plugin (`gsd-core.js`) re-stages the canonical set on next run.
+   `~/.config/opencode/skills/`.** Delete one or the other; no
+   opencode plugin re-stages the canonical set anymore (`gsd-core.js`
+   was removed; GSD runtime code now lives at `~/.agents/gsd-core/`).
    Saving: ~3 300 tokens.
-4. **Slim the gsd-core.js plugin.** Currently 32 KB; most of it is
-   subprocess-reuse scaffolding. Replace with a minimal early-return
-   if you don't need the GSD-side hooks. Saving: ~6 000 tokens.
+4. **Slim the gsd-core.js plugin.** No longer applicable — the plugin
+   is not present at `~/.config/opencode/plugins/` and the directory
+   has been removed; GSD runtime code now lives at
+   `~/.agents/gsd-core/bin/lib/`. Saving: already realized.
 
 Combined, those four steps would bring the opencode TUI down from
 ~31 400 tokens to ~13 000–15 000 tokens on turn 1, all without

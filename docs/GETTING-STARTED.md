@@ -14,14 +14,21 @@ Before starting, ensure your system has the following installed:
 | **Git** | 2.30+ | Version control |
 | **Free Ports** | — | `8080` (HTTP), `8443` (HTTPS), `8081` (API direct), `8082` (Traefik dashboard), `1025` + `8025` (Mailpit SMTP + web UI) |
 
+Optional (only if you intend to build and test outside containers):
+
+- **.NET SDK 8.0** — pinned by `global.json` to `8.0.0` (with `rollForward: latestMajor`).
+- **Node.js + Angular CLI** — required to lint, build, and test the Angular 18 SPA (`src/Web/ControlEasyReborn.Web/*`). See [Development Guide](DEVELOPMENT.md).
+- **Devcontainer** — the canonical development environment is defined under `.devcontainer/`; all compilation and integration testing happens inside containers per the Docker-first policy.
+
 ## Quick Installation & First Boot
 
 ### 1. Clone the Repository
 ```bash
-git clone http://192.168.15.5:3030/reisfelipe18/ControlEasy.git
+git clone https://github.com/gednt/ControlEasy.git
 cd ControlEasy
 ```
-<!-- VERIFY: clone URL is the current Git origin — a LAN-hosted Git server (http://192.168.15.5:3030/reisfelipe18/ControlEasy, per `git remote -v`); not reachable outside this network. Update if a public remote is published. -->
+An alternative `origin` points at a LAN-hosted Git server (`http://192.168.15.5:3030/reisfelipe18/ControlEasy`, per `git remote -v`); use whichever remote is reachable from your network.
+<!-- VERIFY: GitHub remote (https://github.com/gednt/ControlEasy.git, registered as `origin-git`) and LAN origin (http://192.168.15.5:3030/reisfelipe18/ControlEasy, `origin`) are the two remotes in `git remote -v`; neither has been verified as externally fetchable. Update if a public remote is confirmed. -->
 
 ### 2. Configure Environment (Optional)
 By default, the stack uses development defaults. You can copy the example environment file:
@@ -73,9 +80,13 @@ When starting with an empty database volume (`mysql-data`):
    - `12-access-control-schema.sql`: AccessControl module tables (credentials, events)
    - `13-backfill-tenant-admin-permissions.sql` / `14-visits-unification.sql` / `15-access-events-visit-link.sql`: Permission backfills and the unified visits/access ledger
    - `16-password-reset-requests.sql`: Durable password reset requests
+   - `17-devices-schema.sql`: AccessControl Devices module tables
+   - `18-device-soft-delete-and-tenant-flag-audit.sql`: Device soft delete and tenant flag audit
+   - `19-device-events-schema.sql` / `20-device-heartbeats-schema.sql`: Device events and heartbeats
+   - `21-tenant-admin-permissions-backfill.sql`: Tenant admin permission backfill
 
 2. **Schema Migrations:**
-   Once `db` is healthy, the one-shot `db-migrate` container applies the SQL files in `docker/mysql/migrations/` (access control, tenant-admin permission backfill, visits unification, access-event/visit link, password reset requests, photo entity bindings, system audit backfill). The `api` container starts only after `db-migrate` completes successfully.
+   Once `db` is healthy, the one-shot `db-migrate` container applies SQL files from `docker/mysql/migrations/` in a fixed order (photo entity bindings, access control, tenant-admin permission backfills, visits unification, access-event/visit link, password reset requests, system audit backfill, gatehouse lifecycle). The `api` container starts only after `db-migrate` completes successfully.
 
 3. **PlatformAdmin Bootstrap:**
    Once migrations finish, the `api` container executes `PlatformAdminBootstrapService` (skipped when demo mode is enabled). If no platform administrator exists, it generates random credentials and logs them at warning level:

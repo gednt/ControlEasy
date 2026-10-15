@@ -13,7 +13,7 @@ The testing suite is designed to ensure strict adherence to Clean Architecture b
 |---|---|---|
 | **Unit Testing** | xUnit 2.9.2, FluentAssertions 8.2.0, NSubstitute 5.1.0 | `tests/ControlEasyReborn.UnitTests/` |
 | **Architecture Rules** | NetArchTest.Rules 1.3.2 | `tests/ControlEasyReborn.ArchitectureTests/` |
-| **Integration Testing** | xUnit + Testcontainers.MySql 4.0.0 | `tests/ControlEasyReborn.IntegrationTests/` |
+| **Integration Testing** | xUnit + Testcontainers.MySql 4.0.0 + in-process API hosting (`Microsoft.AspNetCore.Mvc.Testing`) | `tests/ControlEasyReborn.IntegrationTests/` |
 | **Frontend Unit** | Karma + Jasmine + ChromeHeadless | `src/Web/ControlEasyReborn.Web/` (`src/**/*.spec.ts`) |
 | **E2E** | Playwright ^1.49.0 | `src/Web/ControlEasyReborn.Web/e2e/` |
 | **Accessibility** | Playwright + `@axe-core/playwright` ^4.11.3 | `src/Web/ControlEasyReborn.Web/tests/a11y/` |
@@ -72,9 +72,9 @@ npm run e2e:install
 npm run e2e
 ```
 
-- `e2e/*.spec.ts` — end-to-end flows (login, residents, vehicles, visits, apartments, gatehouse, photos, access control).
-- `tests/a11y/showcase.spec.ts` — axe-core scan of the design-system showcase page (fails on serious/critical WCAG 2.x violations).
-- `tests/visual/showcase.spec.ts` — screenshot regression across viewport × theme matrix; snapshots live in `tests/visual/__snapshots__/`.
+- `e2e/*.spec.ts` — end-to-end flows (first-boot login & platform bootstrap, module pages, residents, vehicles, visits, apartments, gatehouse, photo capture/list, devices incl. device-simulator and virtual-door UI, access control lifecycle, platform condominiums).
+- `tests/a11y/*.spec.ts` — axe-core scans (login, dashboard, administration, devices-health, showcase); fails on serious/critical WCAG 2.x violations.
+- `tests/visual/*.spec.ts` — screenshot regression suites (login, dashboard, showcase, vehicles, visits, administration, administration-doors-disabled, devices-health, gatehouse-offline-toast); snapshots live in `tests/visual/__snapshots__/`.
 
 ---
 
@@ -93,8 +93,9 @@ npm run e2e
 - Verify architectural invariants using `NetArchTest.Rules` plus reflection-based checks. Existing suites enforce:
   - Domain layers must not depend on Infrastructure (layer dependency rules).
   - Infrastructure must not reference EF Core or `MySql.Data`.
-  - Tenant isolation: non-platform domain entities must have a non-nullable `TenantId`; cross-tenant integration tests must be named/nested accordingly.
+  - Tenant isolation: non-platform domain entities must have a non-nullable `TenantId`; cross-tenant integration tests must be named/nested accordingly (`TenantIdPropertyTests.cs`, `CrossTenantTestNamingTests.cs`, `AccessControlTenantRulesTests.cs`).
   - Security redaction: Security and Email code must never log passwords or temp passwords.
+  - Schema sync: MySQL init scripts/DDL stay in sync with schema backfill expectations (`SchemaBackfillSyncTests.cs`).
   - AccessControl constitution compliance (no DBTools in Application/Api, no raw SQL, no biometric keywords, no sensitive PII logging, no MVC controllers/MediatR/Moq).
   - Tokens contract: light/dark design tokens must exist in the Angular theme.
 
@@ -126,6 +127,7 @@ public sealed class LayerDependencyTests
 ### Integration Tests
 - Located in `tests/ControlEasyReborn.IntegrationTests/`.
 - Use `Testcontainers.MySql` to spin up a genuine MySQL 8 container during test execution.
+- API endpoints are exercised in-process via `TestcontainersWebApplicationFactory` / `TenantAwareWebApplicationFactory` (built on `Microsoft.AspNetCore.Mvc.Testing`) against the containerized database.
 - Tests execute real DBTools LINQ queries and migrations against a live database instance to catch SQL syntax, constraint, or provider issues before deployment.
 - Set `CE_ITEST_MYSQL` to point at an already-running MySQL instance and bypass container spawn.
 
@@ -150,7 +152,7 @@ The workflow triggers on pull requests and pushes to `main`/`master` and runs th
 
 | Job | Trigger | Tasks Executed |
 |---|---|---|
-| `lint` | PR / Push to main | `dotnet format --verify-no-changes`, `npm run lint`, `npm test -- --no-watch --browsers=ChromeHeadlessNoSandbox` |
+| `lint` | PR / Push to main | `npm run lint`, `npm test -- --no-watch --browsers=ChromeHeadlessNoSandbox`; `dotnet format --verify-no-changes` runs only when the changed diff contains `.cs` files |
 | `build` | PR / Push to main | `dotnet build`, Tokens contract tests (`--filter TokensContract`), `ng build --configuration production` |
 | `test-fast` | PR / Push to main | Unit tests + NetArchTest architecture tests (excluding `TokensContract`) |
 | `test-integration` | PR / Push to main | Integration tests with cached `mysql:8.0` Testcontainers image |

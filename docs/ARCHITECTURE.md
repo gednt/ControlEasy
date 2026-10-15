@@ -14,7 +14,7 @@ ControlEasy Reborn is structured as a **modular monolith** with **Clean Architec
    - `Application`: Use-case handlers, DTOs, FluentValidation validators, repository interfaces (`Application/Abstractions`), and module domain exceptions (`Application/Errors`).
    - `Infrastructure`: Data persistence with DBTools, external service integrations, module-specific DI registration.
    - `Api`: Minimal API endpoint definitions (`MapGroup`), route registration, authorization policies.
-2. **No Cross-Module Persistence References:** Modules never reference another module's persistence implementation directly. The intended pattern for cross-module reads is directory abstractions — e.g., the AccessControl module consumes `IResidentDirectory`, `IVehicleDirectory`, `IApartmentDirectory`, and `IVisitDirectory` — abstractions defined in the Application layer of the Residents, Vehicles, Apartments, and Visits modules respectively and implemented by each module's own Infrastructure repositories. In practice, a small number of Application-layer consumers (currently AccessControl's `AccessEventDestinationResolver`) additionally reference sibling modules' Domain entity types directly, and `AccessControl.Application` carries ProjectReferences to those modules' Application projects; keep new cross-module integrations on the directory-abstraction pattern.
+2. **No Cross-Module Persistence References:** Modules never reference another module's persistence implementation directly. The intended pattern for cross-module reads is directory abstractions — e.g., the AccessControl module consumes `IResidentDirectory`, `IVehicleDirectory`, `IApartmentDirectory`, `IVisitDirectory`, and the Photos module's Application abstractions — interfaces defined in the Application layer of the producing module and implemented by that module's own Infrastructure repositories. In practice, a small number of Application-layer consumers (currently AccessControl's `AccessEventDestinationResolver` and `LookupSubjectHandler`) additionally reference sibling modules' Domain entity types directly, and `AccessControl.Application` carries ProjectReferences to the Residents, Vehicles, Apartments, Visits, and Photos Application projects. The Devices and Security modules follow the sanctioned pattern: `Devices.Application`/`Devices.Infrastructure` reference the AccessControl and Visits Application projects only for their abstractions, and `Security.Infrastructure` consumes AccessControl's Application abstractions (`GatehouseAccessValidator`). Keep new cross-module integrations on the Application-abstraction pattern.
 3. **No Entity Framework Core (ADR 0002):** Persistence is implemented using [DBTools](https://www.nuget.org/packages/DBTools) 1.4.3 via its `IAsyncSqlClient` API (`SelectAsync` / `InsertAsync` / `UpdateAsync` with explicit field lists). Repositories call `IAsyncSqlClient` directly; raw SQL is reserved strictly for complex multi-table queries or stored procedures.
 4. **Tenant Isolation:** Multi-tenancy is enforced at runtime. Tenant-scoped operations must use `ITenantAwareLinqFactory` to ensure no cross-tenant data leaks. Platform-level tables that intentionally have no tenant dimension — `Users`, `RefreshTokens`, `PasswordResetRequests` (Security), and `TenantAdmins` (Tenants) — are accessed via `IAsyncSqlClient` directly, without the tenant filter.
 5. **No MediatR:** Handlers and services are registered as scoped services directly in DI and invoked without reflection-based mediator layers.
@@ -39,7 +39,7 @@ graph TD
 
 ## Module Structure
 
-The application is decomposed into eleven feature modules and a shared kernel:
+The application is decomposed into twelve feature modules and a shared kernel:
 
 | Module | Purpose | Key Responsibilities |
 |---|---|---|
@@ -51,6 +51,7 @@ The application is decomposed into eleven feature modules and a shared kernel:
 | `Visits` | Gatehouse Operations | Visitor registration, active visits, check-in, check-out timestamps |
 | `ServiceProviders` | Contractor Access | Service provider registration, company records |
 | `AccessControl` | Gatehouse Access Control | QR credential issuance, replacement, revocation & lifecycle actions; access scan decisions; manual access events; subject lookup (CPF/name/apartment) with audit trail; refused-scan attempts |
+| `Devices` | Door Hardware Integration | Device registration/edit/activation, tenant door-integration opt-in flag, reader event ingestion, heartbeats with health & offline-threshold monitoring, HMAC-verified door unlock requests with rate limiting and unlock audit trail, simulated device/door controller & simulator inspector endpoints for development |
 | `Photos` | Identity Capture | Gatehouse webcam/upload capture, client-side resizing, consent policy ledger, audit log |
 | `Reports` | Analytics & Auditing | Access logs, attendance reports, dashboard statistics |
 | `Administration` | System Operations | Condominium configuration, gatehouse settings, system parameters |
@@ -110,6 +111,10 @@ To eliminate divergence between frontend models and backend DTOs:
 - **Location:** `src/BuildingBlocks/ControlEasyReborn.Infrastructure/MultiTenancy/TenantResolutionMiddleware.cs`
 - **Role:** Registered between `UseAuthentication` and `UseAuthorization`. Reads the `tenant_id` and `profile_id` claims plus `roles`/`permissions` claims from the authenticated `ClaimsPrincipal` and populates `ITenantContext` (backed by `HttpTenantContext`). If the request carries no `tenant_id` claim and the caller does not hold the `PlatformAdmin` role, it short-circuits with a `403` `ProblemDetails`-shaped response ("Tenant context required").
 
+### Per-Tenant Key Derivation
+- **Locations:** `src/BuildingBlocks/ControlEasyReborn.Infrastructure/KeyDerivation/` — `EnvironmentTenantMasterKeyProvider`, `PerTenantKeyDeriver` (`IPerTenantKeyDeriver`), `KeyDerivationPurposes`
+- **Role:** Derives tenant-specific secret material from a single environment master key, with purpose-separated derivation constants (`KeyDerivationPurpose`: `AccessControlHmacV1`, `DoorUnlockV1`, `DoorConnectionParamsV1`). The Devices module's `DeviceUnlockKeyProvider` (`IDeviceUnlockKeyProvider`) consumes it for HMAC verification of door-unlock requests, and the Devices module's `DeviceConnectionCryptoService` derives device connection parameters from the same root. New modules requiring derived keys must register a new purpose constant in `KeyDerivationPurposes`.
+
 ### Authorization Policies
 - **Locations:**
   - `PlatformAdminRequirement` + `PlatformAdminAuthorizationHandler`: `src/Modules/Tenants/ControlEasyReborn.Modules.Tenants.Api/Auth/`
@@ -137,8 +142,9 @@ src/
 │   │                                    # ITenantContext, IStorageProvider/StorageOptions, audit-log & email
 │   │                                    # contracts, feature flags, bootstrap/demo option types
 │   └── ControlEasyReborn.Infrastructure/# DBTools setup & DI, Multi-tenancy (TenantResolutionMiddleware,
-│                                        # TenantAwareLinqFactory, TenantFilterInterceptor), storage providers
-│                                        # (Local/S3), MailKit email sender, demo seeder, platform-admin bootstrap
+│                                        # TenantAwareLinqFactory, TenantFilterInterceptor), per-tenant key
+│                                        # derivation (KeyDerivation), storage providers (Local/S3), MailKit
+│                                        # email sender, demo seeder, platform-admin bootstrap
 └── Modules/                             # Bounded contexts with decoupled domain models
     └── <ModuleName>/
         ├── ControlEasyReborn.Modules.<Name>.Domain/

@@ -16,7 +16,7 @@ Verify demo mode is active:
 
 ```bash
 curl -sk https://localhost:8443/api/v1/demo/info
-# → {"enabled":true,"seedVersion":1,"tenants":[...]}
+# → {"enabled":true,"seedVersion":2,"tenants":[...]}
 ```
 
 ## Demo condominiums
@@ -87,7 +87,7 @@ Returns **204 No Content** on success. Returns **404** when demo mode is disable
 Bump the seed version in `docker-compose.demo.yml`:
 
 ```yaml
-Demo__SeedVersion: "2"
+Demo__SeedVersion: "3"
 ```
 
 Then recreate the API container.

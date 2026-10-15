@@ -4,7 +4,7 @@
 
 Schema-driven template for `AGENTS.md` that works across BMAD, GSD-core, impeccable, and future workflow or skill overlays. Replace example content with project content; keep the section structure, ownership markers, and freshness stamps.
 
-Workflow-owned machinery (BMAD project-context block, GSD state slice, etc.) lives in marked blocks. Skill overlays are pointers to sibling files; they own no block. Authoritative reader contract: `AGENTS-SPEC.md`.
+Workflow-owned machinery (BMAD project-context block, GSD state slice, etc.) lives in marked blocks. Skill overlays are pointers to sibling files; they own no block. The reader contract below makes this file self-contained.
 
 ---
 
@@ -104,7 +104,7 @@ Each block is owned by one workflow. An empty block is inert — an agent that d
 
 ### Other workflows
 
-Add a new `<!-- owner:<workflow> -->` block here when adopting a new workflow. Document the block in `AGENTS-SPEC.md` §Extension protocol.
+Add a new `<!-- owner:<workflow> -->` block here when adopting a new workflow. Document the extension protocol in this file (see the Workflow blocks section above for block ownership rules).
 
 ---
 

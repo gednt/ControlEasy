@@ -106,7 +106,7 @@ cmd /c '"C:\Program Files\Git\bin\bash.exe" -c "MSYS_NO_PATHCONV=1 docker run --
 
 Always wait for the container to finish before reading the result; do not poll. The full log lands at `/tmp/karma.log` inside the container.
 
-Stop hooks in `.agents/hooks.json`, `.agent/hooks.json`, `.claude/settings.json`, `.codex/hooks.json`, `.cursor/hooks.json`, `.opencode/plugins/verify-ci.ts` enforce this.
+Stop hooks in `.agents/hooks.json` and `.agent/hooks.json` (backed by `scripts/hooks/verify-ci-agent-stop.sh` / `.ps1` / `.cjs`) enforce this.
 
 ## Platform-aware command execution (Constitution Principle VIII)
 
@@ -123,7 +123,7 @@ Detect host OS + shell before issuing terminal commands. No platform-mismatched 
 - **No host-side tool installation.** Do not install tools on the host machine (`apt`, `brew`, `choco`, `winget`, `npm install -g`, `dotnet tool install -g`, `pip`, etc.). All tooling runs inside containers. If a required tool is missing and Docker is not running, surface the missing dependency to the user and stop. Do not start Docker on the user's behalf.
 - **Atomic commits.** One commit = one logical change. Each commit's tree must build cleanly (Fast Gate green), tests pass, and contain no unrelated file modifications, debug code, or commented-out blocks. Atomic commits land on the worktree branch (`feat/<slug>` / `fix/<slug>`); main is updated only by a human-authorized fast-forward. Commit messages MUST follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`, `build:`, `ci:`, `perf:`, `style:`, `revert:`). Subject ≤ 72 chars, imperative mood, no trailing period. Body explains *why*, not *what*; references the spec or issue. No commitlint runner is mandated — if a project-wide linter is configured, run it; otherwise the agent self-reviews.
 - **Push after every commit.** Every atomic commit MUST be pushed to `origin` immediately (see `AGENTS.WORKTREES.md` §Push after every commit). No work stays local-only across commits. On push failure: keep the commit local, surface the error + SHA to the user, do **not** mark the task done. The agent never retries a failed push, never falls back to another remote, never force-pushes.
-- **No EF Core.** DBTools (`Linq<TModel>`, `IAsyncSqlClient`) is the only data-access library. LINQ-first; raw SQL only for stored procs (ADR 0002).
+- **No EF Core.** DBTools (LINQ over `IAsyncSqlClient`, obtained via `ITenantAwareLinqFactory`) is the only data-access library. LINQ-first; raw SQL only for stored procs (Constitution Principle III).
 - **No MediatR.** Handlers registered as scoped services directly.
 - **No MVC controllers.** Minimal API endpoint classes only.
 - **No cross-tenant access.** All tenant-scoped reads/writes go through `ITenantAwareLinqFactory`; no query reaches the DB without it.
@@ -131,7 +131,7 @@ Detect host OS + shell before issuing terminal commands. No platform-mismatched 
 - **Synthetic test data only.** Never copy document numbers, names, contact details, or any user-supplied data into tests, snapshots, seeders, or example payloads.
 - **BCrypt cost ≥ 11** for password hashing.
 - **`ProblemDetails` (RFC 7807)** for all error responses. Domain exceptions: `NotFoundException`, `ValidationException`, `ConflictException`.
-- **Serilog** structured logging to Console (JSON) + Seq.
+- **Serilog** structured logging to Console + Seq.
 
 ## Workflow ownership (non-overlapping)
 

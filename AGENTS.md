@@ -8,7 +8,7 @@ mode: primary
 
 Constitutional authority: `.specify/memory/constitution.md`. On conflict, the constitution wins.
 
-Heavy content lives in sibling files under `## Skill overlays`; load them only when the task touches that domain. The reader contract below makes this file interpretable without `AGENTS-SPEC.md`.
+Heavy content lives in sibling files under `## Skill overlays`; load them only when the task touches that domain. The reader contract below makes this file self-contained.
 
 ---
 
@@ -16,17 +16,16 @@ Heavy content lives in sibling files under `## Skill overlays`; load them only w
 
 Condominium access-control web platform. Users: administrators, portaria staff, residents. Manages residents, visitors, vehicles, service providers, apartments, gatehouse operations.
 
-**Stack:** ASP.NET Core 8 modular monolith + Angular 18 SPA + MySQL 8 + Docker Compose + JWT bearer. Nine feature modules (Residents, Visits, Vehicles, ServiceProviders, Apartments, Security, Tenants, Reports, Administration), each with Clean Architecture (Domain, Application, Infrastructure, Api).
+**Stack:** ASP.NET Core 8 modular monolith + Angular 18 SPA + MySQL 8 + Docker Compose + JWT bearer. Twelve feature modules (Residents, Apartments, Visits, Vehicles, ServiceProviders, Photos, AccessControl, Security, Tenants, Reports, Administration, Devices), each with Clean Architecture (Domain, Application, Infrastructure, Api).
 
 ---
 
 ## Repo anatomy
 
-- `src/` — ASP.NET Core 8 + Angular 18, shared building blocks, nine feature modules.
+- `src/` — ASP.NET Core 8 + Angular 18, shared building blocks, twelve feature modules.
 - `tests/` — xUnit unit, integration (Testcontainers.MySql), architecture (NetArchTest), a11y/visual.
 - `docker/` — Compose files, Dockerfiles, MySQL init scripts.
 - `.planning/`, `.specs/`, `.specify/`, `_bmad/`, `_bmad-output/` — workflow-owned. See `AGENTS.POLICY.md`.
-- `agents-init/` — agents-template onboarding skill.
 - `docs/`, `scripts/`, `mockup/` — operator/developer docs, worktree scripts, UI mockups.
 - `Makefile`, `global.json` — convenience targets and SDK pin.
 
@@ -60,7 +59,7 @@ Load only when the task touches the overlay's domain.
 - **AGENTS.WORKTREES.md** — Mandatory Git worktree rule + naming convention.
 - **AGENTS.STACK.md** — Stack, C# / Angular conventions, concurrency budget.
 - **impeccable** — `.opencode/skills/impeccable/SKILL.md`. Frontend design skill.
-- **agents-template** — `AGENTS-TEMPLATE.md`, `AGENTS-SPEC.md`, `agents-init/SKILL.md`. Schema authoring + onboarding.
+- **agents-template** — `AGENTS-TEMPLATE.md`. Schema authoring + onboarding.
 - **Playwright validation** — After any Angular SPA edit, smoke-test with the `webapp-testing` skill. Contributor responsibility, not auto-invoked.
 - **docs/AGENT-TOKEN-OPTIMIZATION.md** — Per-turn token budget notes; load when troubleshooting turn-1 bloat.
 

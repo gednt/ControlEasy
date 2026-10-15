@@ -35,12 +35,14 @@ The application can be configured via environment variables supplied in Docker C
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `JWT_SIGNING_KEY` / `Jwt__SigningKey` | **Required** | `CHANGE-ME-IN-PRODUCTION-AT-LEAST-32-CHARS!` | Symmetric HMAC-SHA256 signing key. Missing key throws `InvalidOperationException("Jwt:SigningKey is not configured.")` when tokens are issued or validated. Example values are 32+ characters by convention; no explicit length validation exists in code (HMAC-SHA256 rejects keys shorter than 128 bits / 16 bytes at token signing/validation time) |
-| `Jwt__Issuer` | Optional | `ControlEasyReborn` | JWT issuer claim (`iss`) |
-| `Jwt__Audience` | Optional | `ControlEasyReborn` | JWT audience claim (`aud`) |
+| `Jwt__Issuer` | Optional | `ControlEasyReborn` | JWT issuer claim (`iss`). `JwtTokenService` throws `InvalidOperationException("Jwt:Issuer is not configured.")` if unset — in practice the defaults come from `appsettings.json` / Compose |
+| `Jwt__Audience` | Optional | `ControlEasyReborn` | JWT audience claim (`aud`). Same startup behavior as `Jwt__Issuer` (throws `Jwt:Audience is not configured.` when unset) |
 | `Jwt__AccessTokenTtlMinutes` | Optional | `15` | Access token time-to-live in minutes (code fallback: `15`) |
 | `Jwt__RefreshTokenTtlDays` | Optional | `7` | Refresh token lifetime in days (code fallback: `7`) |
+| `Bootstrap__Enabled` | Optional | `true` | Gates PlatformAdmin bootstrap registration in the API host (`BootstrapHostingExtensions.ShouldRunPlatformAdminBootstrap`); set to `false` to skip seeding entirely |
 | `Bootstrap__PlatformAdminEmail` | Optional | `platform-admin@controleasy.local` | Bootstrap PlatformAdmin email; if blank, a random address (`platform-admin-{random}@controleasy.local`) is generated |
 | `Bootstrap__PlatformAdminPassword` | Optional | `Bootstrap-ChangeMe1!` | Bootstrap PlatformAdmin password; if blank, a random 16-character password is generated |
+| `CE_MASTER_KEY_V1` | Optional* | `CE-DEV-MASTER-KEY-V1-CHANGE-IN-PROD-32B-MIN!!` | Master key for per-tenant key derivation (HKDF via `EnvironmentTenantMasterKeyProvider`, `src/BuildingBlocks/ControlEasyReborn.Infrastructure/KeyDerivation/`). Read directly from the process environment, *not* via Compose `environment:` mapping — set it in the container environment (e.g. Docker secrets or Compose `env_file`) for production <!-- VERIFY: production master key provisioning method --> |
 
 ### SMTP & Email Configuration
 
@@ -94,7 +96,7 @@ Changes take effect on the next `docker compose up -d` (the `api` container is r
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `TIME_ZONE` | Optional | `America/Sao_Paulo` | IANA timezone used by the web date formatting and mapped by Compose to the API's `TimeZone__Id` (tenant-local report date boundaries, see `TenantDayBoundary`) and the container `TZ`. For example: `TIME_ZONE=America/Fortaleza`. |
+| `TIME_ZONE` | Optional | `America/Sao_Paulo` | IANA timezone used by the web date formatting and mapped by Compose to the API's `TimeZone__Id` (tenant-local report day boundaries; see `TenantDayBoundary`) and the container `TZ`. The web (nginx) container passes it through `docker/40-runtime-config.sh`, which writes `/usr/share/nginx/html/runtime-config.js` as `window.__CE_RUNTIME_CONFIG__ = { timeZone: '...' }` for the Angular SPA (`src/app/core/config/runtime-config.ts`); the SPA also falls back to `America/Sao_Paulo`, and invalid characters in the value trigger the same fallback. For example: `TIME_ZONE=America/Fortaleza`. |
 
 ### Feature Management & Demo Mode
 
@@ -108,6 +110,12 @@ Changes take effect on the next `docker compose up -d` (the `api` container is r
 | `FeatureManagement__Vehicles__UseWeb` | Optional | `false` | Enable web workflow for Vehicles |
 | `FeatureManagement__ServiceProviders__UseWeb` | Optional | `false` | Enable web workflow for Service Providers |
 | `FeatureManagement__Administration__UseWeb` | Optional | `false` | Enable web workflow for Administration |
+
+### Devices & Simulator
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `Devices__Simulator__EnableInspectorEndpoint` | Optional | *(not set)* | Enables the device-simulator inspector endpoints (`/api/v1/_internal/devices/{deviceId:guid}/simulator*`, see `SimulatorInspectorEndpoints.cs`). Production remains unreachable: the endpoints require both a non-Development environment check and this flag, so they can only be active where `ASPNETCORE_ENVIRONMENT=Development`. Docker Compose sets it to `"true"` in the local stack |
 
 ---
 
@@ -129,6 +137,21 @@ MYSQL_ROOT_PASSWORD=controleasy_root_dev
 MYSQL_USER=controleasy
 MYSQL_PASSWORD=controleasy_dev
 JWT_SIGNING_KEY=CHANGE-ME-IN-PRODUCTION-AT-LEAST-32-CHARS!
+
+# Outbound email (SMTP)
+# Defaults: host=mailpit (dev sink), port=1025, no auth, no TLS.
+# Set/uncomment to send through a real provider (dev included).
+# IMPORTANT: only SMTP_HOST/SMTP_PORT are wired in docker-compose.yml. For the
+# sender/auth/TLS vars to reach the api container you must ALSO uncomment the
+# matching Smtp__* lines in docker/docker-compose.yml (they are commented out
+# there on purpose). SMTP_PORT must be numeric.
+# SMTP_HOST=smtp.yourprovider.com
+# SMTP_PORT=587
+# SMTP_SENDER_EMAIL=noreply@yourdomain.com
+# SMTP_SENDER_NAME=ControlEasy
+# SMTP_USERNAME=your-smtp-user
+# SMTP_PASSWORD=your-smtp-password
+# SMTP_ENABLE_SSL=true
 
 # Photo storage (Local filesystem by default; set to S3 + MinIO vars for S3-compatible storage)
 STORAGE__PROVIDER=Local
@@ -204,6 +227,8 @@ Located at `src/Host/ControlEasyReborn.Api/appsettings.json`. Used for base conf
 - **Optional Settings with Defaults:**
   - Port configurations (`REVERSE_PROXY_PORT=8080`, `API_PORT=8081`) have pre-configured fallbacks suitable for local development.
   - Storage provider defaults to `Local` with `/storage/photos` inside the container mounted to the `photos-data` Docker volume.
+  - `Bootstrap__Enabled` defaults to `true` (PlatformAdmin bootstrap runs); set to `false` in configurations that seed PlatformAdmin by other means.
+  - `CE_MASTER_KEY_V1` falls back to a hardcoded dev key (`CE-DEV-MASTER-KEY-V1-CHANGE-IN-PROD-32B-MIN!!`). Never rely on the fallback in production — set it from a secure secret store.
 
 ---
 

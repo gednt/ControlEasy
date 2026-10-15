@@ -3,7 +3,7 @@
 > **Canonical home (dev/operator reference):** this file.
 > **Governance anchor:** `.specify/memory/constitution.md` v1.7.0
 > (Principle VI — "Workflow Tooling").
-> **Runtime anchor:** `AGENTS.md` (Workflow tooling policy).
+> **Runtime anchor:** `AGENTS.md` (operator reference; hard rules in `AGENTS.POLICY.md`).
 >
 > This document is a quick-reference card for the workflow
 > systems that run ControlEasy Reborn. It is **not** a substitute
@@ -21,10 +21,10 @@
 | **Home directory** | `.planning/` | `.specs/<feature>/`, `.specify/` | `_bmad/`, `_bmad-output/` |
 | **Command prefix** | `/gsd-*` | `/speckit-*` | `bmad-*` skills |
 | **Mandatory?** | Yes — every phase runs through it | Yes — every feature/bug starts here | No — invoked for reviews/audits |
-| **Cadence** | Per phase (14 phases) | Per feature | Per review/audit need |
+| **Cadence** | Per phase (34 phases) | Per feature | Per review/audit need |
 | **Output is** | Plans, summaries, UAT, validation | `spec.md`, `plan.md`, `tasks.md` | Reviews, audits, traceability, deferred-work ledger |
-| **Skill home** | `.claude/skills/gsd-*`, `.agents/skills/gsd-*` | `.agents/skills/speckit-*` | `.claude/skills/bmad-*`, `.agents/skills/bmad-*` |
-| **Single sentence** | "Where are we on the 14-phase rollout?" | "What does this feature look like end-to-end?" | "Is this work actually good?" |
+| **Skill home** | `~/.config/opencode/skills/gsd-*` (user-global) | `.agents/skills/speckit-*` | `.claude/skills/bmad-*`, `.agents/skills/bmad-*` |
+| **Single sentence** | "Where are we on the 34-phase rollout?" | "What does this feature look like end-to-end?" | "Is this work actually good?" |
 
 The constitution's **ownership principle** (Principle VI § 3 Seams) is
 the one rule that keeps the tools from drifting:
@@ -54,7 +54,7 @@ overlap.
 |---|---|
 | `.planning/PROJECT.md` (validated / active / out-of-scope) | `.specs/<feature>/` artifacts (read-only consumer) |
 | `.planning/milestones/v*.*-REQUIREMENTS.md` (archived per milestone) | `.specify/memory/constitution.md` (constitution is spec-kit's) |
-| `.planning/ROADMAP.md` (14 phases) | The spec-kit `tasks.md` checkbox (spec-kit's job) |
+| `.planning/ROADMAP.md` (34 phases) | The spec-kit `tasks.md` checkbox (spec-kit's job) |
 | `.planning/STATE.md` (live state, decisions, blockers) | Per-PR review (that's a code review concern) |
 | `.planning/codebase/*.md` (7 maps: STACK, STRUCTURE, ARCHITECTURE, CONVENTIONS, CONCERNS, INTEGRATIONS, TESTING) | — |
 | `.planning/milestones/v<ver>-phases/<NN>-<slug>/` (CONTEXT, RESEARCH, NN-PLAN, NN-SUMMARY, NN-VERIFICATION, VALIDATION, NN-UAT) | — |
@@ -78,7 +78,10 @@ overlap.
 /gsd-validate-phase N ── Nyquist test audit ──▶ VALIDATION.md + generated tests
         │
         ▼
-/gsd-transition ── advance roadmap pointer; re-validate PROJECT, REQUIREMENTS, constitution
+<!-- VERIFY: /gsd-transition — no such skill is installed; the constitution (Principle -->
+<!--   VI) still names this step but no command backs it. Phase completion is marked   -->
+<!--   directly in ROADMAP.md (checkboxes + per-milestone status table).               -->
+(gsd-validate-phase N passes → phase complete)
         │
         ▼ (at milestone boundaries)
 /gsd-complete-milestone <version> ── archive roadmap + requirements,
@@ -96,7 +99,7 @@ overlap.
 | `/gsd-execute-phase N --gaps-only` | When UAT found gaps | closes the gaps | `gsd-executor` |
 | `/gsd-verify-work N` | After execution | `NN-UAT.md` | conversational; no sub-agent |
 | `/gsd-validate-phase N` | After UAT passes | `VALIDATION.md` | `gsd-nyquist-auditor` |
-| `/gsd-transition` | When the phase is complete | updated phase pointer | — |
+| *(no `/gsd-transition` skill installed — phase completion is marked in `ROADMAP.md` itself)* | When the phase is complete | `ROADMAP.md` status table | — |
 | `/gsd-complete-milestone <v>` | At a milestone boundary | `.planning/milestones/` archive | legacy-docs retirement |
 | `/gsd-audit-milestone` | Before archive | audit report | — |
 | `/gsd-quick`, `/gsd-fast`, `/gsd-autonomous`, `/gsd-help` | Ad-hoc driver commands | varies | varies |
@@ -115,7 +118,7 @@ block (`{"waves": [...]}`).
 
 ### 1.5 When to invoke GSD as a sub-agent
 
-Per `AGENTS.md` (sub-agent invocation rule), any agent — including
+Per `.specify/memory/constitution.md` (Principle VII — sub-agent orchestration), any agent — including
 a main orchestrator or an in-flight spec-kit sub-agent —
 MAY invoke a `/gsd-*` skill when the work crosses the seam:
 
@@ -171,7 +174,7 @@ workflow tool's ownership rule wins.
 | `/speckit-clarify` | Spec still has `[NEEDS CLARIFICATION]` markers | resolves them |
 | `/speckit-checklist` | Need a domain checklist (UX, security, test) | `<domain>-checklist.md` |
 | `/speckit-converge` | After implementation, consolidate drift | convergence report |
-| `/speckit-analyze` | Periodic code analysis | `.specs/<feature>/analysis.md` |
+| `/speckit-analyze` | Periodic code analysis | Markdown report (strictly read-only; no file writes) |
 | `/speckit-constitution` | Amend `.specify/memory/constitution.md` | new version + Sync Impact Report |
 
 ### 2.3 The per-feature folder
@@ -185,9 +188,7 @@ workflow tool's ownership rule wins.
 ├── design.md         # feature design (overview, glossary, architecture, diagrams)
 ├── bugfix.md         # only for bug-fix specs
 ├── review.md         # produced by GSD code-review agents
-├── analysis.md       # produced by /speckit-analyze or GSD
 ├── docplan.md        # new documentation set plan (Doc agent)
-├── docchange.md      # existing-documentation update plan (Doc agent)
 ├── orchestration.md  # produced by BMAD orchestrator (when used)
 └── requirements.md   # legacy: see .specs/1 - modernization-roadmap/
 ```
@@ -296,7 +297,7 @@ Four kinds of artifact, each with a fixed home:
 - **BMAD → spec-kit.** BMAD MUST NOT rewrite `.specs/<feature>/`
   files; it emits findings and the spec-kit agent applies changes.
 - **BMAD → GSD.** BMAD findings that affect project state are
-  promoted via `/gsd-transition` or `/gsd-complete-milestone`;
+  promoted via `/gsd-complete-milestone`;
   BMAD does not advance the roadmap pointer itself.
 
 ---
@@ -444,7 +445,7 @@ sees it without a separate scan.
 | **GSD → spec-kit** | Phase references a feature | spec-kit `tasks.md` is read; GSD does not rewrite it | GSD |
 | **spec-kit → GSD** | A spec-kit task lands | (none — read-only) | spec-kit (writes decision/blocker) |
 | **spec-kit → GSD** | Requirement validated/invalidated | (none) | spec-kit (moves PROJECT.md list) |
-| **BMAD → GSD** | Audit or review affects project state | findings in `_bmad-output/` | promoted via `/gsd-transition` or `/gsd-complete-milestone` |
+| **BMAD → GSD** | Audit or review affects project state | findings in `_bmad-output/` | promoted via `/gsd-complete-milestone` |
 | **BMAD → spec-kit** | Review finding on implemented code | findings in `_bmad-output/` | spec-kit applies; files `review.md` |
 
 ### 6.3 The verification gate (every mode, every change)
@@ -481,8 +482,9 @@ the work.
 
 > **"I'm mid-phase. Can I update the spec?"**
 > Yes — `requirements.md` and `design.md` are living
-> documents. A change is `docchange.md` (for an existing
-> doc) or `docplan.md` (for a new doc). Update
+> documents. A change is documented via `docplan.md`
+> (for a new doc; this repo has no `docchange.md`
+> convention in use today). Update
 > `.planning/STATE.md` with the change.
 
 > **"I have a 4-agent parallel plan. Is that allowed?"**
@@ -502,9 +504,9 @@ the work.
 
 | Artifact | Canonical home | Owner | How to amend |
 |---|---|---|---|
-| Project brief, validated/active/out-of-scope lists | `.planning/PROJECT.md` | GSD | Re-validated at every `/gsd-transition` |
-| Roadmap (14 phases) | `.planning/ROADMAP.md` | GSD | `/gsd-transition`, `/gsd-complete-milestone` |
-| Requirements (v1/v2, traceability) | `.planning/milestones/v*.*-REQUIREMENTS.md` | GSD | `/gsd-transition` |
+| Project brief, validated/active/out-of-scope lists | `.planning/PROJECT.md` | GSD | Re-validated at every `/gsd-complete-milestone` |
+| Roadmap (34 phases) | `.planning/ROADMAP.md` | GSD | `/gsd-complete-milestone` |
+| Requirements (v1/v2, traceability) | `.planning/milestones/v*.*-REQUIREMENTS.md` | GSD | `/gsd-complete-milestone` |
 | Live state (decisions, blockers, deferred) | `.planning/STATE.md` | GSD **writer-of-record**; spec-kit & BMAD **writers** | Update whenever the fact changes |
 | 7 codebase maps (STACK, STRUCTURE, ARCHITECTURE, CONVENTIONS, CONCERNS, INTEGRATIONS, TESTING) | `.planning/codebase/*.md` | GSD | `/gsd-map-codebase` |
 | Per-phase folder (CONTEXT, RESEARCH, NN-PLAN, NN-SUMMARY, NN-VERIFICATION, VALIDATION, NN-UAT) | `.planning/milestones/v<ver>-phases/<NN>-<slug>/` | GSD | The phase-lifecycle commands |
@@ -512,7 +514,7 @@ the work.
 | Constitution (binding governance) | `.specify/memory/constitution.md` | spec-kit | `/speckit-constitution` |
 | BMAD reviews, audits, deferred-work ledger | `_bmad-output/` | BMAD | `bmad-*` review skills; findings consumed, not auto-applied |
 | ADR decision & rationale | `.planning/STATE.md` | GSD | When the decision is made |
-| ADR finding that prompted the decision | `.specs/<feature>/{review,analysis}.md` | spec-kit | When the finding lands |
+| ADR finding that prompted the decision | `.specs/<feature>/review.md` | spec-kit | When the finding lands |
 
 ---
 
@@ -536,7 +538,7 @@ the work.
 
 - **Constitution:** v1.7.0 (ratified 2026-07-12,
   last amended 2026-09-21)
-- **AGENTS.md:** version pins to v1.7.0
+- **AGENTS.md:** no version pin (references the constitution by path, not by version)
 - **This cheat sheet:** v1.4 — v1.4 on 2026-09-21 aligns with
   constitution v1.7.0 (OpenSpec removed; Principle VI restated as a
   three-tool split of GSD / spec-kit / BMAD; the OpenSpec lifecycle

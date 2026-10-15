@@ -43,6 +43,7 @@ The active condominium is resolved by the `TenantResolutionMiddleware` from the 
 | `POST` | `/api/v1/security/tenant-switch` | Switch active tenant context; returns a new token pair | Yes |
 | `POST` | `/api/v1/security/users` | Register a new platform user | Yes (`PlatformAdminOnly`) |
 | `POST` | `/api/v1/security/users/{userId}/reset-password` | Generate a temporary password for a user (PlatformAdmin or TenantAdmin role, enforced in handler) | Yes |
+| `GET` | `/api/v1/security/staff` | List tenant staff users | Yes |
 | `GET` | `/api/v1/security/attendant-profiles` | List attendant profiles for the active tenant | Yes |
 | `GET` | `/api/v1/security/attendant-profiles/me` | Get attendant profile of the logged-in user | Yes |
 | `POST` | `/api/v1/security/attendant-profiles` | Create a new attendant profile | Yes |
@@ -51,8 +52,34 @@ The active condominium is resolved by the `TenantResolutionMiddleware` from the 
 | `POST` | `/api/v1/security/attendant-profiles/{id}/deactivate` | Deactivate an attendant profile | Yes |
 | `GET` | `/api/v1/security/shifts` | List gatehouse work shifts | Yes |
 | `POST` | `/api/v1/security/shifts` | Create a gatehouse work shift | Yes |
-| `GET` | `/api/v1/security/gatehouses` | List physical gatehouses ("portarias") | Yes |
+| `GET` | `/api/v1/security/gatehouses` | List physical gatehouses ("portarias"); `?includeInactive=true` requires `Permission_devices.write` | Yes |
 | `POST` | `/api/v1/security/gatehouses` | Register a physical gatehouse | Yes |
+| `PUT` | `/api/v1/security/gatehouses/{id}` | Update a physical gatehouse | Yes (`Permission_devices.write`) |
+| `PUT` | `/api/v1/security/gatehouses/{id}/activation` | Activate/deactivate a gatehouse; returns `400` validation ProblemDetails when `active` is omitted | Yes (`Permission_devices.write`) |
+
+### Devices & Door Integration (`/api/v1/devices`)
+
+Door hardware management, reader event ingestion, unlock, and device health. Device permission policies use lowercase names (`Permission_devices.read`, `Permission_devices.write`, `Permission_devices.unlock`).
+
+| Method | Path | Description | Auth Required |
+|---|---|---|---|
+| `GET` | `/api/v1/devices` | List admin-managed devices | Yes (`Permission_devices.read`) |
+| `GET` | `/api/v1/devices/{id}` | Get device details (connection params always redacted) | Yes (`Permission_devices.read`) |
+| `POST` | `/api/v1/devices` | Register a new device | Yes (`Permission_devices.write`) |
+| `PATCH` | `/api/v1/devices/{id}` | Partial device update | Yes (`Permission_devices.write`) |
+| `PUT` | `/api/v1/devices/{id}/activation` | Toggle device active state | Yes (`Permission_devices.write`) |
+| `PUT` | `/api/v1/devices/{id}/thresholds` | Set heartbeat/error-rate thresholds; unknown/removed devices return `404` | Yes (`Permission_devices.write`) |
+| `DELETE` | `/api/v1/devices/{id}` | Soft-delete a device; returns `204 No Content` | Yes (`Permission_devices.write`) |
+| `POST` | `/api/v1/devices/{id}/unlock` | Trigger door unlock (HMAC-signed body); returns `401` on auth failure, `403` on wrong role, `404` when device unknown/inactive or tenant flag off, `429` on rate limit, `503` when device offline | Yes (`Permission_devices.unlock`) |
+| `POST` | `/api/v1/devices/{id}/events` | Ingest one reader event; returns a discriminated ingestion result | Yes (`Permission_devices.read`) |
+| `GET` | `/api/v1/devices/{id}/events?since=&limit=` | List device events (metadata projection, no payload_json) | Yes (`Permission_devices.read`) |
+| `GET` | `/api/v1/devices/health` | Per-device health list for the devices dashboard | Yes (`Permission_devices.read`) |
+| `GET` | `/api/v1/tenants/current/door-integration` | Read the per-tenant door-integration flag state | Yes (`Permission_devices.read`) |
+| `PUT` | `/api/v1/tenants/current/door-integration` | Toggle the per-tenant door-integration flag (idempotent) | Yes (`Permission_tenants.toggle_door_integration`) |
+
+The unlock surface (`POST /api/v1/devices/{id}/unlock`) is scoped to the porteiro role and rate-limited per device. The `POST /api/v1/devices/{id}/events` ingestion surface is called by the reader panel via a service account; a successful ingest returns `Outcome`, `VisitId`, `AccessEventId`, `RefusedScanAttemptId`, `OccurredAtUtc`, and `ProcessedAtUtc`.
+
+Development-only virtual-reader inspector routes exist under `/api/v1/_internal/devices/{deviceId}/simulator` (state, failure-mode, offline, reset, enqueue-offline, queue, readiness, present-credential). They are registered only when the environment is Development **and** `Devices:Simulator:EnableInspectorEndpoint` is `true`; in production every route returns `404`. The state-manipulation routes are anonymous, while `readiness` and `present-credential` additionally require `Permission_devices.read`.
 
 ### Tenants Management (`/api/v1/tenants`)
 
@@ -137,7 +164,6 @@ The entire tenant management group (and tenant backups) requires the `PlatformAd
 | `DELETE` | `/api/v1/photos/{id}` | Soft-delete a photo; returns `204 No Content` | Yes (`Permission_Photos.Delete`) |
 | `GET` | `/api/v1/consent-policy/{subjectCategory}` | Get the tenant consent policy for a subject category | Yes (`Permission_Photos.Read`) |
 | `PUT` | `/api/v1/consent-policy` | Update tenant-wide photo consent settings | Yes (`Permission_Photos.Write`) |
-| `POST` | `/api/v1/entry-log` | Append entry log with photo and consent audit | Yes (`Permission_Photos.Write`) |
 | `GET` | `/api/v1/entry-log` | List entry logs (filter by `entryState`, `subjectType`, date range) | Yes (`Permission_Photos.Read`) |
 | `GET` | `/api/v1/entry-log/export` | Export entry log as CSV (`text/csv`) | Yes (`Permission_Photos.Read`) |
 
@@ -268,8 +294,13 @@ Validation failures from any module's `ValidationException` include an `errors` 
 - `413 Payload Too Large` — Photo upload exceeds the 8 MB limit.
 - `422 Unprocessable Entity` — Access scan rejected; `failureCode` extension identifies the reason.
 - `429 Too Many Requests` — Rate limit exceeded (see Rate Limits).
+- `503 Service Unavailable` — Device unlock attempted while the device is offline (`failureCode: device_offline`).
 - `500 Internal Server Error` — Unexpected unhandled exception.
 
 ## Rate Limits
 
-The `forgot-password` policy applies to `POST /api/v1/security/auth/forgot-password` only: a fixed window of **3 requests per 15 minutes**, partitioned per request-email (parsed from the body, falling back to the `X-Reset-Email` header, then to the client IP). Exceeding the limit returns `429 Too Many Requests`. No other endpoints are rate limited.
+The `forgot-password` policy applies to `POST /api/v1/security/auth/forgot-password` only: a fixed window of **3 requests per 15 minutes**, partitioned per request-email (parsed from the body, falling back to the `X-Reset-Email` header, then to the client IP). Exceeding the limit returns `429 Too Many Requests`.
+
+Device unlock applies an additional in-memory limiter on `POST /api/v1/devices/{id}/unlock`: **1 request per 3-second window** per (tenant, device). A refused attempt returns `429` with `title: "unlock-rate-limited"`, `failureCode: "unlock_rate_limited"`, and a `correlationId`.
+
+No other endpoints are rate limited.
