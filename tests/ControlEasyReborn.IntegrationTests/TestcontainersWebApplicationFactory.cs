@@ -43,6 +43,10 @@ public sealed class TestcontainersWebApplicationFactory : TenantAwareWebApplicat
                 ["Jwt:Audience"] = JwtTestHelper.Audience,
                 ["Storage:Provider"] = "Local",
                 ["Storage:Local:Path"] = Path.Combine(Path.GetTempPath(), "ce-photos-integration-tests"),
+                // Dev-only simulator inspector surface (virtual door execution
+                // endpoints). The real dev stack sets the same flag via
+                // docker/docker-compose.yml (Devices__Simulator__EnableInspectorEndpoint).
+                ["Devices:Simulator:EnableInspectorEndpoint"] = "true",
             });
         });
 

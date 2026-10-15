@@ -1,8 +1,8 @@
 // Discriminated outcome for a single device-event ingestion. The result is
-// projected to the wire as JSON with snake_case keys (Outcome +
-// existing_event_id + visit_id + access_event_id + refused_scan_attempt_id
-// + occurred_at_utc + processed_at_utc) so the Angular devices-api.service
-// can deserialize it without a generated client.
+// projected to the wire as JSON with camelCase keys (Outcome +
+// existingEventId + visitId + accessEventId + refusedScanAttemptId
+// + occurredAtUtc + processedAtUtc + failureCode) so the Angular
+// devices-api.service can deserialize it without a generated client.
 public sealed record DeviceEventIngestionDto(
     string Outcome,
     Guid? ExistingEventId,
@@ -10,4 +10,7 @@ public sealed record DeviceEventIngestionDto(
     Guid? AccessEventId,
     Guid? RefusedScanAttemptId,
     DateTime OccurredAtUtc,
-    DateTime ProcessedAtUtc);
+    DateTime ProcessedAtUtc,
+    // Canonical refusal code (e.g. invalid_credential) when the outcome is a
+    // denial; null for accepted / lifecycle outcomes. Additive field.
+    string? FailureCode = null);

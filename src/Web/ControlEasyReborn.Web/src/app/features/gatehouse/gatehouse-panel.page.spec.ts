@@ -3,7 +3,7 @@ import { computed, importProvidersFrom, signal } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { BehaviorSubject, Subject } from 'rxjs';
+import { BehaviorSubject, Subject, of } from 'rxjs';
 import { GatehousePanelPage } from './gatehouse-panel.page';
 import { VisitsApiService } from '../visits/visits-api.service';
 import { ApartmentsApiService } from '../apartments/apartments-api.service';
@@ -14,6 +14,25 @@ import { DeviceHealthService, DeviceStatusTransition } from '../devices/device-h
 import { DeviceHealthDto } from '../devices/door-unlock.types';
 import { GatehouseContextService } from '../access-control/gatehouse-context.service';
 import { AuthService } from '../../core/services/auth.service';
+import { DeviceSimulatorService } from '../devices/device-simulator.service';
+import { DevicesApiService } from '../devices/devices-api.service';
+
+class FakeDevicesApiService {
+  // The virtual-door subcomponent is only instantiated when the inspector
+  // is available; these no-ops keep its mount HTTP-free under HttpTestingController.
+  list = jasmine.createSpy('list').and.returnValue(of([]));
+  listEvents = jasmine.createSpy('listEvents').and.returnValue(of([]));
+  register = jasmine
+    .createSpy('register')
+    .and.returnValue(of({ id: '00000000-0000-0000-0000-0000000000aa' } as never));
+}
+
+class FakeDeviceSimulatorService {
+  // null = probe pending, false = inspector off, true = inspector on.
+  readonly inspectorAvailable = signal<boolean | null>(null);
+  readonly lastError = signal<string | null>(null);
+  probeInspector = jasmine.createSpy('probeInspector').and.returnValue(Promise.resolve());
+}
 
 class FakeDeviceHealthService {
   readonly health$ = new BehaviorSubject<DeviceHealthDto[]>([]);
@@ -60,6 +79,7 @@ describe('GatehousePanelPage', () => {
   let component: GatehousePanelPage;
   let httpMock: HttpTestingController;
   let deviceHealth: FakeDeviceHealthService;
+  let simulator: FakeDeviceSimulatorService;
 
   const queryParamsSubject = new BehaviorSubject(convertToParamMap({}));
 
@@ -69,6 +89,7 @@ describe('GatehousePanelPage', () => {
     );
 
     deviceHealth = new FakeDeviceHealthService();
+    simulator = new FakeDeviceSimulatorService();
 
     await TestBed.configureTestingModule({
       imports: [GatehousePanelPage],
@@ -83,6 +104,8 @@ describe('GatehousePanelPage', () => {
         { provide: GatehouseContextService, useValue: new FakeGatehouseContextService() },
         { provide: AuthService, useValue: { isTenantAdmin: () => true } },
         { provide: DeviceHealthService, useValue: deviceHealth },
+        { provide: DeviceSimulatorService, useValue: simulator },
+        { provide: DevicesApiService, useValue: new FakeDevicesApiService() },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -558,5 +581,59 @@ describe('GatehousePanelPage', () => {
       '[data-test="device-offline-toast"]'
     );
     expect(wrapper).withContext('no offline toast when all online').toBeNull();
+  }));
+
+  it('hides the virtual door tab from the DOM while the inspector probe is pending', fakeAsync(() => {
+    simulator.inspectorAvailable.set(null);
+    fixture.detectChanges();
+    flushInitialRequests();
+    tick();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="tab-virtual"]')).toBeNull();
+    expect(simulator.probeInspector).toHaveBeenCalled();
+  }));
+
+  it('keeps the virtual door tab absent when the inspector is unavailable', fakeAsync(() => {
+    simulator.inspectorAvailable.set(false);
+    fixture.detectChanges();
+    flushInitialRequests();
+    tick();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('[data-testid="tab-virtual"]')).toBeNull();
+    expect(fixture.nativeElement.querySelector('[data-testid="panel-virtual"]')).toBeNull();
+  }));
+
+  it('shows the virtual door tab and console only when the inspector is available', fakeAsync(() => {
+    simulator.inspectorAvailable.set(true);
+    fixture.detectChanges();
+    flushInitialRequests();
+    tick();
+    fixture.detectChanges();
+
+    const tab = fixture.nativeElement.querySelector('[data-testid="tab-virtual"]');
+    expect(tab).not.toBeNull();
+    (tab as HTMLElement).click();
+    fixture.detectChanges();
+    tick();
+
+    expect(component.activeTab()).toBe('virtual');
+    expect(component.activeTabLabel()).toBe('Virtual Door Console');
+    expect(
+      fixture.nativeElement.querySelector('[data-testid="panel-virtual"]'),
+    ).not.toBeNull();
+  }));
+
+  it('falls back to the QR console when a deep link requests the unavailable virtual tab', fakeAsync(() => {
+    fixture.detectChanges();
+    flushInitialRequests();
+    tick();
+    // Inspector probe still pending / disabled: ?tab=virtual must not stick.
+    queryParamsSubject.next(convertToParamMap({ tab: 'virtual' }));
+    tick();
+    fixture.detectChanges();
+
+    expect(component.activeTab()).toBe('qr');
   }));
 });

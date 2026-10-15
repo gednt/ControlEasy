@@ -201,6 +201,42 @@ public sealed class DeviceAdminEndpointTests : IAsyncLifetime
         secondBytes.Should().Equal(firstBytes);
     }
 
+    // Configure-dialog unbind: GatehouseId=Guid.Empty is the documented
+    // "clear the binding" marker (EditDeviceRequest contract comment). null
+    // must keep the binding UNCHANGED — sending a vendor-only partial edit
+    // that deserializes gatehouseId=null must never silently unbind.
+    [Fact]
+    public async Task EditDevice_EmptyGatehouseId_Unbinds_ButNullGatehouseId_KeepsBinding()
+    {
+        var client = TenantAdminClient();
+        var req = new RegisterDeviceRequest(
+            DeviceType: "reader",
+            Vendor: "Generic",
+            GatehouseId: _fx.GatehouseId,
+            ConnectionParams: new Dictionary<string, object> { ["endpoint"] = "https://bind.example" });
+        var register = await client.PostAsJsonAsync("/api/v1/devices", req);
+        register.StatusCode.Should().Be(HttpStatusCode.Created);
+        var registered = await register.Content.ReadFromJsonAsync<DeviceDetail>();
+        var deviceId = registered!.Id;
+        registered.GatehouseId.Should().Be(_fx.GatehouseId);
+
+        // gatehouseId=null (absent from the JSON) → binding preserved.
+        var keepEdit = await client.PatchAsJsonAsync(
+            $"/api/v1/devices/{deviceId}",
+            new EditDeviceRequest(Vendor: "Synthetic unchanged-gatehouse vendor", GatehouseId: null, ConnectionParams: null));
+        keepEdit.StatusCode.Should().Be(HttpStatusCode.OK);
+        var kept = await keepEdit.Content.ReadFromJsonAsync<DeviceDetail>();
+        kept!.GatehouseId.Should().Be(_fx.GatehouseId);
+
+        // gatehouseId=Guid.Empty ("No binding") → binding cleared.
+        var unbind = await client.PatchAsJsonAsync(
+            $"/api/v1/devices/{deviceId}",
+            new EditDeviceRequest(Vendor: null, GatehouseId: Guid.Empty, ConnectionParams: null));
+        unbind.StatusCode.Should().Be(HttpStatusCode.OK);
+        var unbound = await unbind.Content.ReadFromJsonAsync<DeviceDetail>();
+        unbound!.GatehouseId.Should().BeNull();
+    }
+
     [Fact]
     public async Task InactiveGatehouse_BlocksNewBindingAndUnlock_ButAllowsUnchangedDeviceAssignment()
     {

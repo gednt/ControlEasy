@@ -25,9 +25,12 @@ public sealed class DeviceEventCrossTenantTests : IAsyncLifetime
         await _fx.SeedAsync();
 
         // Seed Tenant B + a Device B in tenant B so we can test the
-        // cross-tenant ingest paths.
+        // cross-tenant ingest paths. Device B carries a tenant-B gatehouse
+        // binding because the canonical credential decision validates the
+        // gatehouse boundary before any credential resolution.
         await using var conn = new MySqlConnection(_fx.MySql.ConnectionString);
         await conn.OpenAsync();
+        var gatehouseBId = Guid.NewGuid();
         await using (var tenantsCmd = new MySqlCommand(
             @"INSERT INTO Tenants (Id, Slug, DisplayName, Status, CreatedAtUtc, DoorIntegrationEnabled)
               VALUES (@id, @slug, @name, 0, UTC_TIMESTAMP(6), 1)
@@ -38,14 +41,23 @@ public sealed class DeviceEventCrossTenantTests : IAsyncLifetime
             tenantsCmd.Parameters.AddWithValue("@name", "Tenant B Devices");
             await tenantsCmd.ExecuteNonQueryAsync();
         }
+        await using (var gatehouseCmd = new MySqlCommand(
+            @"INSERT INTO Gatehouses (Id, TenantId, Name, Location, Active, tenant_id)
+              VALUES (@id, @tid, 'Tenant B Gatehouse', 'B-01', 1, @tid)", conn))
+        {
+            gatehouseCmd.Parameters.AddWithValue("@id", gatehouseBId.ToString());
+            gatehouseCmd.Parameters.AddWithValue("@tid", TenantBId.ToString());
+            await gatehouseCmd.ExecuteNonQueryAsync();
+        }
         await using (var devicesCmd = new MySqlCommand(
             @"INSERT INTO Devices
-                (Id, TenantId, DeviceType, Vendor, ConnectionParams, IsActive, CreatedAtUtc, CreatedByProfileId, tenant_id)
-              VALUES (@id, @tid, 'controller', 'simulated', @params, 1, UTC_TIMESTAMP(6), @actor, @tid)", conn))
+                (Id, TenantId, DeviceType, Vendor, ConnectionParams, GatehouseId, IsActive, CreatedAtUtc, CreatedByProfileId, tenant_id)
+              VALUES (@id, @tid, 'controller', 'simulated', @params, @gatehouse, 1, UTC_TIMESTAMP(6), @actor, @tid)", conn))
         {
             devicesCmd.Parameters.AddWithValue("@id", DeviceBId.ToString());
             devicesCmd.Parameters.AddWithValue("@tid", TenantBId.ToString());
             devicesCmd.Parameters.AddWithValue("@params", new byte[] { 0x01, 0x02, 0x03, 0x04 });
+            devicesCmd.Parameters.AddWithValue("@gatehouse", gatehouseBId.ToString());
             devicesCmd.Parameters.AddWithValue("@actor", Guid.NewGuid().ToString());
             await devicesCmd.ExecuteNonQueryAsync();
         }
@@ -152,7 +164,10 @@ public sealed class DeviceEventCrossTenantTests : IAsyncLifetime
             SequenceNumber: 999,
             ExternalEventId: Guid.NewGuid(),
             OpaqueToken: token,
-            PayloadJson: "{}");
+            // Strict direction validation requires a valid "direction" in
+            // payload_json for card_read events (mirror
+            // DevicesTestFixture.BuildCardReadPayload's shape).
+            PayloadJson: "{\"direction\":\"entrance\"}");
 
         var response = await tenantBClient.PostAsJsonAsync($"/api/v1/devices/{DeviceBId}/events", payload);
         response.StatusCode.Should().Be(HttpStatusCode.OK);

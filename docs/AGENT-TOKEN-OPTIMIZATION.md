@@ -222,3 +222,17 @@ print('authored turn-1 contribution: ', total, 'tokens')
 
 Compare the output to the equivalent run before this commit
 (`git checkout main -- AGENTS.md .opencode/commands/speckit.specify.md`).
+
+---
+
+## Windows-host Web SPA gate (added 2026-10-12)
+
+Windows binds do not propagate `node_modules/.bin/` symlinks into Linux
+containers, and `cp -r` of an in-flight `npm ci` populating `node_modules/`
+races and fails intermittently. Use the recipe in
+[`AGENTS.POLICY.md` §Web SPA gate / Fallbacks](../AGENTS.POLICY.md) — the
+single bind-mount of the source tree is replaced with a `cp -r` of the
+Web folder (excluding `node_modules`, `.angular`, `test-results`, `.git`)
+into the container's native filesystem, then `npm ci` runs in-container.
+Everything else (lint, playwright install, karma) is bit-for-bit
+equivalent to the Gitea `lint` job.

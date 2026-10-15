@@ -1,6 +1,8 @@
 import {
   LucideAngularModule,
   LayoutDashboard,
+  LogIn,
+  ScanLine,
   Users,
   User,
   UserCheck,
@@ -86,4 +88,6 @@ export const CE_LUCIDE_ICONS = LucideAngularModule.pick({
   Download,
   FileText,
   Activity,
+  LogIn,
+  ScanLine,
 });

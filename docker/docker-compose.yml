@@ -42,6 +42,10 @@ services:
       Jwt__Issuer: ControlEasyReborn
       Jwt__Audience: ControlEasyReborn
       ASPNETCORE_ENVIRONMENT: Development
+      # The simulator inspector is deliberately available only in the local
+      # Development stack. Production still requires both a non-Development
+      # environment check and this flag, so it remains unreachable there.
+      Devices__Simulator__EnableInspectorEndpoint: "true"
       Serilog__WriteTo__1__Args__serverUrl: http://seq:5341
       Storage__Provider: Local
       Storage__Local__Path: /storage/photos

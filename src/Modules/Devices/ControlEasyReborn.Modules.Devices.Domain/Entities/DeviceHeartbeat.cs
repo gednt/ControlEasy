@@ -12,6 +12,21 @@ namespace ControlEasyReborn.Modules.Devices.Domain.Entities;
 // does NOT expose Update or Delete methods (DOOR-12 design rule).
 public sealed class DeviceHeartbeat
 {
+    // Sentinel convention (per-device Configure flow): a device_heartbeats
+    // row stamped 2000-01-01 UTC means "thresholds were configured but no
+    // real heartbeat has ever been seen". The repository writes it on the
+    // absent-row branch (SetThresholdsAsync) so the health dashboard can
+    // surface the configured thresholds truthfully with a "never" heartbeat
+    // display instead of a 25-year-old timestamp; ListDeviceHealthHandler
+    // maps it to LastHeartbeatAtUtc=null on the DTO.
+    public static readonly DateTime SentinelLastHeartbeatAtUtc = new(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+    // Anything stamped before this boundary reads as the sentinel ("never").
+    // The comparison is deliberately loose so sub-second / timezone drift in
+    // MySQL DATETIME(6) round-trips cannot flip a sentinel row into a real
+    // timestamp.
+    public static readonly DateTime SentinelBoundaryUtc = new(2001, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
     public Guid Id { get; private set; }
     public Guid DeviceId { get; private set; }
     public Guid TenantId { get; private set; }
@@ -83,6 +98,12 @@ public sealed class DeviceHeartbeat
     {
         return nowUtc - LastHeartbeatAtUtc > TimeSpan.FromSeconds(OfflineAfterSeconds);
     }
+
+    // True when the row is the "configured but never heartbeaten" sentinel
+    // (thresholds set via the Configure flow, no real ingest yet). The ingest
+    // pipeline's ON DUPLICATE branch overwrites the sentinel timestamp on the
+    // first real heartbeat, so this flag can never stick to a live device.
+    public bool IsSentinelNeverHeartbeaten => LastHeartbeatAtUtc < SentinelBoundaryUtc;
 
     public static DeviceHeartbeat Hydrate(
         Guid id,

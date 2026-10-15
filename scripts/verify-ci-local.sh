@@ -160,7 +160,12 @@ if [ "${FAST_ONLY:-false}" = "true" ] && ! has_cs_changes; then
   _ok "Stage 1/6: Skipped C# format check (no .cs files modified)."
 else
   _log "Stage 1/6: Checking C# code format..."
-  dotnet restore src/ControlEasyReborn.sln --verbosity quiet --nologo
+  # Build BEFORE the format verify: dotnet format's verdict is only stable
+  # when obj/ carries a consistent msbuild/editorgenerated state (a bare
+  # restore on a never-built tree can misclassify analyzer context and
+  # flag perfectly formatted comment lines). Stage 2 then reuses this
+  # build incrementally.
+  dotnet build src/ControlEasyReborn.sln --configuration Release --nologo
   dotnet format src/ControlEasyReborn.sln --verify-no-changes --no-restore \
     || _fail "Format check failed! Run 'dotnet format src/ControlEasyReborn.sln' to fix formatting."
   _ok "Code format verified."
@@ -341,13 +346,18 @@ else
     >/dev/null
 
   # Poll swagger endpoint until ready (curl is an HTTP client — not a build tool)
-  deadline=$((SECONDS + 45))
+  # A 200 status code counts as ready even when curl exits non-zero from the
+  # --max-time body timeout on a cold-started API (Windows Docker Desktop:
+  # first swagger.json download can exceed 5s while headers already returned).
+  deadline=$((SECONDS + 90))
   READY=false
   while (( SECONDS < deadline )); do
     STATUS=$(curl --connect-timeout 2 --max-time 5 --silent \
       -o /dev/null -w "%{http_code}" \
       "http://127.0.0.1:${API_PORT}/swagger/v1/swagger.json" 2>/dev/null || echo "000")
-    [ "$STATUS" = "200" ] && { READY=true; break; }
+    case "$STATUS" in
+      200*) READY=true; break ;;
+    esac
     sleep 1
   done
 
@@ -355,8 +365,11 @@ else
     _die "API container failed to start within 45s. Check: docker logs ${API_CONTAINER}"
   fi
 
+  # Relative output path: with MSYS_NO_PATHCONV=1 (Windows Git-Bash runs of
+  # this script) an absolute POSIX-style path reaches Windows curl unconverted
+  # and cannot be written; the script cwd is already REPO_ROOT.
   curl --fail --silent --show-error \
-    "http://127.0.0.1:${API_PORT}/swagger/v1/swagger.json" -o "$SWAGGER_TEMP"
+    "http://127.0.0.1:${API_PORT}/swagger/v1/swagger.json" -o ".tmp-ci-swagger.json"
   docker rm -f "$API_CONTAINER" >/dev/null 2>&1 || true
 
   # Run ng-openapi-gen in node container.

@@ -18,8 +18,12 @@ import { apiV1InternalDevicesDeviceIdSimulatorGet } from '../fn/devices-internal
 import { ApiV1InternalDevicesDeviceIdSimulatorGet$Params } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-get';
 import { apiV1InternalDevicesDeviceIdSimulatorOfflinePost } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-offline-post';
 import { ApiV1InternalDevicesDeviceIdSimulatorOfflinePost$Params } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-offline-post';
+import { apiV1InternalDevicesDeviceIdSimulatorPresentCredentialPost } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-present-credential-post';
+import { ApiV1InternalDevicesDeviceIdSimulatorPresentCredentialPost$Params } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-present-credential-post';
 import { apiV1InternalDevicesDeviceIdSimulatorQueueGet } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-queue-get';
 import { ApiV1InternalDevicesDeviceIdSimulatorQueueGet$Params } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-queue-get';
+import { apiV1InternalDevicesDeviceIdSimulatorReadinessGet } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-readiness-get';
+import { ApiV1InternalDevicesDeviceIdSimulatorReadinessGet$Params } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-readiness-get';
 import { apiV1InternalDevicesDeviceIdSimulatorResetPost } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-reset-post';
 import { ApiV1InternalDevicesDeviceIdSimulatorResetPost$Params } from '../fn/devices-internal/api-v-1-internal-devices-device-id-simulator-reset-post';
 
@@ -186,6 +190,60 @@ export class DevicesInternalService extends BaseService {
    */
   apiV1InternalDevicesDeviceIdSimulatorQueueGet(params: ApiV1InternalDevicesDeviceIdSimulatorQueueGet$Params, context?: HttpContext): Observable<void> {
     const resp = this.apiV1InternalDevicesDeviceIdSimulatorQueueGet$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1InternalDevicesDeviceIdSimulatorReadinessGet()` */
+  static readonly ApiV1InternalDevicesDeviceIdSimulatorReadinessGetPath = '/api/v1/_internal/devices/{deviceId}/simulator/readiness';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1InternalDevicesDeviceIdSimulatorReadinessGet()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1InternalDevicesDeviceIdSimulatorReadinessGet$Response(params: ApiV1InternalDevicesDeviceIdSimulatorReadinessGet$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = apiV1InternalDevicesDeviceIdSimulatorReadinessGet(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1InternalDevicesDeviceIdSimulatorReadinessGet$Response()` instead.
+   *
+   * This method doesn't expect any request body.
+   */
+  apiV1InternalDevicesDeviceIdSimulatorReadinessGet(params: ApiV1InternalDevicesDeviceIdSimulatorReadinessGet$Params, context?: HttpContext): Observable<void> {
+    const resp = this.apiV1InternalDevicesDeviceIdSimulatorReadinessGet$Response(params, context);
+    return resp.pipe(
+      map((r: StrictHttpResponse<void>): void => r.body)
+    );
+  }
+
+  /** Path part for operation `apiV1InternalDevicesDeviceIdSimulatorPresentCredentialPost()` */
+  static readonly ApiV1InternalDevicesDeviceIdSimulatorPresentCredentialPostPath = '/api/v1/_internal/devices/{deviceId}/simulator/present-credential';
+
+  /**
+   * This method provides access to the full `HttpResponse`, allowing access to response headers.
+   * To access only the response body, use `apiV1InternalDevicesDeviceIdSimulatorPresentCredentialPost()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1InternalDevicesDeviceIdSimulatorPresentCredentialPost$Response(params: ApiV1InternalDevicesDeviceIdSimulatorPresentCredentialPost$Params, context?: HttpContext): Observable<StrictHttpResponse<void>> {
+    const obs = apiV1InternalDevicesDeviceIdSimulatorPresentCredentialPost(this.http, this.rootUrl, params, context);
+    return obs;
+  }
+
+  /**
+   * This method provides access only to the response body.
+   * To access the full response (for headers, for example), `apiV1InternalDevicesDeviceIdSimulatorPresentCredentialPost$Response()` instead.
+   *
+   * This method sends `application/json` and handles request body of type `application/json`.
+   */
+  apiV1InternalDevicesDeviceIdSimulatorPresentCredentialPost(params: ApiV1InternalDevicesDeviceIdSimulatorPresentCredentialPost$Params, context?: HttpContext): Observable<void> {
+    const resp = this.apiV1InternalDevicesDeviceIdSimulatorPresentCredentialPost$Response(params, context);
     return resp.pipe(
       map((r: StrictHttpResponse<void>): void => r.body)
     );

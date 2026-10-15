@@ -1,9 +1,46 @@
-import { expect, Page } from '@playwright/test';
+import { expect, Page, APIRequestContext } from '@playwright/test';
 
 export const demoAdminEmail = process.env['E2E_ADMIN_EMAIL'] ?? 'admin@controleasy.app';
 export const demoAdminPassword = process.env['E2E_ADMIN_PASSWORD'] ?? 'demo123';
 export const demoPorteiroEmail = process.env['E2E_PORTEIRO_EMAIL'] ?? 'porteiro@controleasy.app';
 export const demoPorteiroPassword = process.env['E2E_PORTEIRO_PASSWORD'] ?? 'demo123';
+
+// When E2E_STACK_HOST is set (running the suite against a worktree stack
+// reachable at https://localhost:<port> where the per-worktree DNS override
+// is not available), rewrite the Host header of every browser request so
+// Traefik's Host-based router still recognizes the stack hostname.
+export function applyStackHostHeader(page: Page, stackHost?: string): void {
+  const host = stackHost ?? process.env['E2E_STACK_HOST'];
+  if (!host) return;
+  void page.route('**/*', (route) =>
+    route.continue({ headers: { ...route.request().headers(), host } }),
+  );
+}
+
+// Authenticated probe helpers:
+// the dev-only inspector endpoints resolve the tenant from the bearer JWT
+// even on AllowAnonymous routes (401 without auth), so availability probes
+// must carry a demo-admin token. The Host header is added for worktree
+// stacks reached via localhost (no per-user DNS override).
+export async function demoApiToken(request: APIRequestContext): Promise<string | null> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (process.env['E2E_STACK_HOST']) headers.host = process.env['E2E_STACK_HOST'];
+  const response = await request.post('/api/v1/security/auth/login', {
+    headers,
+    data: { email: demoAdminEmail, password: demoAdminPassword },
+  }).catch(() => null);
+  if (!response?.ok()) return null;
+  const body = (await response.json()) as { token?: string };
+  return body.token ?? null;
+}
+
+export async function authedProbeHeaders(request: APIRequestContext): Promise<Record<string, string> | undefined> {
+  const headers: Record<string, string> = {};
+  if (process.env['E2E_STACK_HOST']) headers.host = process.env['E2E_STACK_HOST'];
+  const token = await demoApiToken(request);
+  if (token) headers.authorization = `Bearer ${token}`;
+  return headers;
+}
 
 export async function loginAsDemoUser(
   page: Page,

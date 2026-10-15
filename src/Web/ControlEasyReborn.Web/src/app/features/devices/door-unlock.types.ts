@@ -3,6 +3,14 @@
 // API contract changes (Phase 23 ships the API; Phase 24/26 surface it in
 // the porteiro / administration pages).
 
+// Re-exported for the device simulator feature (Phase 27). The generated
+// module is the source of truth; the indirection lets consumers import the
+// alias from this barrel (the file they already use for the other device
+// DTOs) instead of the generated-models path. `export type` is required by
+// the project's `isolatedModules: true` setting.
+import type { SimulatorFailureMode } from '../../api/models/simulator-failure-mode';
+export type { SimulatorFailureMode };
+
 export type DoorUnlockOutcome =
   | 'success'
   | 'device_offline'
@@ -96,6 +104,24 @@ export interface EditDeviceRequest {
   connectionParams?: Record<string, unknown>;
 }
 
+// Per-device Configure dialog on /devices — persisted heartbeat thresholds.
+// Mirrors the C# records in
+// src/Modules/Devices/ControlEasyReborn.Modules.Devices.Application/Contracts/
+// UpdateDeviceThresholdsRequest.cs. Guid.Empty gatehouseId ("No binding")
+// clears the device's gatehouse binding.
+export const DEVICE_UNBOUND_GATEHOUSE_ID = '00000000-0000-0000-0000-000000000000';
+
+export interface UpdateDeviceThresholdsRequest {
+  offlineAfterSeconds: number;
+  errorRateThresholdPercent: number;
+}
+
+export interface DeviceThresholdsDto {
+  deviceId: string;
+  offlineAfterSeconds: number;
+  errorRateThresholdPercent: number;
+}
+
 export interface SetDeviceActivationRequest {
   isActive: boolean;
 }
@@ -153,6 +179,9 @@ export interface DeviceEventIngestionDto {
   refusedScanAttemptId: string | null;
   occurredAtUtc: string;
   processedAtUtc: string;
+  // Additive field. Canonical refusal code (e.g. invalid_credential) when
+  // the outcome is a denial; absent/null otherwise.
+  failureCode?: string | null;
 }
 
 export interface DeviceEventListItem {
@@ -190,4 +219,126 @@ export interface DeviceHealthDto {
   offlineAfterSeconds: number;
   errorRateThresholdPercent: number;
   isOfflineExceeded: boolean;
+}
+
+// Phase 27 (DOOR-15) — device simulator inspector surface (UI only).
+// Mirrors the v2.3 backend inspector endpoints shipped in Phase 23/25.
+// No backend changes in this phase; the types are inferred from the C#
+// DTOs in src/Modules/Devices/ControlEasyReborn.Modules.Devices.Application
+// /Abstractions/IDoorSimulatorState.cs and the request bodies in
+// SimulatorInspectorEndpoints.cs. Update both files when the API contract
+// changes (the OpenAPI generation is the source of truth for path / method
+// shape, but the body types are hand-mirrored because the generated
+// service returns Observable<void> for these endpoints).
+
+export function simulatorFailureModeLabel(mode: SimulatorFailureMode): string {
+  switch (mode) {
+    case 0:
+      return 'None';
+    case 1:
+      return 'Always AuthFailed';
+    case 2:
+      return 'Always DeviceOffline';
+    case 3:
+      return 'Fails-Then-Recovers';
+    default:
+      return 'None';
+  }
+}
+
+// Tuple form for use in template literals and array iteration where
+// the index is statically 0..3. Prefer `simulatorFailureModeLabel(mode)`
+// for single-value rendering — this is a sibling API for select-option
+// rendering.
+export const SIMULATOR_FAILURE_MODE_LABELS: readonly [string, string, string, string] = [
+  'None',
+  'Always AuthFailed',
+  'Always DeviceOffline',
+  'Fails-Then-Recovers',
+];
+
+export interface SimulatedAttempt {
+  tenantId: string;
+  deviceId: string;
+  actorProfileId: string;
+  nonce: string;
+  timestampUtc: string;
+  outcome: string;
+  correlationId: string;
+  occurredAtUtc: string;
+}
+
+export interface EnqueueOfflineResult {
+  queued: number;
+}
+
+export interface SimulatorQueueItem {
+  // Mirrors ControlEasyReborn.Modules.Devices.Application.Contracts.DeviceEventPayload.
+  eventType: string;
+  occurredAtUtc: string;
+  sequenceNumber: number;
+  externalEventId: string | null;
+  opaqueToken: string | null;
+  payloadJson: string | null;
+}
+
+// Operational-gatehouse-simulator — virtual physical reader surface
+// (development only). Mirrors the C# records in
+// SimulatorInspectorEndpoints.cs + PresentSimulatedCredentialHandler.cs +
+// VirtualDoorReadinessHandler.cs. Update all files together.
+
+export type VirtualDoorDirection = 'entrance' | 'exit';
+
+export interface SimulatorDeviceReadiness {
+  ready: boolean;
+  reason: string | null;
+  vendor: string;
+  gatehouseId: string | null;
+  gatehouseName: string | null;
+}
+
+export interface SimulatedPresentationResult {
+  // Either DeviceEventOutcome or the configured simulator failure
+  // ('device_offline' | 'auth_failed') when the failure short-circuit fired
+  // before ingestion.
+  outcome: string;
+  failureCode: string | null;
+  direction: string;
+  existingEventId: string | null;
+  visitId: string | null;
+  accessEventId: string | null;
+  refusalId: string | null;
+  occurredAtUtc: string;
+  processedAtUtc: string;
+}
+
+export function isConfiguredSimulatorFailure(outcome: string): boolean {
+  return outcome === 'device_offline' || outcome === 'auth_failed';
+}
+
+// Human labels for the canonical outcomes surfaced in the virtual-door
+// receipt (device-event result codes + the configured failure modes).
+export function virtualDoorOutcomeLabel(outcome: string): string {
+  switch (outcome) {
+    case 'advanced_visit':
+      return 'Visit advanced';
+    case 'created_visit':
+      return 'Visit created';
+    case 'matched_dweller':
+      return 'Access recorded';
+    case 'denied_attempt':
+      return 'Access denied';
+    case 'replay_duplicate':
+      return 'Replay (already recorded)';
+    case 'device_offline':
+      return 'Reader offline';
+    case 'auth_failed':
+      return 'Credential refused by reader';
+    case 'device_inactive':
+      return 'Reader inactive';
+    case 'tenant_flag_off':
+      return 'Door integration disabled';
+    default:
+      return outcome;
+  }
 }

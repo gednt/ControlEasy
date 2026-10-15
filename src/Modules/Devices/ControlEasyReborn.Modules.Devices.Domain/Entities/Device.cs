@@ -93,7 +93,10 @@ public sealed class Device
             if (string.IsNullOrWhiteSpace(vendor)) throw new InvalidOperationException("Vendor cannot be empty.");
             Vendor = vendor;
         }
-        if (gatehouseId.HasValue) GatehouseId = gatehouseId;
+        // GatehouseId semantics (per the EditDeviceRequest contract): null =
+        // leave the binding unchanged; Guid.Empty = clear the binding ("No
+        // binding" in the Configure dialog); any other value = rebind.
+        if (gatehouseId.HasValue) GatehouseId = gatehouseId.Value == Guid.Empty ? null : gatehouseId.Value;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 

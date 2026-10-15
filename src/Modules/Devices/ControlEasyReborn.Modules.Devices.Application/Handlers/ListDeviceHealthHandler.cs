@@ -14,6 +14,11 @@ namespace ControlEasyReborn.Modules.Devices.Application.Handlers;
 // Soft-deleted devices are excluded.
 public sealed class ListDeviceHealthHandler
 {
+    // Virtual readers are created solely by the Development-only simulator
+    // surface. They have no hardware heartbeat, so applying the normal
+    // "missing heartbeat = offline" rule would make a ready simulator look
+    // broken before the user has selected an offline failure mode.
+    private const string SimulatorVendor = "ControlEasy simulator";
     private readonly IDeviceRepository _devices;
     private readonly IDeviceHeartbeatRepository _heartbeats;
     private readonly IGatehouseLookup _gatehouses;
@@ -57,6 +62,11 @@ public sealed class ListDeviceHealthHandler
             {
                 var pct = (decimal)heartbeat.ErrorCount / Math.Max(heartbeat.EventsSinceLastSuccess, 1) * 100m;
                 var isOffline = heartbeat.IsOfflineExceeded(nowUtc);
+                // Sentinel row (configured-but-never-heartbeaten): the
+                // 2000-01-01 timestamp marks "thresholds configured, no real
+                // heartbeat seen yet". Display truthfully — the row's Offline
+                // status with a "never" heartbeat — instead of a 25-year-old
+                // timestamp; the configured thresholds are still surfaced.
                 items.Add(new DeviceHealthDto(
                     DeviceId: device.Id,
                     Vendor: device.Vendor,
@@ -65,7 +75,7 @@ public sealed class ListDeviceHealthHandler
                     GatehouseName: gatehouseName,
                     Status: heartbeat.Status,
                     StatusLabel: StatusLabel(heartbeat.Status),
-                    LastHeartbeatAtUtc: heartbeat.LastHeartbeatAtUtc,
+                    LastHeartbeatAtUtc: heartbeat.IsSentinelNeverHeartbeaten ? null : heartbeat.LastHeartbeatAtUtc,
                     ErrorCount: heartbeat.ErrorCount,
                     EventsSinceLastSuccess: heartbeat.EventsSinceLastSuccess,
                     ErrorRatePercent: Math.Round(pct, 2),
@@ -75,6 +85,26 @@ public sealed class ListDeviceHealthHandler
             }
             else
             {
+                if (string.Equals(device.Vendor, SimulatorVendor, StringComparison.OrdinalIgnoreCase))
+                {
+                    items.Add(new DeviceHealthDto(
+                        DeviceId: device.Id,
+                        Vendor: device.Vendor,
+                        DeviceType: device.DeviceType,
+                        GatehouseId: device.GatehouseId,
+                        GatehouseName: gatehouseName,
+                        Status: DeviceStatus.Online,
+                        StatusLabel: StatusLabel(DeviceStatus.Online),
+                        LastHeartbeatAtUtc: null,
+                        ErrorCount: 0,
+                        EventsSinceLastSuccess: 0,
+                        ErrorRatePercent: 0m,
+                        OfflineAfterSeconds: IngestHeartbeatHandler.DefaultOfflineAfterSeconds,
+                        ErrorRateThresholdPercent: IngestHeartbeatHandler.DefaultErrorRateThresholdPercent,
+                        IsOfflineExceeded: false));
+                    continue;
+                }
+
                 // No heartbeat row — treat as offline (we have never heard from this device).
                 items.Add(new DeviceHealthDto(
                     DeviceId: device.Id,

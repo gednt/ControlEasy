@@ -14,7 +14,12 @@ async function globalSetup(config: FullConfig): Promise<void> {
     try {
       const response = await fetch(`${baseURL}/api/v1/security/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // Worktree stacks reached via localhost keep Traefik routing intact
+          // through an explicit Host header (see applyStackHostHeader).
+          ...(process.env['E2E_STACK_HOST'] ? { host: process.env['E2E_STACK_HOST'] } : {}),
+        },
         body: JSON.stringify({ email, password }),
       });
       if (response.ok) {

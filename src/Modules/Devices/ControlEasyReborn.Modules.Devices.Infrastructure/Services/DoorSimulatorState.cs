@@ -14,6 +14,7 @@ public sealed class DoorSimulatorState : IDoorSimulatorState
     private readonly ConcurrentDictionary<Guid, SimulatorFailureMode> _failureModes = new();
     private readonly ConcurrentDictionary<Guid, DateTime> _offlineUntil = new();
     private readonly ConcurrentDictionary<Guid, int> _failureCounters = new();
+    private readonly ConcurrentDictionary<Guid, long> _sequenceCounters = new();
 
     public void RecordAttempt(
         Guid tenantId,
@@ -87,7 +88,7 @@ public sealed class DoorSimulatorState : IDoorSimulatorState
     // Resolve the effective outcome for a given device, honouring the
     // configured failure mode and offline window. Returns null when the
     // simulator is in the default "always succeeds" mode (caller emits Success).
-    internal string? ResolveOutcome(Guid deviceId, DateTime nowUtc)
+    public string? ResolveOutcome(Guid deviceId, DateTime nowUtc)
     {
         if (IsOfflineNow(deviceId, nowUtc)) return nameof(DoorUnlockResultKind.DeviceOffline);
 
@@ -102,6 +103,19 @@ public sealed class DoorSimulatorState : IDoorSimulatorState
             _ => null
         };
     }
+
+    // Safe per-device SequenceNumber source for simulated reader events:
+    //   - process-recycle safe: a fresh counter seeds from the current wall
+    //     clock ticks, which is orders of magnitude beyond any previously
+    //     persisted manual sequence number;
+    //   - concurrency safe: monotonic CAS-style increments within the
+    //     process. Distinct rows still pair the sequence with a fresh
+    //     ExternalEventId, so even a rare tied seed cannot suppress a row.
+    public long NextSequenceNumber(Guid deviceId) =>
+        _sequenceCounters.AddOrUpdate(
+            deviceId,
+            DateTime.UtcNow.Ticks,
+            (_, current) => Math.Max(current + 1, DateTime.UtcNow.Ticks));
 
     private string ResolveFailsThenRecover(Guid deviceId, DateTime nowUtc)
     {

@@ -10,9 +10,11 @@ using MySqlConnector;
 namespace ControlEasyReborn.Modules.Devices.Infrastructure.Persistence;
 
 // Tenant-scoped persistence for device_heartbeats. One row per device
-// (DeviceId UNIQUE). Update/Delete methods are intentionally absent from
-// the abstraction — the row is upserted by IngestHeartbeatHandler using
-// INSERT ... ON DUPLICATE KEY UPDATE (atomic, idempotent per device).
+// (DeviceId UNIQUE). Heartbeat-derived Update/Delete methods are intentionally
+// absent from the abstraction — the row is upserted by IngestHeartbeatHandler
+// using INSERT ... ON DUPLICATE KEY UPDATE (atomic, idempotent per device).
+// SetThresholdsAsync (per-device Configure flow) is the one sanctioned
+// threshold-columns write: it never touches the heartbeat-derived columns.
 public sealed class DeviceHeartbeatRepository : IDeviceHeartbeatRepository
 {
     private const string TableName = "device_heartbeats";
@@ -88,6 +90,51 @@ ON DUPLICATE KEY UPDATE
         cmd.Parameters.AddWithValue("@offlineAfterSeconds", heartbeat.OfflineAfterSeconds);
         cmd.Parameters.AddWithValue("@errorRateThreshold", heartbeat.ErrorRateThresholdPercent);
         cmd.Parameters.AddWithValue("@updatedAt", heartbeat.UpdatedAtUtc);
+        await cmd.ExecuteNonQueryAsync(ct);
+    }
+
+    // Per-device Configure flow — the first production write path for the
+    // threshold columns. One atomic INSERT ... ON DUPLICATE KEY UPDATE (same
+    // shape as the ingest pipeline, no read/race window):
+    //   - Existing row (duplicate branch): ONLY the threshold columns +
+    //     UpdatedAtUtc change — LastHeartbeatAtUtc / Status / counters stay
+    //     untouched so re-configuring a live device cannot corrupt the
+    //     rolling data, and real ingest keeps the configured thresholds
+    //     (carry-forward; UpsertAsync's update-set deliberately excludes
+    //     these columns).
+    //   - Absent row (insert branch): sentinel row so the health dashboard
+    //     surfaces the configured thresholds with a "never" heartbeat display.
+    // The entity's threshold invariants must already have been enforced by
+    // UpdateDeviceThresholdsValidator.
+    public async Task SetThresholdsAsync(
+        Guid tenantId,
+        Guid deviceId,
+        int offlineAfterSeconds,
+        decimal errorRateThresholdPercent,
+        CancellationToken ct)
+    {
+        await using var conn = new MySqlConnection(_factory.Create(_ctx).ConnectionString);
+        await conn.OpenAsync(ct);
+
+        const string sql = @"
+INSERT INTO device_heartbeats
+  (Id, DeviceId, TenantId, LastHeartbeatAtUtc, Status, ErrorCount, EventsSinceLastSuccess, OfflineAfterSeconds, ErrorRateThresholdPercent, UpdatedAtUtc, tenant_id)
+VALUES
+  (@id, @deviceId, @tenantId, @lastHeartbeat, @status, 0, 0, @offlineAfterSeconds, @errorRateThreshold, @updatedAt, @tenantId)
+ON DUPLICATE KEY UPDATE
+  OfflineAfterSeconds = VALUES(OfflineAfterSeconds),
+  ErrorRateThresholdPercent = VALUES(ErrorRateThresholdPercent),
+  UpdatedAtUtc = VALUES(UpdatedAtUtc);";
+
+        await using var cmd = new MySqlCommand(sql, conn);
+        cmd.Parameters.AddWithValue("@id", Guid.NewGuid().ToString());
+        cmd.Parameters.AddWithValue("@deviceId", deviceId.ToString());
+        cmd.Parameters.AddWithValue("@tenantId", tenantId.ToString());
+        cmd.Parameters.AddWithValue("@lastHeartbeat", DeviceHeartbeat.SentinelLastHeartbeatAtUtc);
+        cmd.Parameters.AddWithValue("@status", (int)DeviceStatus.Offline);
+        cmd.Parameters.AddWithValue("@offlineAfterSeconds", offlineAfterSeconds);
+        cmd.Parameters.AddWithValue("@errorRateThreshold", errorRateThresholdPercent);
+        cmd.Parameters.AddWithValue("@updatedAt", DateTime.UtcNow);
         await cmd.ExecuteNonQueryAsync(ct);
     }
 

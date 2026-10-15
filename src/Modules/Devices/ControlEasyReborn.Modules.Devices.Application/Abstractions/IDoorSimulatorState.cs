@@ -30,4 +30,15 @@ public interface IDoorSimulatorState
     void SetOffline(Guid deviceId, DateTime untilUtc);
     SimulatorFailureMode GetFailureMode(Guid deviceId);
     DateTime? GetOfflineUntil(Guid deviceId);
+
+    // Effective configured outcome for the device at nowUtc ("DeviceOffline",
+    // "AuthFailed", ...) or null when the simulator is in the default
+    // "always succeeds" mode. Development-only consumers (the simulated door
+    // controller and the virtual-door presentation endpoints).
+    string? ResolveOutcome(Guid deviceId, DateTime nowUtc);
+
+    // Safe monotonic per-device SequenceNumber source for simulated reader
+    // events — process-recycle safe (seeded from the wall clock) and
+    // concurrency safe (monotonic increments within the process).
+    long NextSequenceNumber(Guid deviceId);
 }
