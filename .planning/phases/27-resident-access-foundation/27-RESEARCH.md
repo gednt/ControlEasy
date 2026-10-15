@@ -445,20 +445,22 @@ portalGroup.MapPost("/{residentId:guid}/portal-credential", async (
 | A4 | ASP.NET endpoint authorization middleware yields 403 on policy failure with the default scheme (uniform ProblemDetails via the existing pipeline) | Pattern 2 | If a different status emerges (e.g. 401 re-prompt), the negative suite's asserted status code needs adjusting; integration test will pin it |
 | A5 | Testcontainers integration harness works unchanged for a new module's endpoints; two-apartment seeding follows the raw-SQL insert precedent (`SeedApartmentForTenantAAsync`) | Validation Architecture | Low risk — established pattern |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Resident refresh-token keying (`sub`/`RefreshTokens.UserId` collision space)**
+All three questions were settled at plan time; resolutions are pinned in plan content. Per-question pointers:
+
+1. **Resident refresh-token keying (`sub`/`RefreshTokens.UserId` collision space)** — RESOLVED: explicit `SubjectKind` VARCHAR(32) column on `RefreshTokens` added in migration 0023, DEFAULT 'Staff' so staff rows are unaffected; resident refresh rows carry 'Resident'. Resolved in Plan 02 Task 1 (schema trio) and Plan 03 Task 3 (refresh dispatch branching on SubjectKind).
    - What we know: `RefreshTokens.UserId` is a bare Guid keyed on `Users` ids; residents have no `Users` row; `RevokeAllForUserAsync` must revoke resident tokens too (password-reset flow requires it).
    - What's unclear: whether to add a discriminator column to `RefreshTokens` or re-resolve by trying Users-then-ResidentCredential at refresh time (ambiguity risk: an accidental Guid collision is cryptographically improbable but schema honesty matters).
-   - Recommendation: add an explicit `subject_kind`/`profile_kind` column to `RefreshTokens` in the 0023 migration; defaults keep staff rows unaffected. Settle at plan time.
-2. **Policy granularity inside Administration/AccessControl groups**
+   - Recommendation: add an explicit `subject_kind`/`profile_kind` column to `RefreshTokens` in the 0023 migration; defaults keep staff rows unaffected. ~~Settle at plan time.~~ — settled as above.
+2. **Policy granularity inside Administration/AccessControl groups** — RESOLVED: group-level staff-role default (`StaffPolicies.Staff` / `StaffPolicies.TenantAdminOrPorteiro` shapes), escalating to `StaffPolicies.TenantAdmin` where the handler assumes admin (settings PUT routes, staff listing, Administration module, `staff` listing); the negative suite covers classes, not routes, so the coarse default is safe. Resolved in Plan 01 Task 2 (policy granularity discretion block).
    - What we know: group-level policies are coarse; some inner endpoints (Administration settings PUT, audit-log writes) may be TenantAdmin-only while others serve Porteiro.
    - What's unclear: exact per-endpoint role split — no existing doc enumerates it.
-   - Recommendation: conservative default `TenantAdminOrPorteiro` at group level, escalate specific tenant-admin-only routes to a `TenantAdmin` policy; the negative suite covers classes, not routes, so the coarse default is safe.
-3. **Mixed-role user whose staff side is deactivated**
+   - Recommendation: conservative default `TenantAdminOrPorteiro` at group level, escalate specific tenant-admin-only routes to a `TenantAdmin` policy; the negative suite covers classes, not routes, so the coarse default is safe. ~~Confirm in plan.~~ — confirmed as above.
+3. **Mixed-role user whose staff side is deactivated** — RESOLVED: hard-fail with the existing uniform message, never silently escalate to the resident branch; pinned with the LoginHandler dispatch-matrix unit test (inactive-staff case asserts the resident lookup is never invoked). Resolved in Plan 03 Task 2.
    - What we know: locked decision = staff branch wins; but if a mixed user's staff profile is inactive, current staff path throws `"No active attendant profile found for user."`.
    - What's unclear: fall back to resident branch, or hard-fail?
-   - Recommendation: hard-fail with the existing uniform message (never silently escalate to a lower-trust token); pin with a unit test. Confirm in plan.
+   - Recommendation: hard-fail with the existing uniform message (never silently escalate to a lower-trust token); pin with a unit test. ~~Confirm in plan.~~ — confirmed as above.
 
 ## Environment Availability
 

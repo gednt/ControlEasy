@@ -178,7 +178,7 @@ Accent reserved for (explicit list, nothing else): primary CTA buttons in the Po
 | Write-once body | "Copy it now. It will not be displayed again." |
 | Empty state | "Portal access hasn't been created for this resident yet. Create portal access to give them a portal sign-in." |
 | Error state (provisioning/action failure) | Use server ProblemDetails message via `getApiErrorMessage(err, 'Failed to save portal access')` — banner inside the modal, retry by re-submitting |
-| Error state (resident login — enumeration-safe) | "Unable to sign in with these credentials." — the SAME string for unknown resident / wrong password / inactive / revoked / suspended (RES-02 uniformity; never reveal which factor failed) |
+| Error state (resident login — enumeration-safe) | "Invalid email or password." — the backend's EXISTING uniform `UnauthorizedException` body (reused per the locked uniform-response decision), rendered on /login for both the staff and the resident branch: the SAME string for unknown email / wrong password / inactive / revoked / suspended (RES-02 uniformity; never reveal which factor failed). Reconciled here to match the backend literal pinned in Plan 03 — the UI never substitutes its own copy. |
 | Suspend feedback | "Portal access suspended — takes effect on the resident's next request." (toast) |
 | Reactivate feedback | "Portal access reactivated." (toast) |
 | Revoke confirmation | "Revoke portal access for {name}? This permanently removes their portal credential — they can no longer sign in. A new credential with a new password would be required to restore access. This cannot be undone." |
