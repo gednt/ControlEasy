@@ -253,11 +253,21 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
+**Wave 1**
 - [ ] 27-01-PLAN.md — Trust precondition: StaffPolicies deny matrix + endpoint-metadata arch scan + negative integration suite (resident JWT → 403 on the four endpoint classes)
+
+**Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 27-02-PLAN.md — ResidentCredential schema trio + repository/resolver + per-request credential-status/occupancy authorization machinery + suspension-sequence proof (session resident branch)
+
+**Wave 3** *(blocked on Wave 2 completion)*
 - [ ] 27-03-PLAN.md — Resident login dispatch (LoginHandler/RefreshHandler/ChangePasswordHandler resident branches + resident JWT claim variant + uniform enumeration-safe denies)
+
+**Wave 4** *(blocked on Wave 3 completion)*
 - [ ] 27-04-PLAN.md — TenantAdmin provisioning lifecycle endpoints + admin reset (BCrypt ≥ 11 + MustChangePassword re-arm + refresh revoke) + two-apartment isolation fixtures
+
+**Wave 5** *(blocked on Wave 4 completion)*
 - [ ] 27-05-PLAN.md — Portal Access modal (Phase 24 device-admin pattern) + residents page integration per 27-UI-SPEC.md
+
 **UI hint**: yes
 
 ### Phase 28: Visitor Pre-Registration & Purpose Codes
