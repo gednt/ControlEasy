@@ -1,20 +1,16 @@
 ---
-gsd_state_version: 1.0
-milestone: v2.3
-milestone_name: Door Integration & Hardware Access (Simulator-First)
-status: archived
-stopped_at: v2.3 milestone complete + archived 2026-10-11 — audit `passed` (15/15 DOOR-* requirements, 9/9 cross-phase integration checks verified, 0 constitutional regressions); 4 phases (23–26) shipped with SUMMARY + VERIFICATION; 26 atomic commits on feat/milestone-v2.3 since milestone-start 4b9d5dd (commit range 4b9d5dd..a42087c, 179 files, +15,894/−58 LOC). Archive: `.planning/milestones/v2.3-ROADMAP.md` + `v2.3-REQUIREMENTS.md` + `v2.3-MILESTONE-AUDIT.md`. Tag: `v2.3` (local). Next: `/gsd-new-milestone` to start v2.4.
-last_updated: "2026-10-11T15:30:00.000Z"
-last_activity: 2026-10-11
-last_activity_desc: v2.3 milestone archived — `gsd-complete-milestone` workflow executed; tag `v2.3` created
-state_head: a42087c
+gsd_state_version: "1.0"
+milestone: v2.4
+milestone_name: Resident Self-Service & Visitor Experience
+status: planning
+last_updated: "2026-10-15T22:14:03.537Z"
+last_activity: 2026-10-15
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 4
-  completed_plans: 4
-current_phase: null
-current_phase_name: v2.3 archived (Phases 23 + 24 + 25 + 26 all shipped) — ready for `/gsd-new-milestone` (v2.4)
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -28,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-10-11)
 
 ## Current Position
 
-Phase: (none — v2.3 milestone archived)
+Phase: Not started (defining requirements)
 Plan: —
-Status: v2.3 archived; tag `v2.3` created locally on `feat/milestone-v2.3` at `a42087c`. Ready for `/gsd-new-milestone` to start v2.4 (Resident Self-Service & Visitor Experience, Phases 27–30).
-Last activity: 2026-10-11 — `gsd-complete-milestone` workflow executed; archive files written to `.planning/milestones/`; PROJECT.md / ROADMAP.md / STATE.md advanced; commit `chore: archive v2.3 milestone`; tag `v2.3`.
+Status: Defining requirements
+Last activity: 2026-10-15 — Milestone v2.4 started
 
 ## Performance Metrics
 

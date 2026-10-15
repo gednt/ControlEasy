@@ -28,7 +28,39 @@ Gatehouse staff can reliably register and control access for residents, visitors
 - Reports page: `/reports` (Today/7d/30d/custom, visit counts by day, residents per apartment, server-side filtering, millisecond-precision CSV export) — dead dashboard link fixed
 - Password management: enumeration-safe forgot-password (decoy verify + partitioned rate limiter), platform/tenant admin resets with token revocation, BCrypt cost ≥ 11 pinned, MailKit SMTP + Mailpit dev catch-all, redaction arch tests
 
-## Current Milestone
+## Current Milestone: v2.4 Resident Self-Service & Visitor Experience
+
+**Started:** 2026-10-15 (party-mode gap-fill + Codex adversarial scope review)
+
+**Goal:** The resident becomes a first-class portal user — credential provisioned by the TenantAdmin and isolated to their own apartment, pre-registering expected visitors, watching arrival history, and receiving in-app arrival notifications — while visitors self check-in at a gatehouse self-service lane riding the unified `VisitorArrivalHandler` write path, and the porteiro sees pending pre-registrations, matches arriving visitors by document, and prints badges.
+
+**Target features:**
+- Resident portal access & apartment-scoped isolation (RES-01..03, RES-13)
+- Visitor pre-registration CRUD with validity windows + `max_uses` and per-tenant purpose codes (RES-04..06)
+- Visitor self check-in at the gatehouse self-service lane with denied-path security and printable badge (RES-07, RES-08, RES-12)
+- Resident visibility, notifications & gatehouse panel integration (RES-09..11)
+- PII masking & log redaction across all new personal-data surfaces (RES-14)
+
+**Phases:** 27 (Resident Access Foundation) · 28 (Visitor Pre-Registration & Purpose Codes) · 29 (Visitor Self Check-In) · 30 (Resident Visibility, Notifications & Gatehouse Panel Integration)
+
+**Gap-closure decisions (2026-10-15, party mode + Codex adversarial review — full findings: [v2-4-codex-gap-review.md](notes/v2-4-codex-gap-review.md)):**
+- Self check-in ships as a supervised, gatehouse-authenticated **self-service lane** — no anonymous public API; the visitor-phone path is deferred (gated on a delivery channel; WhatsApp/e-mail parked)
+- Pre-registrations carry **`max_uses`** (default 1, per-tenant cap in admin settings) inside the validity window; consumed = uses exhausted or window closed; "expired" derived at read time, no background sweep
+- Pre-registrations are **apartment-owned**: any resident of the unit may edit/cancel any pending pre-reg; creator/editor recorded for audit only
+- Arrival is **pre-registration-bound**: same-document cross-apartment conflicts never auto-resolve — porteiro disambiguates
+- **RES-13 staff-endpoint deny matrix**: every existing staff endpoint declares an explicit role policy and a negative integration suite proves resident tokens are refused
+- Residents: per-request suspended-status checks (stateless JWT live-expiry covered), TenantAdmin-only password recovery, constant-cost uniform denials; pre-auth codes reuse `OpaqueTokenIssuer` verifier-only QRs (32-byte, not visitor-typable); rate-limit partitioning on normalized document
+- Consumption, Visit advance and notification insert are **atomic** (compare-and-consume + bounded idempotent replay in the canonical transaction)
+- Badges **reuse `AccessCredential`** (VisitId-bound, verifier-only; reprint = new staff-authorized print) — no second credential subsystem
+- Documents: typed canonical identity (CPF check-digit), no identity disclosure in denied responses, masked display on the resident portal
+- Purpose codes: immutable code identity + historical label snapshot; consent policy runs unchanged through the lane; actor kind `Visitor@Lane` recorded (no fake porteiro); plates are normalized informational snapshots; checkout stays staff-only
+
+**Open flags (not blocking planning):** PII retention duration (constitution-adjacent, owed a legal/product review), tenant clock refinement beyond the Phase 19 tenant-day basis if the lane needs finer granularity, dedicated lane hardware decisions.
+
+**Sequencing:** depends on the post-cleanup entry-log contract already landed on `main` 2026-09-26 (PR #11 `7a5eb35` + PR #10 `0d8f96a`); no external prerequisites; v2.5 follows v2.4.
+
+<details>
+<summary>Previous: v2.3 closeout (shipped 2026-10-11)</summary>
 
 **v2.3 — Door Integration & Hardware Access (Simulator-First)** ✅ shipped 2026-10-11
 
@@ -51,11 +83,7 @@ Gatehouse staff can reliably register and control access for residents, visitors
 
 </details>
 
-**Next milestone (next to start):** **v2.4 — Resident Self-Service & Visitor Experience** (planned 2026-09-23; Phases 27–30; requirements + roadmap defined). The resident becomes a first-class portal user — apartment-scoped credential provisioning (BCrypt ≥ 11, enumeration-safe), pre-registration CRUD with per-tenant purpose codes, visitor self check-in through the unified `VisitorArrivalHandler` write path, apartment-scoped visit history, in-app arrival notifications, printable badges via browser print. Scope sourced from the v2.1 deferred requirements pool — zero external dependencies. See [v2.4-REQUIREMENTS in planning state](REQUIREMENTS.md) and the [v2.4 Phase Details below](#phase-27-resident-access-foundation).
-
-**Later milestone (defined, blocked):** **v2.5 — Real Vendor Hardware Integration (Control iD, Intelbras, Hikvision)** (defined 2026-09-23; Phases 31–34). Three first-party vendor drivers implementing the v2.3 `IDoorController`/`IDeviceHandler` abstractions, the edge agent (outbound-only WSS on-site runtime, forced into scope by the two we-dial-them vendors), vendor contract-test simulators with zero physical hardware in CI, security-bar parity, and the on-site pilot (DOOR-R3). See `.planning/milestones/v2.5-REQUIREMENTS.md`.
-
-Fast-cycle (no milestone): multi-arch Docker/CI (`ARCH-01`, `ARCH-02`).
+</details>
 
 ## Requirements
 
@@ -101,7 +129,7 @@ Fast-cycle (no milestone): multi-arch Docker/CI (`ARCH-01`, `ARCH-02`).
 - [~] Consent gatehouse workflow UI (v2.0, Phase 13) — `CONSENT-03` — backend done; audit review UI pending — `.specs/consent-gatehouse/` — v2.2 target
 - [~] TenantAdmin password reset UI (v2.1 PASS-03 partial) — backend done; UI surface pending — v2.2 target
 - [ ] Ledger polish (v2.1 carryover) — day-bucketing INFRA-02, inert status filter options, search scope, condominium-level package-drop trigger, X-Total-Count exposure — v2.2 target
-- [ ] Resident self-service & visitor experience (v2.4) — CPF pre-registration matching, purpose codes, resident visit history, visitor self check-in, badge printing, arrival notifications (deferred pool from v2.1 REQUIREMENTS.md) — planning started 2026-09-23
+- [ ] Resident self-service & visitor experience (v2.4) — CPF pre-registration matching, purpose codes, resident visit history, visitor self check-in (gatehouse lane), badge printing, arrival notifications (deferred pool from v2.1 REQUIREMENTS.md) — **current milestone**, started 2026-10-15 after party-mode gap-fill + Codex adversarial scope review
 - [ ] Real vendor hardware integration (v2.5) — Control iD, Intelbras, Hikvision drivers + edge agent + vendor simulators + on-site pilot (DOOR-R1..R3 concretized) — defined 2026-09-23, `.planning/milestones/v2.5-REQUIREMENTS.md`
 - [ ] Multi-arch Docker/CI (fast-cycle) — `.specs/1 - modernization-roadmap-arm64/`
 
@@ -118,23 +146,6 @@ Fast-cycle (no milestone): multi-arch Docker/CI (`ARCH-01`, `ARCH-02`).
 - Native WhatsApp Business API integration — Meta approval + per-tenant numbers; webhook/WhatsApp temp-password delivery deferred
 - Resident-facing mobile app / push notifications — v2.4 delivers in-app portal notifications only; push/mobile-native stays future
 - Visitor identity verification hardware / ID scanners — self check-in uses entered + pre-registered data matched against the pending authorization; no scanner hardware
-
-## Next Milestone Goals
-
-**v2.4 — Resident Self-Service & Visitor Experience** (Phases 27–30; ready to start next).
-
-The resident becomes a first-class platform user — credential provisioned by TenantAdmin, logged in with their own password (BCrypt ≥ 11, enumeration-safe), isolated to their own apartment by integration tests (not by convention). Then residents pre-register expected visitors for their apartment (full name, document, optional plate, purpose code, validity window), edit/cancel pending ones, and read-only consumed/cancelled history. An arriving visitor self checks in through a pre-authorization against the SAME unified `VisitorArrivalHandler` write path the gatehouse uses — denied paths return uniform enumeration-safe ProblemDetails, are rate-limited, audit-logged. Residents watch their apartment's visit history and receive in-app arrival notifications. The porteiro sees pending pre-registrations at the gatehouse panel with document-matching and one-click check-in, plus a printable badge at every check-in (browser print, no printer hardware).
-
-**Phase 27 — Resident Access Foundation:** TenantAdmin resident-credential provisioning (activate/suspend/revoke), resident role login (BCrypt ≥ 11 + enumeration-safe uniform responses), apartment-scoped isolation with cross-apartment integration tests (RES-01..03).
-**Phase 28 — Visitor Pre-Registration & Purpose Codes:** Resident pre-registration CRUD with validity windows, edit/cancel lifecycle with read-only consumed history, per-tenant purpose codes stamped on visits (RES-04..06).
-**Phase 29 — Visitor Self Check-In:** Self check-in via document match or pre-auth code through the unified `VisitorArrivalHandler` write path; denied-path security (uniform ProblemDetails, rate limiting, audit); printable badge via browser print (RES-07, RES-08, RES-12).
-**Phase 30 — Resident Visibility, Notifications & Gatehouse Panel Integration:** Apartment-scoped visit history, in-app arrival notifications, gatehouse panel pending pre-registrations with CPF/document matching + one-click check-in + badge print trigger (RES-09..11).
-
-**Scope principle:** BCrypt ≥ 11 for resident credentials; enumeration-safe uniform responses on auth failures; apartment-scoped isolation integration tests mandatory; all tenant-scoped reads/writes via `ITenantAwareLinqFactory`; `ProblemDetails` (RFC 7807) everywhere; no EF Core / no MediatR / minimal API endpoints only. Self check-in MUST reuse the unified `VisitorArrivalHandler` write path — no second door into the Visits data model. Portal-only notifications (no push/mobile-native), data matching (no ID-scanner hardware), browser print (no badge-printer hardware).
-
-**Sequencing:** v2.4 depends on the post-cleanup entry-log contract already landed on `main` 2026-09-26 (PR #11 `7a5eb35` + PR #10 `0d8f96a`); no external prerequisites. Zero dependency on v2.5.
-
-**After v2.4 ships**, v2.5 (Real Vendor Hardware Integration, Phases 31–34) becomes next — Control iD (DOOR-R1, Phase 32) → Intelbras (DOOR-R2 — proves the abstraction, Phase 33) → Hikvision behind VLAN isolation (DOOR-R3, Phase 34) + on-site pilot, all built against the v2.3 `IDoorController` / `IDeviceHandler` / `device_heartbeats` / `device_events` surfaces just shipped.
 
 ## Context
 
@@ -215,4 +226,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-11 — milestone v2.3 (Door Integration simulator-first) **shipped** on `feat/milestone-v2.3` (audit `passed`, 15/15 DOOR-* requirements, 4 phases, 26 atomic commits); v2.4 (Resident Self-Service & Visitor Experience) ready to start next; v2.5 (Real Vendor Hardware Integration) remains defined*
+*Last updated: 2026-10-15 — milestone v2.4 (Resident Self-Service & Visitor Experience) **started** after party-mode gap-fill + Codex adversarial scope review (18 findings, all closed into requirements — see notes/v2-4-codex-gap-review.md); v2.3 (Door Integration simulator-first) shipped 2026-10-11 (audit `passed`); v2.5 (Real Vendor Hardware Integration) remains defined*
